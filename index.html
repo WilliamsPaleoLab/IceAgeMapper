@@ -95,10 +95,10 @@
 			<div id='map-controls' class='col-xs-6'>
 				<h4>Map Controls</h4>
 				<label>
-					Reference Time Period
-				</label>
-				<label>Period Start: </label><input type='number' min="0" max="22000" value='0' step="100" id='min-year'><br />
-				<label>Period End: </label><input type='number' min="0" max="22000" value='0' step="100" id='max-year'>
+					Set Reference Time Period
+				</label><br />
+				<label>Period Start: </label><input type='number' min="-30" max="22000" value='-30' step="100" id='min-year'><label>Years B.P.</label><br />
+				<label>Period End: </label><input type='number' min="-30" max="22000" value='0' step="100" id='max-year'><label>Years B.P.</label>
 			</div>
 			<div id='chart-controls' class='col-xs-6'>
 				<h4>Chart Controls</h4>
@@ -160,6 +160,20 @@ d3.selection.prototype.moveToBack = function() {
     });
 };
 
+var zoom = d3.behavior.zoom()
+    .translate([0, 0])
+    .scale(1)
+    .scaleExtent([1, 21])
+    .on("zoom", zoomed);
+
+function zoomed() {
+	d3.selectAll(".land").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+	d3.selectAll(".boundary").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+	d3.selectAll(".map-point").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+	d3.selectAll(".graticule").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+};
+	
+
 globals = {}
 globals.map = {}
 globals.chart = {}
@@ -174,17 +188,20 @@ $(".display-type").change(function(){
 	if (globals.displayType == "points"){
 		$("#point-radius-holder").show()
 		$("#hex-radius-holder").hide()
+		drawChartPoints(globals.chart.xVar, globals.chart.yVar, globals.data);
+		
 	}
 	else if (globals.displayType == "hexes"){
 		$("#point-radius-holder").hide()
 		$("#hex-radius-holder").show()
+		drawChartHexes(globals.chart.xVar, globals.chart.yVar, globals.data, $("#hex-radius").val());
 	}
 });
 
 $(document).ready(function(){
 	setupNVChart(); //set up the niche viewer chart
 	loadBasemap(); // set up the map and load the basemap json file
-	loadData("assets/data/quercus_with_climate.csv"); //load the space/time/climate data --> calls the functions to draw map and chart points
+	loadData("assets/data/sequoia_with_climate.csv"); //load the space/time/climate data --> calls the functions to draw map and chart points
 });
 
 function loadBasemap(){
@@ -207,6 +224,8 @@ function loadBasemap(){
 	globals.map.svg = d3.select("#map").append("svg")
 	    .attr("width", globals.map.width)
 	    .attr("height", globals.map.height);
+	
+	globals.map.svg.call(zoom).call(zoom.event)
 	
 	globals.map.svg.append("path")
 	    .datum(globals.map.graticule)
@@ -270,6 +289,7 @@ function loadData(path){
 			}else{
 				drawChartHexes(globals.chart.xVar, globals.chart.yVar, globals.data, 10);
 			}
+			stylePointsByAgeRange(-30, 0);
 			
 		});
 	});
@@ -312,7 +332,7 @@ function drawMapPoints(data){
 		.data(data)
 		.enter()
 		.append("circle")
-			.attr('class', 'point map-point')
+			.attr('class', function(d) { return "point map-point " + removeNonLetters(d.siteName) + "_" + d.age})
 			.attr('cx', function(d){ 
 				return d.projected[0]})
 			.attr('cy', function(d){
@@ -321,13 +341,21 @@ function drawMapPoints(data){
 			.attr('fill', 'blue')
 			.attr('opacity', 0.25)
 			.attr('stroke', 'black')
-			.attr('stroke-opacity', 0.25).moveToFront();
+			.attr('stroke-opacity', 0.25).moveToFront()
+			.on('mouseover', function(d){
+      	c = "." + removeNonLetters(d.siteName) + "_" + d.age
+      	highlight(c)
+      }).on('mouseout', function(d){
+      	c = "." + removeNonLetters(d.siteName) + "_" + d.age
+      	deHighlight(c)
+      });
 	console.log("Draw map points complete.");
 };
 
 function drawChartHexes(xVar, yVar, data, radius){
 	d3.select("#nv").selectAll(".hexagon").remove();
 	d3.select("#nv").selectAll(".hexagons").remove();
+	d3.select("#nv").selectAll(".point").remove();
 	
 	
 	globals.chart.hexbin = d3.hexbin()
@@ -360,19 +388,53 @@ function drawChartHexes(xVar, yVar, data, radius){
 	      .attr("d", globals.chart.hexbin.hexagon())
 	      .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
 	      .style('stroke-width', 0.25)
-	      .style('fill', function(d){return globals.chart.color(d.length)})
 	      .on('click', function(d){
 	      	console.log(d);
+	      })
+	      .on('mouseover', function(d){
+	      	d3.select(this).transition().attr('stroke', 'orange').style('stroke-width', 2.5)
+	      	
+	      	for (item in d){
+	      		if (typeof d[item] == "object"){
+	      			c = "." + removeNonLetters(d[item].siteName) + "_" + d[item].age
+	      			highlight(c)
+	      		}
+	      	}
+	      })
+	      .on('mouseout', function(d){
+	      	d3.select(this).transition().attr('stroke', 'none').style('stroke-width', 0)
+	      	for (item in d){
+	      		if (typeof d[item] == "object"){
+	      			c = "." + removeNonLetters(d[item].siteName) + "_" + d[item].age
+	      			deHighlight(c)
+	      		}
+	      	}
 	      });
-	
+	styleHexagons()
 	 $("#wait").text("Ready.");
 	
 }
 
+function styleHexagons(){
+	hexes = d3.selectAll(".hexagon")[0]
+	console.log(hexes)
+	r = d3.extent(hexes, function(d){ 
+		return d.__data__.length})
+	console.log(r)
+	globals.chart.color = d3.scale.linear()
+    .domain(r)
+    .range(["#d3e2ef", "#2a2337"])
+    .interpolate(d3.interpolateLab);
+    
+    d3.selectAll(".hexagon").attr('fill', function(d){
+    	return globals.chart.color(d.length)
+    });
+}
+
 function drawChartAxes(xVar, yVar, data){
-		d3.select("#nv").selectAll(".axis").remove()
+	d3.select("#nv").selectAll(".axis").remove()
 	d3.select("#nv").selectAll(".label").remove()
-	d3.select("#nv").selectAll(".dot").remove()
+	d3.select("#nv").selectAll(".point").remove()
 	d3.select("#nv").selectAll(".hexagon").remove()
 	d3.select("#nv").selectAll(".hexagons").remove()
 	
@@ -405,11 +467,14 @@ function drawChartAxes(xVar, yVar, data){
 }
 
 function drawChartPoints(xVar, yVar, data){
+		d3.select("#nv").selectAll(".hexagon").remove();
+	d3.select("#nv").selectAll(".hexagons").remove();
+	d3.select("#nv").selectAll(".point").remove();
 
   globals.chart.svg.selectAll(".point")
       .data(data)
     .enter().append("circle")
-      .attr("class", "point chart-point")
+      .attr('class', function(d) { return "point chart-point " + removeNonLetters(d.siteName) + "_" + d.age})
       .attr("r", 3.5)
       .attr("cx", function(d) {  
       	val = globals.chart.x(d[xVar]);
@@ -424,7 +489,15 @@ function drawChartPoints(xVar, yVar, data){
 	      		return val;
 	      	}else{
 	      		return 0;
-	      	} });
+      	} })
+      	.attr('fill', 'blue').on('mouseover', function(d){
+      		console.log(d)
+      	c = "." + removeNonLetters(d.siteName) + "_" + d.age
+      	highlight(c)
+      }).on('mouseout', function(d){
+      	c = "." + removeNonLetters(d.siteName) + "_" + d.age
+      	deHighlight(c)
+      });
 	      	
 	  
 	 refMinAge = $("#min-year").val();
@@ -458,23 +531,55 @@ function setupTimeline(data){
     .attr("width", globals.timeline.width + globals.timeline.margin.left + globals.timeline.margin.right)
     .attr("height", globals.timeline.height + globals.timeline.margin.top + globals.timeline.margin.bottom)
   .append("g")
-    //.attr("transform", "translate(" + globals.timeline.margin.left + "," + globals.timeline.margin.top + ")");
+    .attr("transform", "translate(" + globals.timeline.margin.left + ",-6)");
     
     globals.timeline.svg.append("g")
     .attr("class", "x axis")
     .attr("transform", "translate(0," + globals.timeline.height + ")")
-    .call(globals.timeline.xAxis);
+    .call(globals.timeline.xAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("x", $(window).width() / 2)
+      .attr("y", -20)
+      .style("text-anchor", "middle")
+      .style("font-size", '16px')
+      
+      .text("Years Before Present");
    
    globals.timeline.svg.selectAll(".point")
    	.data(data)
    	.enter()
    	.append('circle')
-   		.attr('class', 'point timeline-point')
+   		.attr('class', function(d) { return "point timeline-point " + removeNonLetters(d.siteName) + "_" + d.age})
    		.attr('cy', 30)
    		.attr('cx', function(d){return globals.timeline.x(d.age)})
    		.attr('r', 5)
    		.attr('fill', 'blue')
-	
+   		.on('mouseover', function(d){
+      	c = "." + removeNonLetters(d.siteName) + "_" + d.age
+      	highlight(c)
+      }).on('mouseout', function(d){
+      	c = "." + removeNonLetters(d.siteName) + "_" + d.age
+      	deHighlight(c)
+      });
+}
+function highlight(className, r){
+	_r = 7
+	console.log(className)
+	d3.selectAll(className).transition()
+		.attr('fill', 'orange')
+		.attr('stroke', 'black')
+		.attr('r', _r*2)
+		.style('opacity', 0.75)
+	d3.selectAll(className).moveToFront();
+}
+function deHighlight(className){
+	_r = $("#point-radius").val();
+	d3.selectAll(className).transition()
+		.attr('fill', 'blue')
+		.attr('stroke', 'none')
+		.attr('r', _r)
+		.attr('opacity', 1)
 }
 
 function stylePointsByAgeBounds(age, bandWidth){
@@ -491,7 +596,7 @@ function stylePointsByAgeBounds(age, bandWidth){
 function stylePointsByAgeRange(minAge, maxAge){
 	d3.selectAll(".point")
 		.attr('fill', function(d){
-			if ((d.age < maxAge) && (d.age > minAge)){
+			if ((d.age <= maxAge) && (d.age >= minAge)){
 				return 'red';
 			}else{
 				return 'blue';
@@ -502,7 +607,8 @@ function stylePointsByAgeRange(minAge, maxAge){
 
 
 function changePointRadius(radius){
-	d3.select("#nv").selectAll(".point")
+	console.log("Changing to: " + radius)
+	d3.selectAll(".point")
 		.attr('r', radius);
 }
 function changeHexRadius(radius){
@@ -512,9 +618,23 @@ $("#point-radius").change(function(){
 	changePointRadius($(this).val());
 })
 $("#hex-radius").change(function(){
-	changeHexRadius($(this).val())
+	changeHexRadius($(this).val());
 })
-
+$("#min-year").change(function(){
+	refMinAge = $("#min-year").val();
+	refMaxAge = $("#max-year").val();
+	stylePointsByAgeRange(refMinAge, refMaxAge);
+})
+$("#max-year").change(function(){
+	refMinAge = $("#min-year").val();
+	refMaxAge = $("#max-year").val();
+	stylePointsByAgeRange(refMinAge, refMaxAge);
+})
+function removeNonLetters(str){
+	str = str.replace(/[^a-zA-Z ]/g, "");
+	str = str.replace(" ", "");
+	return str;
+}
 
 </script>
 		
