@@ -93,7 +93,11 @@
 		<h3>Niche Viewer Early Prototyping</h3>
 		<div id='controls' class='row'>
 			<div id='map-controls' class='col-xs-6'>
-				<h4>Map Controls</h4>
+				<select id='t_select'>
+					<option value='assets/data/sequoia_with_climate.csv'>Sequoia</option>
+					<option value='assets/data/tsuga_with_climate.csv'>Tsuga</option>
+				</select><br />
+				
 				<label>
 					Set Reference Time Period
 				</label><br />
@@ -202,6 +206,20 @@ $(document).ready(function(){
 	setupNVChart(); //set up the niche viewer chart
 	loadBasemap(); // set up the map and load the basemap json file
 	loadData("assets/data/sequoia_with_climate.csv"); //load the space/time/climate data --> calls the functions to draw map and chart points
+});
+
+
+function switchDataFiles(newFile){
+	$("#nv").empty();
+	$("#timeline").empty();
+	setupNVChart();
+	d3.selectAll(".map-point").remove()
+	loadData(newFile)
+}
+
+$("#t_select").change(function(){
+	v = $("#t_select option:selected").val();
+	switchDataFiles(v);
 });
 
 function loadBasemap(){
