@@ -37,7 +37,7 @@ $(document).ready(function(){
   globals.map = {}
   createMap();
   //loadCSV("/testing-data/sequoia_with_climate.csv");
-  loadCSV("/testing-data/tsuga_presence.csv");
+  loadCSV("/PaleoPortal/testing-data/tsuga_presence.csv");
 });
 
 function createMap(){
@@ -68,7 +68,7 @@ function createMap(){
   	    .attr("class", "graticule")
   	    .attr("d", globals.map.path);
 
-  	d3.json("/map-data/world-50m.json", function(error, world){
+  	d3.json("/PaleoPortal/map-data/world-50m.json", function(error, world){
   			globals.map.svg.insert("path", ".graticule")
   	      .datum(topojson.feature(world, world.objects.land))
   	      .attr("class", "land")

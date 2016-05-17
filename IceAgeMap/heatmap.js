@@ -6,7 +6,7 @@ $(document).ready(function(){
   //create leaflet map
   createMap();
   //initially load sequoia
-  CSVtoHeatmap("/testing-data/tsuga_presence.csv")
+  CSVtoHeatmap("/PaleoPortal/testing-data/tsuga_presence.csv")
 
 })
 
