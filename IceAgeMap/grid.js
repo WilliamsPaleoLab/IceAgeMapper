@@ -1,5 +1,6 @@
 
 console.log('This is grid.js version 0');
+$("#loading").show();
 
 d3.selection.prototype.moveToFront = function() {
   return this.each(function(){
@@ -77,13 +78,26 @@ function createMap(){
   	      .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
   	      .attr("class", "boundary")
   	      .attr("d", globals.map.path);
+
+          var graticule = d3.geo.graticule();
+          globals.map.svg.append("path")
+          .datum(graticule)
+          .attr("class", "graticule")
+          .attr("d", globals.map.path)
+          .attr('fill', 'none')
+          .attr('stroke-width', 0.25)
+          .attr('stroke', 'steelblue').moveToBack();
   	});
+
+
+
 }
 
 function loadCSV(filename){
   d3.csv(filename, function(data){
     globals.data = data;
     createGrid(-130, -70, 30, 70, 1);
+    fillGrid();
   })
 }
 
@@ -117,11 +131,6 @@ function createGrid(xmin, xmax, ymin, ymax, cellSize){
       gridID += 1;
     }
     pct = i / (xmax - xmin) * 100
-    if (i % 10 == 0){
-      $("#gridProgress").attr('value', pct);
-      $("#gridProgress").val(pct);
-      console.log(pct)
-    }
     i += 1;
   }//end double geo loop
 
@@ -156,14 +165,22 @@ function createGrid(xmin, xmax, ymin, ymax, cellSize){
       .on('click', function(d){
         console.log(d.gridID);
       })
-      fillGrid();
 }
 
 function fillGrid(){
+
+  d3.select("#map").select("svg")
+    .append("rect")
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('height', 1000)
+      .attr('width', 1000)
+      .style('fill', 'steelblue')
+      .attr('class', 'loading')
+
   globals.filteredData = _.filter(globals.data, function(d){
     return ((+d.age > globals.minYear) && (+d.age < globals.maxYear))
   })
-  console.log("Filling grid with " + globals.filteredData.length + " points.")
   d3.selectAll(".grid")
     .style('fill', function(d){
       gridID = d.gridID;
@@ -176,7 +193,9 @@ function fillGrid(){
       }
 
     })
-  $(".loading").remove();
+
+  d3.selectAll(".loading").remove();
+  $("#loading").hide();
 }
 
 function lookupCell(data, cellID){
@@ -185,15 +204,6 @@ function lookupCell(data, cellID){
 }
 
 function updateGrid(){
-  console.log("Updating grid.")
-  d3.select("#map").select("svg")
-    .append('rect')
-    .attr('class', 'loading')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', $("#map").width())
-    .attr('height', $("#map").height())
-    .attr('fill', "white")
-    .attr('opacity', 0.25)
+  $("#loading").show();
   fillGrid();
 }

@@ -3,14 +3,8 @@ html, body{
   overflow: hidden;
 }
 
-#controls{
-  padding: 0px;
-  margin: 0px;
-
-}
-
 #map{
-  height: 60%;
+  height: 90%;
   background-color: 'none';
   padding: 0px;
   margin: 0px;
@@ -32,9 +26,26 @@ html, body{
 }
 
 #timeline{
-  bottom: 25px;
+  bottom: 0px;
   position: absolute;
+  background-color: white;
 }
 .draggable{
   cursor: ew-resize;
+}
+
+.loading{
+  z-index: 1000;
+  background-color: red;
+}
+#loading{
+  background-color: steelblue;
+  position: absolute;
+  top: 10%;
+  left:0;
+  text-align: center;
+  vertical-align: center;
+  height: 100%;
+  width: 100%;
+  z-index: 10000;
 }

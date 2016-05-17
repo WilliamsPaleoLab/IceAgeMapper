@@ -6,7 +6,7 @@ $(document).ready(function(){
   //create leaflet map
   createMap();
   //initially load sequoia
-  CSVtoHeatmap("/testing-data/sequoia_with_climate.csv")
+  CSVtoHeatmap("/testing-data/tsuga_presence.csv")
 
 })
 
@@ -38,20 +38,19 @@ function CSVtoHeatmap(filename){
     })
     globals.heatmapData = dataset
     createHeatmap(dataset, 25);
+    updateHeatmap();
   })
 }
 
 function createHeatmap(dataset, radius){
   //clear existing layers
   var heat = L.heatLayer([], {radius: radius});
-  heat.setLatLngs(dataset)
   heat.addTo(globals.map);
   globals.mapLayers.push(heat);
   globals.heat = heat;
 }
 
 $("#spatial-window-select").change(function(){
-  radius = $(this).val()
   globals.heatmapRadius = radius;
   globals.heat.setOptions({radius: radius});
   globals.heat.redraw();
@@ -67,6 +66,5 @@ function updateHeatmap(){
   })
   globals.heatmapData = dataset;
   globals.heat.setLatLngs(dataset);
-  globals.heat.setOptions({radius: globals.heatmapRadius});
   globals.heat.redraw();
 }

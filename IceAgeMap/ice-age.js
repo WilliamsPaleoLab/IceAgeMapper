@@ -50,7 +50,7 @@ $(document).ready(function(){
   //timeline
   function createTimeline(){
     d3.select("#timeline").empty();
-    var margins = {top: 0, left: 25, right: 25, bottom: 10}
+    var margins = {top: 0, left: 25, right: 25, bottom: 25}
     var height = 50 - margins.top - margins.bottom;
     var width = $(window).width() - margins.left - margins.right;
 
@@ -101,7 +101,7 @@ $(document).ready(function(){
       .attr('x', 0)
       .attr('y', height)
       .attr('height', 5)
-      .attr('width', 250)
+      .attr('width', 100)
       .attr('fill', 'red')
       .attr('stroke', 'none')
       .attr('class', 'draggable')
@@ -116,9 +116,9 @@ $(document).ready(function(){
       .attr('class', 'draggable')
 
     globals.rightLine = svg.append('line')
-      .attr('x1', 250)
+      .attr('x1', 100)
       .attr('y1', height + 10)
-      .attr('x2', 250)
+      .attr('x2', 100)
       .attr('y2', height - 5)
       .attr('stroke-width', 2)
       .attr('stroke', 'black')
@@ -178,6 +178,9 @@ $(document).ready(function(){
         if (newWidth < 5){
           return;
         }
+        if (newWidth > 100){
+          return
+        }
         if (newX < 0){
           return
         }
@@ -222,6 +225,9 @@ $(document).ready(function(){
         }
         if (newWidth < 5){
           return;
+        }
+        if (newWidth > 100){
+          return
         }
         globals.rightLine.attr('x1', newLineX);
         globals.rightLine.attr('x2', newLineX);

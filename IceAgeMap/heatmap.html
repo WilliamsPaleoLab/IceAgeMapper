@@ -9,26 +9,6 @@
 <body>
   <h2 class='page-header'>IceAgeMapper: <span class='text-muted'>Version 0.0</span></h2>
   <div class='row'>
-  <div class='col-xs-12' id='controls'>
-    <div class='col-xs-3'>
-      <label>Select Taxon</label>
-      <select id='taxa-select'>
-        <option value='sequoia' data-url='/testing-data/sequoia_with_climate.csv'>Sequoia</option>
-        <option value='tsuga' data-url='/testing-data/tsuga_with_climate.csv'>Sequoia</option>
-      </select> <br / />
-      <label>Radius:</label><span id='spatialWindowSize'>25</span><br />
-      <input type='range' id='spatial-window-select' min='0' max='50' value='25'/>
-
-
-    </div>
-    <div class='col-xs-3'>
-      <label>Current Window Center: </label><span id='windowCenterText' class='strong'></span><br / />
-      <label>Max Year: </label><span id='maxYearText'>10100</span><br / />
-      <Label>Min Year:</Label><span id='minYearText'>9900</span><br / />
-      <label>Window Size (years): </label><span id='temporalWindowSize'>100</span><br />
-    </div>
-
-  </div>
   <div id='map' class='col-xs-12'>
 
   </div>
@@ -42,7 +22,7 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'></script>
   <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-  <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+  <script src="leaflet-src.js"></script>
   <script src='leaflet-heat.js'></script>
   <script src='ice-age.js'></script>
   <script src='heatmap.js'></script>
