@@ -163,7 +163,7 @@ $(document).ready(function(){
         }
 
         if (globals.grid){
-          updateGrid();
+        //  updateGrid();
         }
       }
 
@@ -205,7 +205,7 @@ $(document).ready(function(){
           updateHeatmap();
         }
         if (globals.grid){
-          updateGrid();
+        //  updateGrid();
         }
 
       }
@@ -242,7 +242,7 @@ $(document).ready(function(){
           updateHeatmap();
         }
         if (globals.grid){
-          updateGrid();
+          //updateGrid();
         }
 
       }
@@ -251,12 +251,27 @@ $(document).ready(function(){
   //enable drag on the timeline components
   var dragRect = d3.behavior.drag()
   	    .on("drag", onRectDrag)
+        .on('dragend', function(){
+          if (globals.grid){
+            updateGrid()
+          }
+        })
 
     var dragLeftLine = d3.behavior.drag()
     	    .on("drag", onLeftDrag)
+          .on('dragend', function(){
+            if (globals.grid){
+              updateGrid()
+            }
+          });
 
     var dragRightLine = d3.behavior.drag()
         .on("drag", onRightDrag)
+        .on('dragend', function(){
+          if (globals.grid){
+            updateGrid()
+          }
+        });
 
     globals.leftLine.call(dragLeftLine);
     globals.rightLine.call(dragRightLine);

@@ -35,7 +35,8 @@ $(document).ready(function(){
   globals.grid = true;
   globals.map = {}
   createMap();
-  CSVToGrid("/testing-data/tsuga_with_climate.csv");
+  //loadCSV("/testing-data/sequoia_with_climate.csv");
+  loadCSV("/testing-data/tsuga_presence.csv");
 });
 
 function createMap(){
@@ -79,136 +80,120 @@ function createMap(){
   	});
 }
 
-function CSVToGrid(filepath){
-  d3.csv(filepath, function(data){
+function loadCSV(filename){
+  d3.csv(filename, function(data){
     globals.data = data;
-    globals.gridData = createGridlayout(data, 1);
-    drawGrid(globals.gridData)
-
-    // x1 = globals.map.projection([-130, 70])[0]
-    // x2 = globals.map.projection([-70, 0])[1]
-    // width = Math.abs(x2 - x1)
-    // y1 = globals.map.projection([-70, 0])[1]
-    // y2 = globals.map.projection([-130, 70])[1]
-    // height = Math.abs(y1 - y2)
-    //
-    // d3.select("#map").selectAll("svg").append('rect')
-    //   .attr('x', x1)
-    //   .attr('width', width)
-    //   .attr('y', y2)
-    //   .attr('height', height)
-    //   .attr('fill', 'none')
-    //   .style('stroke', 'red')
-    //   .attr('id', 'bounds')
-
+    createGrid(-130, -70, 30, 70, 1);
   })
 }
 
-function createGridlayout(dataset, windowSize){
-  gridID = 0
-  layout = new Array();
-  for (var x = -130; x<-70; x += windowSize){
-    for (var y = 0; y<70;y += windowSize){
-      points = [];
-      xmin = x;
-      ymin = y;
-      xmax = x + windowSize;
-      ymax = y + windowSize
-      // console.log(xmin + "/" + xmax)
-      // console.log(ymin + "/" + ymax)
-      these = _.filter(dataset, function(d){
-        return ((+d.longitude < xmax) && (+d.longitude > xmin) && (+d.latitude > ymin) && (+d.latitude < ymax))
-      })
-      // mean = d3.mean(these, function(d){return d.pollenPercentage});
-      // std = d3.deviation(these, function(d){return d.pollenPercentage})
-      // min = d3.min(these, function(d){return d.pollenPercentage})
-      // max = d3.max(these, function(d){return d.pollenPercentage})
-      // median = d3.median(these, function(d){return d.pollenPercentage});
-      topLeft = globals.map.projection([xmin, ymin])
-      bottomRight = globals.map.projection([xmax, ymax])
-      width = Math.abs(topLeft[0] - bottomRight[0])
-      height = Math.abs(topLeft[1] - bottomRight[1])
-
-      obj = {height: height,
+function createGrid(xmin, xmax, ymin, ymax, cellSize){
+  gridID = 0;
+  grid = []
+  i = 0
+  for (var x = xmin; x < xmax; x += cellSize){
+    for (var y = ymin; y<ymax; y+= cellSize){
+      cellXmin = x;
+      cellYmin = y;
+      cellXmax = x + cellSize;
+      cellYmax = y + cellSize;
+      topLeft = globals.map.projection([cellXmin, cellYmin])
+      bottomRight = globals.map.projection([cellXmax, cellYmax])
+      height = Math.abs(bottomRight[1] - topLeft[1])
+      width = Math.abs(bottomRight[0] - topLeft[0])
+      cell = {
+        height: height,
         width: width,
         topLeft: topLeft,
-        points: these,
-        ymin: ymin,
-        xmin: xmin,
-        ymax: ymax,
-        xmax: xmax
+        gridID: gridID
       }
-      layout.push(obj);
+      grid.push(cell)
+      //give gridIDs to the data
+      _.each(globals.data, function(d){
+        if ((+d.latitude > cellYmin) && (+d.latitude < cellYmax) && (+d.longitude > cellXmin) && (+d.longitude < cellXmax)){
+          d['gridID'] = gridID;
+        }
+      })
       gridID += 1;
     }
-  }
-  return layout;
-}
+    pct = i / (xmax - xmin) * 100
+    if (i % 10 == 0){
+      $("#gridProgress").attr('value', pct);
+      $("#gridProgress").val(pct);
+      console.log(pct)
+    }
+    i += 1;
+  }//end double geo loop
 
-function drawGrid(gridData){
+  globals.filteredData = _.filter(globals.data, function(d){
+    return ((+d.age > globals.minYear) && (+d.age < globals.maxYear))
+  })
+
   globals.colorScale = d3.scale.linear()
-    .range(['white', '#420000'])
+    .domain([0, 25])
+    .range(['#3d648d', '#a06428'])
 
-  if ($('#absolute-display').prop('checked')){
-    globals.colorScale.domain([0, 100])
-  }else{
-    globals.colorScale.domain(d3.extent(values))
-  }
-
-  d3.select("#map").select("svg").selectAll(".grid").remove()
+  d3.selectAll(".grid").remove();
   d3.select("#map").select("svg").selectAll(".grid")
-    .data(gridData)
+    .data(grid)
     .enter()
     .append('rect')
+      .attr('class', 'grid')
       .attr('x', function(d){
-        return +d.topLeft[0]
+        return d.topLeft[0]
       })
       .attr('y', function(d){
-        return +d.topLeft[1]
-      })
-      .attr('height', function(d){
-        return +d.height;
+        return d.topLeft[1]
       })
       .attr('width', function(d){
-        return +d.width;
+        return d.width;
       })
-      .attr('fill', 'none')
+      .attr('height', function(d){
+        return d.height;
+      })
       .attr('stroke', 'black')
-      .attr('stroke-width', 0.1)
-      .attr('class', 'grid')
-
-      updateGrid()
-
-    d3.selectAll(".grid").attr('transform', 'translate(' + zoom.translate()[0] + "," + zoom.translate()[1] + ")scale(" + zoom.scale() + ")")
+      .attr('stroke-width', 0.05)
+      .on('click', function(d){
+        console.log(d.gridID);
+      })
+      fillGrid();
 }
 
-$(".display-select").change(function(){
-  updateGrid();
-})
-
-function checkData(){
-  var withData = 0
-  _.map(globals.gridData, function(d){
-    points = d.points;
-    if (points.length != 0){
-      withData +=1;
-    }
+function fillGrid(){
+  globals.filteredData = _.filter(globals.data, function(d){
+    return ((+d.age > globals.minYear) && (+d.age < globals.maxYear))
   })
-  console.log("Check data: " + withData)
+  console.log("Filling grid with " + globals.filteredData.length + " points.")
+  d3.selectAll(".grid")
+    .style('fill', function(d){
+      gridID = d.gridID;
+      cells = lookupCell(globals.filteredData, gridID)
+      if (cells.length != 0 ){
+        metric = d3.mean(cells, function(d){return +d.pollenPercentage})
+        return globals.colorScale(metric)
+      }else{
+        return 'none'
+      }
+
+    })
+  $(".loading").remove();
+}
+
+function lookupCell(data, cellID){
+  o = _.where(data, {gridID: cellID});
+  return o
 }
 
 function updateGrid(){
-  values = []
-  d3.selectAll(".grid")
-    .style('fill', function(d){
-      var thesePoints = _.filter(d.points, function(point){
-        return ((+d.age > globals.minYear) && (+d.age < globals.maxYear))
-      })
-      var displayVar = $("input[type='radio'][name='variable-select']:checked").val();
-      if (displayVar == 'mean'){
-
-      }
-    })
-
-
+  console.log("Updating grid.")
+  d3.select("#map").select("svg")
+    .append('rect')
+    .attr('class', 'loading')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', $("#map").width())
+    .attr('height', $("#map").height())
+    .attr('fill', "white")
+    .attr('opacity', 0.25)
+  fillGrid();
 }
