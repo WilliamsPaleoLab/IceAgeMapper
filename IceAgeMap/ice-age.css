@@ -1,0 +1,40 @@
+html, body{
+  height: 100%;
+  overflow: hidden;
+}
+
+#controls{
+  padding: 0px;
+  margin: 0px;
+
+}
+
+#map{
+  height: 60%;
+  background-color: steelblue;
+  padding: 0px;
+  margin: 0px;
+}
+
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+#timeline{
+  bottom: 25px;
+  position: absolute;
+}
+.draggable{
+  cursor: ew-resize;
+}
