@@ -1,5 +1,7 @@
 globals = {}
 $(document).ready(function(){
+  loadTaxaFromNeotoma(createSearchWidget)
+
   console.log("Platform loaded.");
   //nav event listeners
   $("#temporal-center-select").change(function(){
@@ -287,3 +289,42 @@ $(document).ready(function(){
   createTimeline();
 
 })
+
+function loadTaxaFromNeotoma(callback){
+  //load all of the vascular plant taxa from the neotoma database
+  $.ajax("http://api.neotomadb.org/v1/data/taxa?taxagroup=VPL", {
+    beforeSend: function(){
+      console.log(this.url)
+    },
+    dataType: "jsonp",
+    error: function(xhr, status, error){
+      console.log(xhr)
+      console.log(status)
+      console.log(error)
+    },
+    success: function(data){
+      console.log("Success!")
+      console.log(data)
+      if (data['success']){
+        if (callback){
+          callback(data['data'])
+        }
+      }else{
+        console.log("Server error on Neotoma's end.")
+      }
+
+    }
+  })
+}
+
+function createSearchWidget(jsonResponse){
+  names = _.pluck(jsonResponse, 'TaxonName')
+  console.log(names)
+  var input = document.getElementById("searchBar");
+  var awesomplete = new Awesomplete(input, {
+    minChars: 2,
+    maxItems: 5,
+    autoFirst: true
+  });
+  awesomplete.list = names;
+}

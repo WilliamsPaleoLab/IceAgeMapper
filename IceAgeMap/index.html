@@ -3,31 +3,15 @@
   <title>PaleoPortal</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
   <link rel='stylesheet' href='ice-age.css' />
+  <link rel='stylesheet' href='awesomplete.css'/>
 </head>
 <body>
-  <h2 class='page-header'>IceAgeMapper: <span class='text-muted'>Version 0.0</span></h2>
+  <h2 class='page-header'>IceAgeMapper: <span class='text-muted'>Version 0.0</span><small><input id='searchBar' placeholder='Search Neotoma...'><button class='btn btn-primary' id='searchButton'>Go</button></small></h2>
+
+  <hr / />
   <div class='row'>
-  <div class='col-xs-12' id='controls'>
-    <div class='col-xs-3'>
-      <label>Select Taxon</label>
-      <select id='taxa-select'>
-        <option value='sequoia' data-url='/testing-data/sequoia_with_climate.csv'>Sequoia</option>
-        <option value='tsuga' data-url='/testing-data/tsuga_with_climate.csv'>Sequoia</option>
-      </select> <br / />
-      <label>Spatial Window Size:</label><span id='spatialWindowSize'>1</span><br />
-      <input type='range' id='spatial-window-select' min='0' max='50' value='1'/>
-
-
-    </div>
-    <div class='col-xs-3'>
-      <label>Current Window Center: </label><span id='windowCenterText' class='strong'></span><br / />
-      <label>Max Year: </label><span id='maxYearText'>10100</span><br / />
-      <Label>Min Year:</Label><span id='minYearText'>9900</span><br / />
-      <label>Window Size (years): </label><span id='temporalWindowSize'>100</span><br />
-    </div>
-
-  </div>
   <div id='map' class='col-xs-12'>
 
   </div>
@@ -41,7 +25,11 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'></script>
   <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src='awesomplete.js'></script>
+  <script src="leaflet-src.js"></script>
+  <script src='leaflet-heat.js'></script>
   <script src='ice-age.js'></script>
+  <script src='heatmap.js'></script>
 </body>
 
 </html>
