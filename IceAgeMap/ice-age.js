@@ -292,6 +292,7 @@ $(document).ready(function(){
 
 function loadTaxaFromNeotoma(callback){
   //load all of the vascular plant taxa from the neotoma database
+  $("#loading").show()
   $.ajax("http://api.neotomadb.org/v1/data/taxa?taxagroup=VPL", {
     beforeSend: function(){
       console.log(this.url)
@@ -327,4 +328,5 @@ function createSearchWidget(jsonResponse){
     autoFirst: true
   });
   awesomplete.list = names;
+  $("#loading").hide()
 }

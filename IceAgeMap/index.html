@@ -8,18 +8,52 @@
   <link rel='stylesheet' href='awesomplete.css'/>
 </head>
 <body>
-  <h2 class='page-header'>IceAgeMapper: <span class='text-muted'>Version 0.0</span><small><input id='searchBar' placeholder='Search Neotoma...'><button class='btn btn-primary' id='searchButton'>Go</button></small></h2>
+  <div id='main'>
+    <div id='floatingTitle'>
+      <h3 class='page-header'>Ice Age Mapper <span class='text-muted'><small>v1.0</small></span></h3>
+      <input type='text' id='searchBar' placeholder='Search Neotoma...' />
+      <button class='btn' id='searchButton'><span class='glyphicon glyphicon-search'></span></button>
+    </div>
 
-  <hr / />
-  <div class='row'>
-  <div id='map' class='col-xs-12'>
+    <div id='map'>
+
+    </div>
+    <div id='menu'>
+      <ul class='list-group' id='nav-list'>
+        <li class='list-group-item nav-item' id='NV-nav'>
+          <div class='nav-text'>Niche<br / />Viewer</div>
+        </li>
+        <li class='list-group-item nav-item' id='SiteDetails-nav'>
+            <div class='nav-text'>Site Details</div>
+        </li>
+        <li class='list-group-item nav-item' id='Taxa-nav'>
+            <div class='nav-text'>Taxonomy</div>
+        </li>
+        <li class='list-group-item nav-item' id='Map-nav'>
+            <div class='nav-text'>Map <br/>Properties</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div id='timeline'>
 
   </div>
-  <div id='timeline' class='col-xs-12'>
+  <div id='loading'>
+    <h3>Loading...</h3>
   </div>
-</div>
 
+  <div id='niche-viewer-panel' class='panel'>
 
+  </div>
+  <div id='site-panel' class='panel'>
+
+  </div>
+  <div id='taxonomy-panel' class='panel'>
+
+  </div>
+  <div id='map-props-panel' class='panel'>
+
+  </div>
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.3/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
@@ -28,8 +62,8 @@
   <script src='awesomplete.js'></script>
   <script src="leaflet-src.js"></script>
   <script src='leaflet-heat.js'></script>
-  <script src='ice-age.js'></script>
-  <script src='heatmap.js'></script>
+  <script src='main.js'></script>
+
 </body>
 
 </html>

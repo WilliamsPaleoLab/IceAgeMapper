@@ -15,17 +15,18 @@ heatOptions = {
   radius: 17,
   minOpacity: 0.5,
   max: 100,
-  blur: 25,
+  blur: 30,
 }
 
 function createMap(){
   console.log("Map created.")
-  globals.map = L.map('map').setView([39.833333, -98.583333], 4);
+  globals.map = L.map('map').setView([39.833333, -98.583333], 3);
   var Esri_WorldTerrain = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', {
   	attribution: 'Tiles &copy; Esri &mdash; Source: USGS, Esri, TANA, DeLorme, and NPS',
-  	maxZoom: 8
+  	maxZoom: 6,
+    minZoom: 2
   }).addTo(globals.map);
-
+  createHeatmap() //blank heatmap layer
 }
 
 
@@ -49,7 +50,7 @@ function CSVtoHeatmap(filename){
   })
 }
 
-function createHeatmap(dataset, radius){
+function createHeatmap(){
   //clear existing layers
   console.log("Creating heatmap!")
   var heat = L.heatLayer([], heatOptions);
@@ -82,6 +83,7 @@ function updateHeatmap(){
 }
 
 function APIToHeatmap(taxon){
+  $("#loading").show()
   $.ajax("http://apidev.neotomadb.org/v1/data/pollen?taxonname=" + taxon, {
      beforeSend: function(){
        console.log(this.url)
@@ -98,8 +100,8 @@ function APIToHeatmap(taxon){
         globals.data = dataset= data['data']
          console.log(dataset)
          globals.heatmapData = dataset
-         createHeatmap(dataset, 25);
          updateHeatmap();
+         $("#loading").hide()
        }
      }
   })
