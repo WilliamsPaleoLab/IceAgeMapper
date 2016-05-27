@@ -64,15 +64,91 @@ $(document).ready(function(){
 })
 
 function createMap(){
-  globals.map.map = L.map('map', {zoomControl:false}).setView([39.828175, -98.5795], 3);
+  globals.map.map = L.map('map',
+  {zoomControl:false,
+    fullscreenControl: true
+  }).setView([39.828175, -98.5795], 3);
 
   L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
   	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
   	maxZoom: 8,
-    minZoom: 3,
+    minZoom: 3
   }).addTo(globals.map.map);
   createLayerController() //creates an empty layer controller
+  createToolbar()
+  createSitePanel()
+  createTaxonomyPanel()
+  createNicheViewerPanel()
+  //panel events
+  $(".leaflet-control-dialog").on('mousedown', function(){
+     movePanelToFront(this)
+  })
+}
 
+function createSitePanel(){
+  globals.sitePanel = L.control.dialog({anchor: [180, 25], initOpen: false})
+              .setContent("<h6>Click on a site to retrieve details about it.")
+              .addTo(globals.map.map)
+  globals.sitePanel.name = "SitePanel"
+}
+
+function createTaxonomyPanel(){
+  globals.taxonomyPanel = L.control.dialog({ anchor: [150, -5], initOpen: false})
+    .setContent("<h6>Search for a taxon to retrieve its taxonomic hierarchy.</h6>")
+    .addTo(globals.map.map)
+    globals.taxonomyPanel.name = "TaxonomyPanel"
+}
+
+function createNicheViewerPanel(){
+  globals.nvPanel = L.control.dialog({ anchor: [400, -5], maxSize: [500, 500], size: [500,500], initOpen: false})
+    .setContent("<h6>NicheViewer Not yet implemented.</h6>")
+    .addTo(globals.map.map)
+    globals.taxonomyPanel.name = "NV"
+}
+
+function createToolbar(){
+  var NicheViewerToolAction = L.ToolbarAction.extend({
+      options: {
+          toolbarIcon: {
+              html: "<span class='glyphicon glyphicon-signal'></span>",
+              tooltip: 'Open Niche Viewer Panel',
+              class:'toolbar-item'
+          }
+      },
+      addHooks: function () {
+          globals.nvPanel.open()
+          movePanelToFront(globals.nvPanel._container)
+      }
+  });
+  var TaxonomyToolAction = L.ToolbarAction.extend({
+      options: {
+          toolbarIcon: {
+              html: "<span class='glyphicon glyphicon-option-vertical'></span>",
+              tooltip: 'Open Taxonomy Panel',
+              class:'toolbar-item'
+          }
+      },
+      addHooks: function () {
+          globals.taxonomyPanel.open()
+      }
+  });
+  var SiteToolAction = L.ToolbarAction.extend({
+      options: {
+          toolbarIcon: {
+              html: "<span class='glyphicon glyphicon-globe'></span>",
+              tooltip: 'Open Site Details Panel',
+              class:'toolbar-item'
+          }
+      },
+      addHooks: function () {
+          //globals.map.map.setView([48.85815, 2.29420], 19);
+            globals.sitePanel.open();
+      }
+  });
+
+  globals.toolbar = new L.Toolbar.Control({
+      actions: [NicheViewerToolAction, SiteToolAction, TaxonomyToolAction], position: 'topright'
+  }).addTo(globals.map.map);
 }
 
 function createLayerController(){
@@ -175,7 +251,7 @@ function createTimeline(){
          .style("text-anchor", "middle")
          .style("font-size", '16px')
          .text("Years Before Present")
-         .attr('transform', 'rotate(-90 -5,' + height / 2 + ')')
+         .attr('transform', 'rotate(-90 -15,' + height / 2 + ')')
 
 
     //create the rectangle
@@ -321,6 +397,8 @@ function loadOccurrenceData(taxon){
          updateSites()
          getTaxonomy()
          setTimelinePoints(data['data'])
+         globals.sitePanel.close()
+         globals.nvPanel.close()
        }else{
          console.log("Server error on Neotoma's end.")
          $("#loading").text("Server error.")
@@ -358,7 +436,8 @@ function updateHeatmap(){
   globals.heat.setLatLngs(dataset);
   globals.heat.redraw();
   globals.map.layerController.addOverlay(globals.heat, "Heatmap") //add layer to controller
-}
+}//end update heat function
+
 function updatePropSymbols(){
   removePropSymbols()
   propSymbols = []
@@ -423,6 +502,8 @@ function updateSites(){
       console.log(this)
       var siteid = this._latlng.alt
       getSiteDetails(siteid);
+      globals.map.map.setView(this._latlng)
+      movePanelToFront(globals.sitePanel._container)
     })
   }
   //see if visible
@@ -484,7 +565,7 @@ function isVisible(layerName){
   selectorDiv = $(".leaflet-control-layers-overlays")
   labs = selectorDiv.find("span")
   inputs = selectorDiv.find("input")
-  visible = undefined
+  visible = true
   for (var i =0; i< labs.length; i++){
     lab = $(labs[i]).text()
     if (lab == " " + layerName){
@@ -492,28 +573,12 @@ function isVisible(layerName){
       break
     }
   }
-  if (visible == undefined){
-    vsible = true
-  }
   return visible
 }
 
 function displayIceSheets(data){
-  //globals.iceVisible = isVisible("Icesheets")
-  //globals.map.layerController.removeLayer(globals.iceSheets)
   globals.iceSheets = L.geoJson(data).addTo(globals.map.map)
-  // if (!globals.iceVisible){
-  //   globals.map.map.removeLayer(globals.iceSheets);
-  // }
   globals.map.layerController.addOverlay(globals.iceSheets, "Icesheets")
-  //see which layers are visible
-  // globals.iceSheets.eachLayer(function(layer){
-  //   console.log(layer)
-  //   age = layer.feature.properties.Age
-  //   if ((age >= globals.minYear) && (age <= globals.maxYear)){
-  //     //pass
-  //   }
-  // })
   styleIceSheets()
 }
 
@@ -521,12 +586,13 @@ function styleIceSheets(){
   globals.iceSheets.eachLayer(function(layer){
     if ((layer.feature.properties.Age >= globals.minYear)
     && (layer.feature.properties.Age <= globals.maxYear)){
-      layer.setStyle({stroke: false, fillColor: '#E0FFFF', fillOpacity: 1})
+      layer.setStyle({stroke: false, fillColor: '#E0FFFF', fillOpacity: 0.5})
 
     }else{
       layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
     }
   })
+  globals.iceSheets.bringToBack();
 }
 
 function getTaxonomy(){
@@ -576,53 +642,38 @@ function processTaxonInfo(taxonResponse){
 
 function displayTaxonomy(){
   globals.taxonomy = globals.taxonomy.reverse()
-  $("#taxonomy-list").empty()
+  html = "<h3>" + globals.taxon + ": <span class='text-muted'>Taxonomy</span></h3>"
   for (var i=0; i< globals.taxonomy.length; i++){
     taxon = globals.taxonomy[i]
-    name = taxon['TaxonName']
-    html = "<li class='list-group-item'>"
-    html += "<div>"
-    html += "<h6>" + name
-    if (taxon['Extinct']){
-      html += "<span class='right'><small><strong>Extnct</strong></small></span>"
-    }
-    html += "</h6>"
-    if (taxon['Author'] != null){
-      html += "<p class='left text-muted'>" + taxon['Author'] + "</p>"
-    }
-    if (taxon['Notes'] != null){
-      html += "<i class ='left text-muted'><small>" + taxon['Notes'] + "</small></i>"
-    }
-    html += "</div>"
-    html += "</li>"
-    $("#taxonomy-list").append(html)
+    html += "<h5 class='strong'>" + taxon.TaxonName + "</h5><i class='small'>" + taxon.Author + "</i>"
   } //end loop
-
+  globals.taxonomyPanel.setContent(html)
+  movePanelToFront(globals.taxonomyPanel._container)
 }
 
-//navigation stuff
-$(".nav-item").click(function(){
-  $(".nav-item").removeClass('active')
-  $(this).addClass('active')
-  $(".panel").hide()
-  isClicked = $(this).data('clicked')
-  if (!isClicked){
-    thePanel = $(this).data('panel')
-    if (thePanel == 'taxonomy'){
-      $("#taxonomy-panel").show()
-    }
-    else if (thePanel == 'site'){
-      $("#site-panel").show()
-    }
-    //other panel opening goes here
-
-
-    $(this).data('clicked', true)
-  }else{
-    $(this).data('clicked', false)
-    $(this).removeClass('active')
-  }
-})
+// //navigation stuff
+// $(".nav-item").click(function(){
+//   $(".nav-item").removeClass('active')
+//   $(this).addClass('active')
+//   $(".panel").hide()
+//   isClicked = $(this).data('clicked')
+//   if (!isClicked){
+//     thePanel = $(this).data('panel')
+//     if (thePanel == 'taxonomy'){
+//       $("#taxonomy-panel").show()
+//     }
+//     else if (thePanel == 'site'){
+//       $("#site-panel").show()
+//     }
+//     //other panel opening goes here
+//
+//
+//     $(this).data('clicked', true)
+//   }else{
+//     $(this).data('clicked', false)
+//     $(this).removeClass('active')
+//   }
+// })
 
 function getSiteDetails(siteid){
   var endpoint = "http://api.neotomadb.org/v1/data/datasets?siteid="
@@ -647,7 +698,6 @@ function getSiteDetails(siteid){
 
 function displaySiteDetails(details){
   //make sure the popup will open correctly
-  $("#SiteDetails-nav").data('clicked', false)
   site = details[0]['Site']
   siteLat = site['LatitudeNorth'] + site['LatitudeSouth'] / 2
   siteLng = site['LongitudeWest'] + site['LongitudeEast'] / 2
@@ -687,11 +737,10 @@ function displaySiteDetails(details){
   }
 
   numDatasets = details.length
-  $("#site-panel").empty()
   html = "<div>"
-  html += "<h4><span class='text-muted'>" + siteName + "</span><i class='right small'>" + siteID + "</i></h4>"
-  html += "<p>Latitude: <span class='text-muted'>" + siteLat + "</span></p>"
-  html += "<p>Longitude: <span class='text-muted'>" + siteLng + "</span></p>"
+  html += "<h4><span class='strong'>" + siteName + "</span><i class='right small'>" + siteID + "</i></h4>"
+  html += "<p>Latitude: <span class='text-muted'>" + round2(siteLat) + "</span></p>"
+  html += "<p>Longitude: <span class='text-muted'>" + round2(siteLng) + "</span></p>"
   html += "<p>Altitude: <span class='text-muted'>" + siteAlt + "m</span></p>"
   if (siteDesc != null){
     html += "<p>Site Description: <i class='text-muted small'>" + siteDesc + "</i></p>"
@@ -701,20 +750,20 @@ function displaySiteDetails(details){
   }
   html += "<hr />"
   html += "<p>Datasets with " + globals.taxon + ":<span class='text-muted'>" + numDatasets + "</span></p>"
-  html += "<p>Youngest Occurrence: <span class='text-muted'>" + ageYoung + "  B.P.</span></p>"
-  html += "<p>Oldest Occurrence: <span class='text-muted'>" + ageOld + "  B.P.</span></p>"
-  html += "<hr />"
-  html += "<h6>PIs:</h6>"
+  // html += "<p>Youngest Occurrence: <span class='text-muted'>" + ageYoung + "  B.P.</span></p>"
+  // html += "<p>Oldest Occurrence: <span class='text-muted'>" + ageOld + "  B.P.</span></p>"
+  // html += "<hr />"
+  html += "<h6>Investigators:</h6>"
   for (var p =0; p< PIs.length; p++){
     html += "<p><i class='text-muted small'>" + PIs[p] + "</i></p>"
   }
-  html += "<h6>Submission Dates:</h6>"
+  html += "<h6>Neotoma Submission Dates:</h6>"
   for (var p =0; p< subDates.length; p++){
     html += "<p><i class='text-muted small'>" + subDates[p] + "</i></p>"
   }
   html += "</div>"
-  $("#site-panel").html(html)
-  $("#SiteDetails-nav").trigger('click')
+  globals.sitePanel.setContent(html)
+  movePanelToFront(globals.sitePanel._container)
 }
 
 function setTimelinePoints(data){
@@ -725,7 +774,7 @@ function setTimelinePoints(data){
     .enter()
     .append('circle')
       .attr('class', 'tl-point')
-      .attr('r', 2.5)
+      .attr('r', 1.5)
       .attr('fill','blue')
       .attr('cx', function(d){
           return 46
@@ -737,4 +786,21 @@ function setTimelinePoints(data){
           }
           return globals.timeScale(age)
       })
+}
+
+function movePanelToFront(panel){
+  openPanels = $(".leaflet-control-dialog")
+  zs = []
+  for (var i =0; i< openPanels.length; i++){
+    p = $(openPanels[i])
+    z = +p.css("z-index")
+    zs.push(z)
+  }
+  maxZ = Math.max(...zs)
+  newZ = maxZ + 1
+  $(panel).css("z-index", newZ)
+}
+
+function round2(num){
+  return Math.round(num * 100) / 100
 }
