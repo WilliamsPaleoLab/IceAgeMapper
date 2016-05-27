@@ -3,7 +3,7 @@
   <title>PaleoPortal</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+<link rel="stylesheet" href="leaflet.css" />
   <link rel='stylesheet' href='ice-age.css' />
   <link rel='stylesheet' href='awesomplete.css'/>
 </head>
@@ -20,16 +20,16 @@
     </div>
     <div id='menu'>
       <ul class='list-group' id='nav-list'>
-        <li class='list-group-item nav-item' id='NV-nav'>
+        <li class='list-group-item nav-item' id='NV-nav' data-panel='nv' data-clicked='false'>
           <div class='nav-text'>Niche<br / />Viewer</div>
         </li>
-        <li class='list-group-item nav-item' id='SiteDetails-nav'>
+        <li class='list-group-item nav-item' id='SiteDetails-nav' data-panel='site' data-clicked='false'>
             <div class='nav-text'>Site Details</div>
         </li>
-        <li class='list-group-item nav-item' id='Taxa-nav'>
+        <li class='list-group-item nav-item' id='Taxa-nav' data-panel='taxonomy' data-clicked='false'>
             <div class='nav-text'>Taxonomy</div>
         </li>
-        <li class='list-group-item nav-item' id='Map-nav'>
+        <li class='list-group-item nav-item' id='Map-nav' data-panel='props' data-clicked='false'>
             <div class='nav-text'>Map <br/>Properties</div>
         </li>
       </ul>
@@ -46,9 +46,14 @@
 
   </div>
   <div id='site-panel' class='panel'>
-
+    <h6>Click on a site to display details about that location.</h6>
   </div>
   <div id='taxonomy-panel' class='panel'>
+    <ul class='list-group' id='taxonomy-list'>
+      <li>
+        <h6>Search a for a taxon to display its taxonomic hierarchy.</h6>
+      </li>
+    </ul>
 
   </div>
   <div id='map-props-panel' class='panel'>

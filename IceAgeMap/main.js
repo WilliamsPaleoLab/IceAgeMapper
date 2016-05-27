@@ -14,6 +14,8 @@ globals.siteLayer = L.layerGroup();
 globals.iceSheets = L.layerGroup();
 globals.sitesVisible = true;
 
+globals.taxonID = -1
+globals.taxon = ""
 
 heatOptions = {
   radius: 17,
@@ -62,7 +64,7 @@ $(document).ready(function(){
 })
 
 function createMap(){
-  globals.map.map = L.map('map', {zoomControl:false}).setView([39.828175, -98.5795], 5);
+  globals.map.map = L.map('map', {zoomControl:false}).setView([39.828175, -98.5795], 3);
 
   L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
   	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
@@ -135,7 +137,7 @@ function createTimeline(){
   var height = $("#timeline").height() - margins.top - margins.bottom;
   var width = $("#timeline").width() - margins.left - margins.right;
 
-  var minYear = 0;
+  var minYear = -75;
   var maxYear = 22000;
 
 
@@ -287,6 +289,7 @@ function createTimeline(){
 }
 
 function loadOccurrenceData(taxon){
+  globals.taxon =taxon
   $("#loading").show()
   loc = "-167.276413,5.49955,-52.23304,83.162102"
   $.ajax("http://apidev.neotomadb.org/v1/data/pollen?taxonname=" + taxon + "&bbox=" + loc, {
@@ -302,14 +305,22 @@ function loadOccurrenceData(taxon){
      },
      dataType: "jsonp",
      success: function(data){
-       console.log("Success!")
        if (data['success']){
-        globals.data = dataset= data['data']
-         console.log(dataset)
-         $("#loading").slideUp()
+         console.log("Success!")
+        globals.data = data['data']
+        console.log(data['data'])
+        if (data['data'].length == 0){
+          alert("No results were returned.")
+          $("#loading").slideUp()
+          return
+        }
+        globals.taxonid = data['data'][0]['TaxonID']
+        $("#loading").slideUp()
          //determine what to do with the data
          updateHeatmap()
          updateSites()
+         getTaxonomy()
+         setTimelinePoints(data['data'])
        }else{
          console.log("Server error on Neotoma's end.")
          $("#loading").text("Server error.")
@@ -408,6 +419,11 @@ function updateSites(){
     .bindPopup("<h6>" + sites[i].siteName + "</h6>")
     l.site = true;
     siteLayer.push(l)
+    l.on('click', function(){
+      console.log(this)
+      var siteid = this._latlng.alt
+      getSiteDetails(siteid);
+    })
   }
   //see if visible
   //hackiest thing ever
@@ -445,11 +461,6 @@ function removeHeatmap(){
 function makeRadius(num){
   return Math.sqrt(num)
 }
-$(".nav-item").click(function(){
-  $(".nav-item").removeClass('active')
-  $(this).addClass('active')
-})
-
 
 function loadIceSheets(){
   //get icesheet geojson
@@ -473,13 +484,16 @@ function isVisible(layerName){
   selectorDiv = $(".leaflet-control-layers-overlays")
   labs = selectorDiv.find("span")
   inputs = selectorDiv.find("input")
-  visible = false
+  visible = undefined
   for (var i =0; i< labs.length; i++){
     lab = $(labs[i]).text()
     if (lab == " " + layerName){
       visible = $(inputs[i]).prop('checked')
       break
     }
+  }
+  if (visible == undefined){
+    vsible = true
   }
   return visible
 }
@@ -505,13 +519,222 @@ function displayIceSheets(data){
 
 function styleIceSheets(){
   globals.iceSheets.eachLayer(function(layer){
-    console.log(layer)
     if ((layer.feature.properties.Age >= globals.minYear)
     && (layer.feature.properties.Age <= globals.maxYear)){
-      layer.setStyle({stroke: false, fillColor: '#E0FFFF'})
+      layer.setStyle({stroke: false, fillColor: '#E0FFFF', fillOpacity: 1})
 
     }else{
       layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
     }
   })
+}
+
+function getTaxonomy(){
+  globals.taxonomyStoppingCriteria = ["Plantae"]
+  globals.taxonomy = []
+  getTaxonInfoFromNeotoma(globals.taxonid)
+}
+
+function getTaxonInfoFromNeotoma(taxonid){
+  endpoint = "http://api.neotomadb.org/v1/data/taxa?taxonid="
+  url = endpoint + taxonid
+  $.ajax(url, {
+    error: function(xhr, status, error){
+      console.log(xhr)
+      console.log(status)
+      console.log(error)
+    },
+    dataType:"jsonp",
+    success: function(response){
+      if (response['success']){
+        info = response['data'][0]
+        name = info['TaxonName']
+        if (globals.taxonomyStoppingCriteria.indexOf(name) > -1){
+          r = false
+        }else{
+          r = true
+        }
+        processTaxonInfo(info)
+        if (r){
+          higherID = info['HigherTaxonID']
+          getTaxonInfoFromNeotoma(higherID)
+        }else{
+          displayTaxonomy();
+        }
+      }
+
+    },
+    beforeSend: function(){
+      console.log(this.url)
+    }
+  })
+}
+
+function processTaxonInfo(taxonResponse){
+  globals.taxonomy.push(taxonResponse);
+}
+
+function displayTaxonomy(){
+  globals.taxonomy = globals.taxonomy.reverse()
+  $("#taxonomy-list").empty()
+  for (var i=0; i< globals.taxonomy.length; i++){
+    taxon = globals.taxonomy[i]
+    name = taxon['TaxonName']
+    html = "<li class='list-group-item'>"
+    html += "<div>"
+    html += "<h6>" + name
+    if (taxon['Extinct']){
+      html += "<span class='right'><small><strong>Extnct</strong></small></span>"
+    }
+    html += "</h6>"
+    if (taxon['Author'] != null){
+      html += "<p class='left text-muted'>" + taxon['Author'] + "</p>"
+    }
+    if (taxon['Notes'] != null){
+      html += "<i class ='left text-muted'><small>" + taxon['Notes'] + "</small></i>"
+    }
+    html += "</div>"
+    html += "</li>"
+    $("#taxonomy-list").append(html)
+  } //end loop
+
+}
+
+//navigation stuff
+$(".nav-item").click(function(){
+  $(".nav-item").removeClass('active')
+  $(this).addClass('active')
+  $(".panel").hide()
+  isClicked = $(this).data('clicked')
+  if (!isClicked){
+    thePanel = $(this).data('panel')
+    if (thePanel == 'taxonomy'){
+      $("#taxonomy-panel").show()
+    }
+    else if (thePanel == 'site'){
+      $("#site-panel").show()
+    }
+    //other panel opening goes here
+
+
+    $(this).data('clicked', true)
+  }else{
+    $(this).data('clicked', false)
+    $(this).removeClass('active')
+  }
+})
+
+function getSiteDetails(siteid){
+  var endpoint = "http://api.neotomadb.org/v1/data/datasets?siteid="
+  var url = endpoint + siteid
+  url += "&taxonname=" + globals.taxon
+  $.ajax(url, {
+    dataType: 'jsonp',
+    error: function(xhr, status, error){
+      console.log(xhr)
+      console.log(status)
+      console.log(error)
+    },
+    success: function(response){
+      displaySiteDetails(response['data'])
+
+    },
+    beforeSend: function(){
+      console.log("Sending site details request.")
+    }
+  })
+}
+
+function displaySiteDetails(details){
+  //make sure the popup will open correctly
+  $("#SiteDetails-nav").data('clicked', false)
+  site = details[0]['Site']
+  siteLat = site['LatitudeNorth'] + site['LatitudeSouth'] / 2
+  siteLng = site['LongitudeWest'] + site['LongitudeEast'] / 2
+  siteName = site['SiteName']
+  siteDesc = site['SiteDescription']
+  siteAlt = site['Altitude']
+  siteNotes = site['SiteNotes']
+  siteID = site['SiteID']
+  PIs = []
+  ageOld = -Infinity
+  ageYoung = Infinity
+  subDates = []
+  for (var i=0; i< details.length; i++){
+    thisDataset = details[i]
+    console.log(thisDataset)
+    thisOld = thisDataset.AgeOldest
+    thisYoung = thisDataset.AgeYoungest
+    if (thisOld > ageOld){
+      ageOld = thisOld
+    }
+    if (thisYoung < ageYoung){
+      ageYoung = thisYoung
+    }
+    dates = thisDataset['SubDates']
+    for (var j = 0; j < dates.length; j++){
+      if (dates[j]['SubmissionDate'] != null){
+        subDates.push(dates[j]['SubmissionDate'])
+      }
+    }
+    thisPI = thisDataset['DatasetPIs']
+    for (var p =0; p<thisPI.length; p++){
+      if (thisPI[p].ContactName != null){
+        PIs.push(thisPI[p].ContactName)
+      }
+
+    }
+  }
+
+  numDatasets = details.length
+  $("#site-panel").empty()
+  html = "<div>"
+  html += "<h4><span class='text-muted'>" + siteName + "</span><i class='right small'>" + siteID + "</i></h4>"
+  html += "<p>Latitude: <span class='text-muted'>" + siteLat + "</span></p>"
+  html += "<p>Longitude: <span class='text-muted'>" + siteLng + "</span></p>"
+  html += "<p>Altitude: <span class='text-muted'>" + siteAlt + "m</span></p>"
+  if (siteDesc != null){
+    html += "<p>Site Description: <i class='text-muted small'>" + siteDesc + "</i></p>"
+  }
+  if (siteNotes != null){
+    html += "<p>Site Notes: <i class='text-muted small'>" + siteNotes + "</i></p>"
+  }
+  html += "<hr />"
+  html += "<p>Datasets with " + globals.taxon + ":<span class='text-muted'>" + numDatasets + "</span></p>"
+  html += "<p>Youngest Occurrence: <span class='text-muted'>" + ageYoung + "  B.P.</span></p>"
+  html += "<p>Oldest Occurrence: <span class='text-muted'>" + ageOld + "  B.P.</span></p>"
+  html += "<hr />"
+  html += "<h6>PIs:</h6>"
+  for (var p =0; p< PIs.length; p++){
+    html += "<p><i class='text-muted small'>" + PIs[p] + "</i></p>"
+  }
+  html += "<h6>Submission Dates:</h6>"
+  for (var p =0; p< subDates.length; p++){
+    html += "<p><i class='text-muted small'>" + subDates[p] + "</i></p>"
+  }
+  html += "</div>"
+  $("#site-panel").html(html)
+  $("#SiteDetails-nav").trigger('click')
+}
+
+function setTimelinePoints(data){
+  console.log(data)
+  d3.selectAll(".tl-point").remove()
+  d3.select("#timeline").select("svg").selectAll(".tl-point")
+    .data(data)
+    .enter()
+    .append('circle')
+      .attr('class', 'tl-point')
+      .attr('r', 2.5)
+      .attr('fill','blue')
+      .attr('cx', function(d){
+          return 46
+      })
+      .attr('cy', function(d){
+          age = d.Age
+          if ((age == null) || (age == undefined)){
+            age = (d.AgeOlder + d.AgeYounger) / 2
+          }
+          return globals.timeScale(age)
+      })
 }

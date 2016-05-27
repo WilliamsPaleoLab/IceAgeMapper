@@ -107,10 +107,10 @@ html, body{
   height: calc(100% - 150px);
   position: absolute;
   top: 150px;
-  right: 100px;
+  left:100px;
   display: none;
-  z-index: 55;
-  width: 250px;
+  z-index: 30;
+  width: 300px;
   border-radius: 7px;
 }
 
@@ -118,11 +118,19 @@ html, body{
   background-color: red;
 }
 #site-panel{
-  background-color:steelblue;
+  background-color: white;
+  overflow-y: auto;
 }
 #taxonomy-panel{
-  background-color: navajowhite;
+  background-color: white;
+  overflow-y: auto;
 }
 #map-props-panel{
   background-color: forestgreen;
+}
+.left{
+  text-align:left;
+}
+.right{
+  text-align: right;
 }
