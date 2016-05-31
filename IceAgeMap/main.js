@@ -194,7 +194,8 @@ function createSearchWidget(jsonResponse){
   var awesomplete = new Awesomplete(input, {
     minChars: 0,
     maxItems: 5,
-    autoFirst: true
+    autoFirst: true,
+    filter: Awesomplete.FILTER_STARTSWITH
   });
   awesomplete.list = names;
   $("#loading").slideUp()

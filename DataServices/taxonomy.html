@@ -6,5 +6,43 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.3/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'></script>
+<script>
+function getNeotomaData(minAlt){
+  endpoint = 'http://api.neotomadb.org/v1/data/sites'
+  $.ajax(endpoint, { //make an ajax call with the query string url
+    dataType: "jsonp", //its json, but coming from a remote server, so jsonp
+    beforeSend: function(){ //optional, but helpful for debugging
+      console.log(this.url) //to see exactly where the call is going to
+    },
+    data:{
+      altmin: 4000
+    },
+    success: function(response){
+      //called when the call succeeds
+      if (response['success']){//check whether the server said okay
+        data = response['data'] //just take the data from the response
+        doStuffWithData(data) //callback function to proceed with the script
+      }else{
+        //the server threw an error, so check what it was
+        console.log("Error on the API call.")
+        console.log(response['message']) //the server will tell you what's wrong
+      }
+    },
+    error: function(xhr, status, error){
+      //there was an AJAX error (communcation problem)
+      console.log("AJAX error.")
+      console.log(error)
+    }
+  })
+}
 
+function doStuffWithData(dataArray){
+  //do stuff here
+  //put the data on a map?
+  //make a table of the sites?
+  //do analysis?
+  //the world is your oyster
+  console.log(dataArray) //or just print the message
+}
+</script>
 </body>
