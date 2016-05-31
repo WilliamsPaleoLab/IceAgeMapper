@@ -777,6 +777,7 @@ function displaySiteDetails(details){
   }
   html += "</div>"
   globals.sitePanel.setContent(html)
+  $(".leaflet-control-dialog-contents").scrollTop(0)
   movePanelToFront(globals.sitePanel._container)
 }
 
