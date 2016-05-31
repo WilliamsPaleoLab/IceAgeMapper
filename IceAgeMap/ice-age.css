@@ -134,3 +134,16 @@ html, body{
 .right{
   text-align: right;
 }
+
+table{
+  width: 100%;
+}
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+  width: 33%;
+}
+
+th {
+    background-color:  #3f7e8a;
+    color: white;
+}

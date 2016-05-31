@@ -711,17 +711,11 @@ function displaySiteDetails(details){
   ageOld = -Infinity
   ageYoung = Infinity
   subDates = []
+  ages = []
+  pcts = []
   for (var i=0; i< details.length; i++){
+    //parse the datasets
     thisDataset = details[i]
-    console.log(thisDataset)
-    thisOld = thisDataset.AgeOldest
-    thisYoung = thisDataset.AgeYoungest
-    if (thisOld > ageOld){
-      ageOld = thisOld
-    }
-    if (thisYoung < ageYoung){
-      ageYoung = thisYoung
-    }
     dates = thisDataset['SubDates']
     for (var j = 0; j < dates.length; j++){
       if (dates[j]['SubmissionDate'] != null){
@@ -736,7 +730,21 @@ function displaySiteDetails(details){
 
     }
   }
+  //associate with the  map data
+  for (var i =0; i< globals.data.length; i++){
+    occ = globals.data[i]
+    if (occ.SiteID == siteID){//match to this site
+      thisAge = occ.Age
+      if ((thisAge == null) || (thisAge == undefined)){
+        thisAge = (occ.AgeOlder + occ.AgeYounger)/2
+      }
+      pct = (occ.Value / occ[globals.TotalField]) * 100
+      obj = {age: thisAge, value: pct, id:occ.SampleID}
+      ages.push(obj)
+    }
+  }
 
+  ages = _.sortBy(ages, function(d){return d.age})
   numDatasets = details.length
   html = "<div>"
   html += "<h4><span class='strong'>" + siteName + "</span><i class='right small'>" + siteID + "</i></h4>"
@@ -750,10 +758,15 @@ function displaySiteDetails(details){
     html += "<p>Site Notes: <i class='text-muted small'>" + siteNotes + "</i></p>"
   }
   html += "<hr />"
+  html += "Samples at this Site: "
+  html += "<table>"
+  html += "<th>Sample ID</th><th>Age</th><th>Value</th>"
+  for (var i =0; i< ages.length; i++){
+    html += "<tr><td>" + ages[i].id + "</td><td>"  + ages[i].age + " B.P.</td><td>" + round2(ages[i].value) + "%</td><tr>"
+  }
+  html += "</table>"
+  html += "<hr />"
   html += "<p>Datasets with " + globals.taxon + ":<span class='text-muted'>" + numDatasets + "</span></p>"
-  // html += "<p>Youngest Occurrence: <span class='text-muted'>" + ageYoung + "  B.P.</span></p>"
-  // html += "<p>Oldest Occurrence: <span class='text-muted'>" + ageOld + "  B.P.</span></p>"
-  // html += "<hr />"
   html += "<h6>Investigators:</h6>"
   for (var p =0; p< PIs.length; p++){
     html += "<p><i class='text-muted small'>" + PIs[p] + "</i></p>"
