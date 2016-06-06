@@ -17,6 +17,14 @@ globals.sitesVisible = true;
 globals.taxonID = -1
 globals.taxon = ""
 
+globals.currentNVXVar = "SimulatedLayer0"
+globals.currentNVYVar = "SimulatedLayer0"
+globals.currentNVXMod = 0
+globals.currentNVYMod = 0
+globals.currentNVXSource = "SimulatedSource"
+globals.currentNVYSource = "SimulatedSource"
+
+
 heatOptions = {
   radius: 17,
   minOpacity: 0.5,
@@ -79,10 +87,12 @@ function createMap(){
   createSitePanel()
   createTaxonomyPanel()
   createNicheViewerPanel()
+
   //panel events
   $(".leaflet-control-dialog").on('mousedown', function(){
      movePanelToFront(this)
   })
+  globals.map.map.on("dialog:resizeend", onAllPanelResized)
 }
 
 function createSitePanel(){
@@ -100,10 +110,10 @@ function createTaxonomyPanel(){
 }
 
 function createNicheViewerPanel(){
-  globals.nvPanel = L.control.dialog({ anchor: [400, -5], maxSize: [500, 500], size: [500,500], initOpen: false})
-    .setContent("<h6>NicheViewer Not yet implemented.</h6>")
+  globals.nvPanel = L.control.dialog({ anchor: [400, -5], minSize: [350, 350], maxSize: [1000000, 1000000], size: [500,500], initOpen: false})
     .addTo(globals.map.map)
     globals.taxonomyPanel.name = "NV"
+    makeBaseNicheViewerPanel()
 }
 
 function createToolbar(){
@@ -301,9 +311,7 @@ function createTimeline(){
         globals.timeBottom.attr('y1', newY + initHeight).attr('y2', newY + initHeight)
         globals.minYear = globals.timeScale.invert(+globals.timeTop.attr('y1'))
         globals.maxYear = globals.timeScale.invert(+globals.timeBottom.attr('y1'))
-        updateHeatmap()
-        updateSites()
-        styleIceSheets()
+        updateTime()
       }
       function onTopDrag(){
         initY = +globals.timeTop.attr('y1')
@@ -321,9 +329,7 @@ function createTimeline(){
         globals.timeTop.attr('y1', newTop).attr('y2', newTop)
         globals.minYear = globals.timeScale.invert(+globals.timeTop.attr('y1'))
         globals.maxYear = globals.timeScale.invert(+globals.timeBottom.attr('y1'))
-        updateHeatmap()
-        updateSites()
-        styleIceSheets()
+        updateTime()
       }
       function onBottomDrag(){
         initY = +globals.timeTop.attr('y1')
@@ -342,9 +348,7 @@ function createTimeline(){
         globals.timeBottom.attr('y1', newBottom).attr('y2', newBottom)
         globals.minYear = globals.timeScale.invert(+globals.timeTop.attr('y1'))
         globals.maxYear = globals.timeScale.invert(+globals.timeBottom.attr('y1'))
-          updateHeatmap()
-          updateSites()
-          styleIceSheets()
+        updateTime()
       }
 
 
@@ -400,6 +404,15 @@ function loadOccurrenceData(taxon){
          setTimelinePoints(data['data'])
          globals.sitePanel.close()
          globals.nvPanel.close()
+         //NicheViewer stuff
+         //make fake nv data (for now)
+         globals.NVResponse = makeFakeData(100, 12, 12)
+         if (globals.NVResponse.success){
+           globals.NVData = globals.NVResponse.data
+           makeNicheViewer()
+         }else{
+           console.log("Failed to load environmental layers for NicheViewer.")
+         }
        }else{
          console.log("Server error on Neotoma's end.")
          $("#loading").text("Server error.")
@@ -546,7 +559,7 @@ function makeRadius(num){
 
 function loadIceSheets(){
   //get icesheet geojson
-  $.ajax("icesheets.json", {
+  $.ajax("data/icesheets.json", {
     dataType: "json",
     error: function(xhr, status, error){
       console.log(xhr)
@@ -632,7 +645,6 @@ function getTaxonInfoFromNeotoma(taxonid){
 
     },
     beforeSend: function(){
-      console.log(this.url)
     }
   })
 }
@@ -818,4 +830,43 @@ function movePanelToFront(panel){
 
 function round2(num){
   return Math.round(num * 100) / 100
+}
+
+function makeBaseNicheViewerPanel(){
+  html = "<div class='col-xs-12' id='nv-controls'>"
+  html += "<div class='col-xs-6' id='axis-1-controls'>"
+  html += "<h4>X Axis</h4>"
+  html += "<label>Data Source</label><select id='x-source-dropdown' class='source-dropdown'></select></br />"
+  html += "<label>Variable</label><select id='x-variable-dropdown' class='variable-dropdown'></select><br />"
+  // html += "<label>Variable Modifier</label><select id='x-modifier-dropdown' class='modifier-dropdown'></select><br />"
+  html += "</div>"
+  html += "<div class='col-xs-6' id='axis-2-controls'>"
+  html += "<h4>Y Axis</h4>"
+  html += "<label>Data Source</label><select id='y-source-dropdown' class='source-dropdown'></select></br />"
+  html += "<label>Variable</label><select id='y-variable-dropdown' class='variable-dropdown'></select><br />"
+  // html += "<label>Variable Modifier</label><select id='y-modifier-dropdown' class='modifier-dropdown'></select><br />"
+  html += "</div>"
+  html += "</div>"
+  html += "<hr />"
+  html += "<div id='nv-chart'>"
+  html += "</div>"
+  globals.nvPanel.setContent(html)
+  $(".leaflet-control-dialog-contents").scrollTop(0)
+  movePanelToFront(globals.nvPanel._container)
+}
+function onAllPanelResized(){
+  //check the niche viewer dimensions
+  newNVWidth = $(globals.nvPanel._container).width()
+  newNVHeight = $(globals.nvPanel._container).height()
+  if ((newNVHeight != globals.nvHeight) || (newNVWidth != globals.nvWidth)){
+    console.log("Will updated.")
+    makeNicheViewer()
+  }
+}
+
+function updateTime(){
+  updateHeatmap()
+  updateSites()
+  styleIceSheets()
+  updateNicheViewer()
 }
