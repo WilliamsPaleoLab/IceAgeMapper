@@ -13,7 +13,7 @@ function makeNicheViewer(){
     top: 25,
     left: 55,
     right: 25,
-    bottom: 25
+    bottom: 40
   }
   globals.nicheViewer.dimensions = {
     height: ($(globals.nvPanel._container).height() - $("#nv-controls").height()) * 0.8 - globals.nicheViewer.margins.top - globals.nicheViewer.margins.bottom, //go with width to make square
@@ -49,6 +49,22 @@ function makeNicheViewer(){
     globals.nicheViewer.svg.append("g")
       .attr("class", "y axis")
       .call(globals.nicheViewer.yAxis);
+
+
+      globals.nicheViewer.svg.append("text")
+          .attr("transform", "rotate(-90)")
+          .attr('class', 'y-axis-label')
+          .attr("y", 0 - globals.nicheViewer.margins.left)
+          .attr("x",0 - (globals.nicheViewer.dimensions.height / 2))
+          .attr("dy", "1em")
+          .style("text-anchor", "middle")
+          .text("");
+
+        globals.nicheViewer.svg.append("text")      // text label for the x axis
+            .attr("transform", "translate(" + (globals.nicheViewer.dimensions.width / 2) + " ," + (globals.nicheViewer.dimensions.height + globals.nicheViewer.margins.bottom) + ")")
+            .style("text-anchor", "middle")
+            .attr('class', 'x-axis-label')
+            .text("");
 
   updateNicheViewerControls()
   updateNicheViewer()
@@ -117,12 +133,14 @@ function updateNicheViewer(){
           t: key,
           siteName: site['siteName'],
           siteID: site['siteID'],
+          units: undefined
         }
         slice = site.slices[key.toString()]
         for (var p=0; p<slice.length; p++){
           layer = slice[p]
           varName = layer['variableName']
           varMod = layer['layerModifier']
+          units = layer['units']
           varSource = layer['layerSource']
           val = layer.value
           if ((varSource == xSource) && (varName == xVar) ){
@@ -133,6 +151,7 @@ function updateNicheViewer(){
           }
         } // end slice variables loop
         if ((plotObj.x != undefined) && (plotObj.y != undefined)){
+          plotObj['units'] = units
           toPlot.push(plotObj)
         }
       } // end if key in range statement
@@ -151,38 +170,69 @@ function updateNicheViewer(){
   }
   globals.nicheViewer.xScale.domain(xExtent).nice()
   globals.nicheViewer.yScale.domain(yExtent).nice()
+
+  //tooltips
+  var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(d) {
+    html = "<h5>Site Name:</strong> <span style='color:red'>" + d.siteName + "</span><br />"
+    html += "<strong>" + globals.currentNVXVar + "</strong> <span class = 'text-muted'>" + numberWithCommas(round2(d.x)) + " " + d.units + "</span><br />";
+    html += "<strong>" + globals.currentNVYVar + "</strong> <span class = 'text-muted'>" + numberWithCommas(round2(d.y)) + " " + d.units + "</span>";
+    return html
+  })
+  globals.nicheViewer.svg.call(tip)
+
+
   //plot the points
-  globals.nicheViewer.svg.selectAll('.nv-point').remove()
+  globals.nicheViewer.svg.selectAll('.nv-point').remove().transition()
 
   globals.nicheViewer.svg.selectAll(".nv-point")
     .data(toPlot)
     .enter()
       .append('circle')
       .attr('class', 'nv-point')
-      .attr('cx', function(d){
-        return globals.nicheViewer.xScale(d.x)
-      })
-      .attr('cy', function(d){
-        return globals.nicheViewer.yScale(d.y)
-      })
-      .attr('r', 5)
+      .attr('r', 2.5)
       .attr('fill', function(d){
         if (d.t == 'Modern'){
           return 'red'
         }else{
-          return 'cyan'
+          return 'blue'
         }
       })
       .attr('stroke', 'black')
       .attr('stroke-width', 0.25)
 
-  //plot the modern points
-  globals.nicheViewer.svg.selectA
+    globals.nicheViewer.svg.selectAll(".nv-point").transition().duration(1000)
+    .attr('cx', function(d){
+      return globals.nicheViewer.xScale(d.x)
+    })
+    .attr('cy', function(d){
+      return globals.nicheViewer.yScale(d.y)
+    })
+
+    globals.nicheViewer.svg.selectAll(".nv-point").on('mouseover', function(d){
+        d3.select(this).attr('stroke', 'red').attr('stroke-width', 1)
+        tip.show(d)
+      })
+      .on('mouseout', function(d){
+        d3.select(this).attr('stroke', 'black').attr('stroke-width', 0.25)
+        tip.hide(d)
+      })
+
+
+
 
   globals.nicheViewer.svg.selectAll(".x.axis") // change the x axis
     .call(globals.nicheViewer.xAxis);
   globals.nicheViewer.svg.selectAll(".y.axis") // change the y axis
     .call(globals.nicheViewer.yAxis);
+
+    d3.selectAll(".x-axis-label").transition().text(globals.currentNVXVar)
+    d3.selectAll(".y-axis-label").transition().text(globals.currentNVYVar)
+
+
+
 } //end function
 
 setNVParams = function(){

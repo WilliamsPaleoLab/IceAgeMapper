@@ -100,6 +100,7 @@ function createSitePanel(){
               .setContent("<h6>Click on a site to retrieve details about it.")
               .addTo(globals.map.map)
   globals.sitePanel.name = "SitePanel"
+  $(globals.sitePanel._container).find(".leaflet-control-dialog-grabber").append("</i id='site-panel-title'>Site Information</i>")
 }
 
 function createTaxonomyPanel(){
@@ -107,6 +108,7 @@ function createTaxonomyPanel(){
     .setContent("<h6>Search for a taxon to retrieve its taxonomic hierarchy.</h6>")
     .addTo(globals.map.map)
     globals.taxonomyPanel.name = "TaxonomyPanel"
+    $(globals.taxonomyPanel._container).find(".leaflet-control-dialog-grabber").append("<i id='taxonomy-panel-title'>Taxonomy</i>")
 }
 
 function createNicheViewerPanel(){
@@ -114,13 +116,15 @@ function createNicheViewerPanel(){
     .addTo(globals.map.map)
     globals.taxonomyPanel.name = "NV"
     makeBaseNicheViewerPanel()
+    globals.nvPanel.close()
+    $(globals.nvPanel._container).find(".leaflet-control-dialog-grabber").append("<i id='nv-panel-title'>NicheViewer</i>")
 }
 
 function createToolbar(){
   var NicheViewerToolAction = L.ToolbarAction.extend({
       options: {
           toolbarIcon: {
-              html: "<span class='glyphicon glyphicon-signal'></span>",
+              html: "<img id='stats-icon'  src='images/icons/stats.svg'/>",
               tooltip: 'Open Niche Viewer Panel',
               class:'toolbar-item'
           }
@@ -133,19 +137,20 @@ function createToolbar(){
   var TaxonomyToolAction = L.ToolbarAction.extend({
       options: {
           toolbarIcon: {
-              html: "<span class='glyphicon glyphicon-option-vertical'></span>",
+              html: "<img id='tree-icon'  src='images/icons/hierarchy.svg'/>",
               tooltip: 'Open Taxonomy Panel',
               class:'toolbar-item'
           }
       },
       addHooks: function () {
           globals.taxonomyPanel.open()
+          movePanelToFront(globals.taxonomyPanel._container)
       }
   });
   var SiteToolAction = L.ToolbarAction.extend({
       options: {
           toolbarIcon: {
-              html: "<span class='glyphicon glyphicon-globe'></span>",
+              html: "<img id='site-icon' src='images/icons/here.svg'/>",
               tooltip: 'Open Site Details Panel',
               class:'toolbar-item'
           }
@@ -153,12 +158,31 @@ function createToolbar(){
       addHooks: function () {
           //globals.map.map.setView([48.85815, 2.29420], 19);
             globals.sitePanel.open();
+            movePanelToFront(globals.sitePanel._container)
       }
   });
 
   globals.toolbar = new L.Toolbar.Control({
       actions: [NicheViewerToolAction, SiteToolAction, TaxonomyToolAction], position: 'topright'
   }).addTo(globals.map.map);
+
+  $("#site-icon").hover(function(){
+    $(this).attr("src", "images/icons/here-black.svg")
+  }, function(){
+    $(this).attr("src", "images/icons/here.svg")
+  })
+
+  $("#tree-icon").hover(function(){
+    $(this).attr("src", "images/icons/hierarchy-black.svg")
+  }, function(){
+    $(this).attr("src", "images/icons/hierarchy.svg")
+  })
+
+  $("#stats-icon").hover(function(){
+    $(this).attr("src", "images/icons/stats-black.svg")
+  }, function(){
+    $(this).attr("src", "images/icons/stats.svg")
+  })
 }
 
 function createLayerController(){
@@ -655,7 +679,9 @@ function processTaxonInfo(taxonResponse){
 
 function displayTaxonomy(){
   globals.taxonomy = globals.taxonomy.reverse()
-  html = "<h3>" + globals.taxon + ": <span class='text-muted'>Taxonomy</span></h3>"
+  header = globals.taxon
+  $("#taxonomy-panel-title").html(header)
+  html = ""
   for (var i=0; i< globals.taxonomy.length; i++){
     taxon = globals.taxonomy[i]
     html += "<h5 class='strong'>" + taxon.TaxonName + "</h5><i class='small'>" + taxon.Author + "</i>"
@@ -758,8 +784,9 @@ function displaySiteDetails(details){
 
   ages = _.sortBy(ages, function(d){return d.age})
   numDatasets = details.length
+  header = siteName + " Site Information"
+  $("#site-panel-title").html(header)
   html = "<div>"
-  html += "<h4><span class='strong'>" + siteName + "</span><i class='right small'>" + siteID + "</i></h4>"
   html += "<p>Latitude: <span class='text-muted'>" + round2(siteLat) + "</span></p>"
   html += "<p>Longitude: <span class='text-muted'>" + round2(siteLng) + "</span></p>"
   html += "<p>Altitude: <span class='text-muted'>" + siteAlt + "m</span></p>"
@@ -836,14 +863,14 @@ function makeBaseNicheViewerPanel(){
   html = "<div class='col-xs-12' id='nv-controls'>"
   html += "<div class='col-xs-6' id='axis-1-controls'>"
   html += "<h4>X Axis</h4>"
-  html += "<label>Data Source</label><select id='x-source-dropdown' class='source-dropdown'></select></br />"
-  html += "<label>Variable</label><select id='x-variable-dropdown' class='variable-dropdown'></select><br />"
+  html += "<label>Data Source</label><br /><select id='x-source-dropdown' class='source-dropdown'></select></br />"
+  html += "<label>Variable</label><br /><select id='x-variable-dropdown' class='variable-dropdown'></select><br />"
   // html += "<label>Variable Modifier</label><select id='x-modifier-dropdown' class='modifier-dropdown'></select><br />"
   html += "</div>"
   html += "<div class='col-xs-6' id='axis-2-controls'>"
   html += "<h4>Y Axis</h4>"
-  html += "<label>Data Source</label><select id='y-source-dropdown' class='source-dropdown'></select></br />"
-  html += "<label>Variable</label><select id='y-variable-dropdown' class='variable-dropdown'></select><br />"
+  html += "<label>Data Source</label><br /><select id='y-source-dropdown' class='source-dropdown'></select></br />"
+  html += "<label>Variable</label><br /><select id='y-variable-dropdown' class='variable-dropdown'></select><br />"
   // html += "<label>Variable Modifier</label><select id='y-modifier-dropdown' class='modifier-dropdown'></select><br />"
   html += "</div>"
   html += "</div>"
@@ -869,4 +896,8 @@ function updateTime(){
   updateSites()
   styleIceSheets()
   updateNicheViewer()
+}
+
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }

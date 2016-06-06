@@ -32,6 +32,7 @@ L.Control.Dialog = L.Control.extend({
     if(!this._map){
       return;
     }
+    this.isOpen = true
     this._container.style.visibility = '';
 
     this._map.fire('dialog:opened', this);
@@ -41,7 +42,7 @@ L.Control.Dialog = L.Control.extend({
 
   close: function(){
     this._container.style.visibility = 'hidden';
-
+    this.isOpen = false;
     this._map.fire('dialog:closed', this);
     return this;
   },
@@ -169,7 +170,7 @@ L.Control.Dialog = L.Control.extend({
     var innerContainer = this._innerContainer = L.DomUtil.create('div', className + '-inner');
 
     var grabberNode = this._grabberNode = L.DomUtil.create('div', className + '-grabber');
-    var grabberIcon = L.DomUtil.create('i', 'fa fa-arrows');
+    var grabberIcon = L.DomUtil.create('i', 'fa fa-arrows title');
     grabberNode.appendChild(grabberIcon);
 
     L.DomEvent.on(grabberNode, 'mousedown', this._handleMoveStart, this);

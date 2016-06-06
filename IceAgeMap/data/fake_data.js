@@ -3,7 +3,8 @@ function makeFakeData(numPoints, numSlices, numLayers){
   response = {
     success: true,
     timestamp : new Date().toUTCString(),
-    data: []
+    data: [],
+    layerDescriptions: []
   }
   for (var i=0; i<numPoints; i++){
     item = {
@@ -61,6 +62,7 @@ function createRandomLayer(yearBP, j){
     layerDescription: layerDescription,
     modiferDescription : modiferDescription,
     yearsBP: yearBP,
+    units: "cm",
     value: getRandomArbitrary(10, 10000)
   }
   return layer
