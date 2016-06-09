@@ -430,7 +430,7 @@ function loadOccurrenceData(taxon){
          globals.nvPanel.close()
          //NicheViewer stuff
          //make fake nv data (for now)
-         globals.NVResponse = makeFakeData(100, 12, 12)
+         globals.NVResponse = makeFakeData(100, 12, 12, 3)
          if (globals.NVResponse.success){
            globals.NVData = globals.NVResponse.data
            makeNicheViewer()
@@ -679,7 +679,7 @@ function processTaxonInfo(taxonResponse){
 
 function displayTaxonomy(){
   globals.taxonomy = globals.taxonomy.reverse()
-  header = globals.taxon
+  header = globals.taxon + " - taxonomy"
   $("#taxonomy-panel-title").html(header)
   html = ""
   for (var i=0; i< globals.taxonomy.length; i++){
@@ -784,9 +784,10 @@ function displaySiteDetails(details){
 
   ages = _.sortBy(ages, function(d){return d.age})
   numDatasets = details.length
-  header = siteName + " Site Information"
-  $("#site-panel-title").html(header)
-  html = "<div>"
+  html = ""
+  html +=  "<h4>" + site['SiteName'] + "<span class='small text-muted'><" + siteID + "></span></h4>"
+
+  html += "<div>"
   html += "<p>Latitude: <span class='text-muted'>" + round2(siteLat) + "</span></p>"
   html += "<p>Longitude: <span class='text-muted'>" + round2(siteLng) + "</span></p>"
   html += "<p>Altitude: <span class='text-muted'>" + siteAlt + "m</span></p>"

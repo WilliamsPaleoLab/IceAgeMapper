@@ -195,9 +195,16 @@ function updateNicheViewer(){
       .attr('r', 2.5)
       .attr('fill', function(d){
         if (d.t == 'Modern'){
-          return 'red'
+          return 'black'
         }else{
-          return 'blue'
+          return 'gray'
+        }
+      })
+      .attr('opacity', function(d){
+        if (d.t == 'Modern'){
+          return 1
+        }else{
+          return 0.5
         }
       })
       .attr('stroke', 'black')

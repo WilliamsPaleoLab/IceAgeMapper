@@ -1,5 +1,6 @@
 //this file makes simulated data for developing the NicheViewer
-function makeFakeData(numPoints, numSlices, numLayers){
+function makeFakeData(numPoints, numSlices, numLayers, numSources){
+  sourceOpts = range(0, numSources)
   response = {
     success: true,
     timestamp : new Date().toUTCString(),
@@ -66,4 +67,17 @@ function createRandomLayer(yearBP, j){
     value: getRandomArbitrary(10, 10000)
   }
   return layer
+}
+
+function getRandomChoice(choices) {
+  var index = Math.floor(Math.random() * choices.length);
+  return choices[index];
+}
+
+function range(start, end) {
+    var foo = [];
+    for (var i = start; i <= end; i++) {
+        foo.push(i);
+    }
+    return foo;
 }
