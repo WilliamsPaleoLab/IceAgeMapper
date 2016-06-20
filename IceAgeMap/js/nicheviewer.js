@@ -77,18 +77,28 @@ function makeNicheViewer(){
 function updateNicheViewerControls(){
   //put variables into dropdowns
   //clear current
+  console.log("Updating controls")
   $(".variable-dropdown").empty()
   $(".source-dropdown").empty()
   $(".modifier-dropdown").empty()
   variables = []
   modifiers = []
   sources = []
-  modern = globals.NVData[0].slices['Modern']
-  for (var i=0; i<modern.length; i++){
-    layer = modern[i]
-    variables.push(layer['variableName'])
-    modifiers.push(+layer['layerModifier'])
-    sources.push(layer['layerSource'])
+  data = globals.NVData
+  j = 0
+  for (layer in data){
+    if (data[layer].data.length > 0){
+      break
+    }else{
+      j += 1
+    }
+  }
+  data = globals.NVData[j].data
+  for (var i=0; i<data.length; i++){
+    layer = data[i]
+    variables.push(layer['VariableDescription'])
+    modifiers.push(+layer['variablePeriod'])
+    sources.push(layer['Model'])
   }//end loop
   uniqueVars = _.uniq(variables).sort()
   uniqueMods = _.uniq(modifiers).sort(compareNumbers) //compare numerically
@@ -107,7 +117,6 @@ function updateNicheViewerControls(){
 
 function updateNicheViewer(){
   //chooses the right values from the dataset and plots them
-
   xVar = globals.currentNVXVar
   yVar = globals.currentNVYVar
   xMod = globals.currentNVXMod
@@ -116,47 +125,45 @@ function updateNicheViewer(){
   ySource = globals.currentNVYSource
   toPlot = []
   for (var i=0; i< globals.NVData.length; i++){
-    //iterate through the spatial dimension
-    site = globals.NVData[i];
-    sliceList = _.keys(site.slices)
-    for (var j = 0; j< sliceList.length; j++){
-      //iterate through the temporal dimension
-
-      key = sliceList[j]
-      if (key != "Modern"){
-        key = parseInt(key)
+    //iterate through the spatial-temporal dimensions
+    //each object will be one lat/lng/time and one or more variables
+    site = globals.NVData[i]
+    siteData = site.data
+    latitude = site['latitude']
+    longitude = site['longitude']
+    yearsBP = site['yearsBP']
+    siteName = site['siteName']
+    siteID = site['siteID']
+    obj = {
+      siteName: siteName,
+      siteID: siteID,
+      latitude: latitude,
+      longitude: longitude,
+      yearsBP: yearsBP,
+      x: undefined,
+      y: undefined,
+      Xunits: undefined,
+      Yunits: undefined
+    }
+    if ((yearsBP >= globals.minYear) && (yearsBP <= globals.maxYear)){
+      for (item in site.data){
+        variableData = site.data[item]
+        varDesc = variableData['VariableDescription']
+        if (varDesc == globals.currentNVXVar){
+          obj.x = variableData.value
+          obj.Xunits = variableData.variableUnits
+        }
+        if (varDesc == globals.currentNVYVar){
+          obj.y = variableData.value
+          obj.Yunits = variableData.variableUnits
+        }
       }
-      if (((key >= globals.minYear) && (key <= globals.maxYear))|| (key == 'Modern')){
-        plotObj = {
-          x: undefined,
-          y: undefined,
-          t: key,
-          siteName: site['siteName'],
-          siteID: site['siteID'],
-          units: undefined
-        }
-        slice = site.slices[key.toString()]
-        for (var p=0; p<slice.length; p++){
-          layer = slice[p]
-          varName = layer['variableName']
-          varMod = layer['layerModifier']
-          units = layer['units']
-          varSource = layer['layerSource']
-          val = layer.value
-          if ((varSource == xSource) && (varName == xVar) ){
-            plotObj.x = val
-          }
-          if ((varSource == ySource) && (varName == yVar) ){
-            plotObj.y = val
-          }
-        } // end slice variables loop
-        if ((plotObj.x != undefined) && (plotObj.y != undefined)){
-          plotObj['units'] = units
-          toPlot.push(plotObj)
-        }
-      } // end if key in range statement
-    } // end slices loop
-  } // sites loop
+      if ((obj.x != undefined) && (obj.y != undefined)){
+        toPlot.push(obj)
+      }
+    }
+
+  } // end of array loop
   //all of the data should now be in the array of plotting objects
   //update the axes
   xExtent = d3.extent(toPlot, function(d) { return +d.x})
@@ -176,9 +183,9 @@ function updateNicheViewer(){
   .attr('class', 'd3-tip')
   .offset([-10, 0])
   .html(function(d) {
-    html = "<h5>Site Name:</strong> <span style='color:red'>" + d.siteName + "</span><br />"
-    html += "<strong>" + globals.currentNVXVar + "</strong> <span class = 'text-muted'>" + numberWithCommas(round2(d.x)) + " " + d.units + "</span><br />";
-    html += "<strong>" + globals.currentNVYVar + "</strong> <span class = 'text-muted'>" + numberWithCommas(round2(d.y)) + " " + d.units + "</span>";
+    html = "<h5>Site Name:</strong> <span style='color:red'>" + d.siteName + " ( " + numberWithCommas(d.yearsBP) + " B.P.)</span><br />"
+    html += "<strong>" + globals.currentNVXVar + "</strong> <span class = 'text-muted'>" + numberWithCommas(round2(d.x)) + " " + d.Xunits + "</span><br />";
+    html += "<strong>" + globals.currentNVYVar + "</strong> <span class = 'text-muted'>" + numberWithCommas(round2(d.y)) + " " + d.Yunits + "</span>";
     return html
   })
   globals.nicheViewer.svg.call(tip)
@@ -194,17 +201,10 @@ function updateNicheViewer(){
       .attr('class', 'nv-point')
       .attr('r', 2.5)
       .attr('fill', function(d){
-        if (d.t == 'Modern'){
-          return 'black'
+        if (d.yearsBP < 100){
+          return 'red'
         }else{
-          return 'gray'
-        }
-      })
-      .attr('opacity', function(d){
-        if (d.t == 'Modern'){
-          return 1
-        }else{
-          return 0.5
+          return 'blue'
         }
       })
       .attr('stroke', 'black')

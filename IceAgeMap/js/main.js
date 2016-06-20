@@ -17,12 +17,12 @@ globals.sitesVisible = true;
 globals.taxonID = -1
 globals.taxon = ""
 
-globals.currentNVXVar = "SimulatedLayer0"
-globals.currentNVYVar = "SimulatedLayer0"
+globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
+globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
 globals.currentNVXMod = 0
 globals.currentNVYMod = 0
-globals.currentNVXSource = "SimulatedSource"
-globals.currentNVYSource = "SimulatedSource"
+globals.currentNVXSource = "Community Climate System Model (CCSM)"
+globals.currentNVYSource = "Community Climate System Model (CCSM)"
 
 
 heatOptions = {
@@ -430,18 +430,88 @@ function loadOccurrenceData(taxon){
          globals.nvPanel.close()
          //NicheViewer stuff
          //make fake nv data (for now)
-         globals.NVResponse = makeFakeData(100, 12, 12, 3)
-         if (globals.NVResponse.success){
-           globals.NVData = globals.NVResponse.data
-           makeNicheViewer()
-         }else{
-           console.log("Failed to load environmental layers for NicheViewer.")
-         }
+        // globals.NVResponse = makeFakeData(100, 12, 12, 3)
+        //  if (globals.NVResponse.success){
+        //    globals.NVData = globals.NVResponse.data
+        //    makeNicheViewer()
+        //  }else{
+        //    console.log("Failed to load environmental layers for NicheViewer.")
+        //  }
+        getNicheData(globals.data, true)
        }else{
          console.log("Server error on Neotoma's end.")
          $("#loading").text("Server error.")
        }
      }
+  })
+}
+
+
+counter = 0
+function getNicheData(dataset, getModern){
+  //gets niche data from the server to make the niche diagram
+  //if getModern is true, will get both the modern (BP 0) and past values for each site in the argument dataset
+  request = {
+    locations: []
+  }
+  $("#loading").slideDown()
+  $("#loadprogress").attr('value', 0)
+  $("#loadprogress").attr('max', dataset.length)
+  totalCounter = dataset.length
+
+  //form the post data payload
+  for (item in dataset){
+    site = dataset[item]
+    siteID = site['SiteID']
+    siteName = site['SiteName']
+    longitude = (site['LongitudeEast'] + site['LongitudeWest']) / 2
+    latitude = (site['LatitudeNorth'] + site['LatitudeSouth']) / 2
+    yearsBP = site['Age']
+    if ((yearsBP == null) || (yearsBP == undefined)){
+      yearsBP = (site['AgeOlder'] + site['AgeYounger']) / 2
+    }
+    obj = {siteID:siteID, siteName:siteName, latitude:latitude, longitude:longitude, yearsBP:yearsBP}
+    request.locations.push(obj)
+    // $.ajax("http://localhost:8080/data", {
+    //   data: obj,
+    //   contentType: "json",
+    //   method: 'GET',
+    //   success: function(response){
+    //     counter += 1;
+    //     console.log(counter)
+    //     $("#loadprogress").attr('value', counter)
+    //   },
+    //   error: function(){
+    //     console.log(error)
+    //   },
+    //   beforeSend: function(){
+    //     $("#loading").show()
+    //   }
+    // })
+  }
+  //wmake the ajax request
+  $.ajax("http://130.211.157.239:8080/data", {
+    data: JSON.stringify(request),
+    method: "POST",
+    contentType: "application/json",
+    error: function(xhr, status, error){
+      console.log(xhr)
+      console.log(status)
+      console.log(error)
+    },
+    beforeSend: function(){
+      $("#loading").slideDown()
+      $("#loading").text("Getting niche data...")
+    },
+    success: function(response){
+      console.log("Got response!")
+      globals.NVData = response.data
+      console.log(response)
+      makeNicheViewer()
+      updateNicheViewerControls()
+      $("#loading").slideUp()
+      $("#loading").text("Loading...")
+    }
   })
 }
 
@@ -786,7 +856,6 @@ function displaySiteDetails(details){
   numDatasets = details.length
   html = ""
   html +=  "<h4>" + site['SiteName'] + "<span class='small text-muted'><" + siteID + "></span></h4>"
-
   html += "<div>"
   html += "<p>Latitude: <span class='text-muted'>" + round2(siteLat) + "</span></p>"
   html += "<p>Longitude: <span class='text-muted'>" + round2(siteLng) + "</span></p>"
