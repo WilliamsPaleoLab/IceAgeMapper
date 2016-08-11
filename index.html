@@ -14,7 +14,7 @@
   <link rel='stylesheet' href='css/jquery-ui.theme.min.css'/>
   <link rel='stylesheet' href='css/jquery-ui.structure.min.css'/>
   <link rel="stylesheet" href="//rawgithub.com/Caged/d3-tip/master/examples/example-styles.css">
-
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
 </head>
 
 <body>
@@ -82,14 +82,31 @@
         <textarea id='share-link' style='width:100%; min-height:150px' readonly>http://paleo.geography.wisc.edu</textarea>
       </div>
       <div class='toolbar buttn-bar container col-xs-12'>
-        <h5 class='page-header'>Sharing Tools</h5>
-        <button id='copyToClipboard' class='btn btn-btn-default' data-toggle="tooltip" data-placement="bottom"
-          title="Copy Link to Clipboard"><span class='glyphicon glyphicon-copy'></span></button>
+        <div class='col-xs-1'>
+          <button id='copyToClipboard' class='btn btn-btn-default' data-toggle="tooltip" data-placement="bottom"
+            title="Copy Link to Clipboard"><span class='glyphicon glyphicon-copy'></span></button>
+        </div>
 
-          <a href="https://twitter.com/share" class="twitter-share-button" data-show-count='true'>Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-          <!-- <a id='twitter-share-button' class='twitter-share-button' href="http://twitter.com/share">
+        <div class='col-xs-1'>
+          <a id='twitter-share-button' class='twitter-share-button' href="http://twitter.com/share"
+          data-toggle="tooltip" data-placement="bottom"
+            title="Tweet Link"
+          >
           Tweet
-          </a> -->
+          </a>
+        </div>
+        <div class='col-xs-1'>
+          <a id='emailLink' href="mailto:scottsfarley@gmail.com?subject=Ice%20Age%20Mapper&body=My%20Stuff"
+          data-toggle="tooltip" data-placement="bottom"
+            title="Email Link"
+          >
+          Email
+          </a>
+        </div>
+        <div class='col-xs-1'>
+          <div class="g-plus" data-action="share"></div>
+        </div>
+
       </div>
     <div class="modal-footer">
          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

@@ -169,11 +169,14 @@ function createToolbar(){
         globals.shareURI = generateShareURI()
 
         uriString = globals.shareURI.toString()
-        generateTwitterLink()
+        generateTwitterLink() //make sure the twitter link is right
+        generateEmailLink() //make sure the email link is right
+        generateGPlusLink()
         //set it so its visible to the user
         $("#share-link").text(uriString)
         $("#share-modal").modal('show')
         $("#share-link").select()
+        window.history.pushState("Ice Age Mapper", "Ice Age Mapper", globals.shareURI) //put page state in url history so we can return if we leave (i.e., go to twitter)
       }
   })
 
@@ -197,6 +200,11 @@ function createToolbar(){
     $(this).attr("src", "images/icons/stats-black.svg")
   }, function(){
     $(this).attr("src", "images/icons/stats.svg")
+  })
+  $("#share-icon").hover(function(){
+    $(this).attr("src", "images/icons/share-black.svg")
+  }, function(){
+    $(this).attr("src", "images/icons/share.svg")
   })
 }
 
@@ -1333,4 +1341,16 @@ function generateTwitterLink(){
   twitterURL.addQuery("hashtags", "paleo")
   twitterURL = twitterURL.toString()
   $(".twitter-share-button").attr("href", twitterURL)
+  console.log(twitterURL)
+}
+
+function generateEmailLink(){
+  link = "mailto:?to=&"
+  link += "subject=" + encodeURIComponent("Ice Age Mapper")
+  link += "&body=" + globals.shareURI
+  $("#emailLink").data('href', link)
+}
+
+function generateGPlusLink(){
+  $(".g-plus").data('href', globals.shareURI)
 }
