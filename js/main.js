@@ -166,9 +166,10 @@ function createToolbar(){
     },
       addHooks: function(){
         //generate the share url string
-        uri = generateShareURI()
-        uriString = uri.toString()
-        //shortenURL(uriString)
+        globals.shareURI = generateShareURI()
+
+        uriString = globals.shareURI.toString()
+        generateTwitterLink()
         //set it so its visible to the user
         $("#share-link").text(uriString)
         $("#share-modal").modal('show')
@@ -1094,9 +1095,11 @@ function numberWithCommas(x) {
 function generateShareURI(){
   //document all of the components of the current configuration so we can share it as a URI
   uri = new URI()
-
   //get the name of what we're looking at
   taxon = globals.taxon
+  if (taxon){
+    uri.addQuery('taxon', taxon)
+  }
   uri.addQuery('taxon', taxon)
   //get the map center and zoom
   center = globals.map.map.getCenter()
@@ -1320,3 +1323,16 @@ $("#copyToClipboard").on('click', function(){
 $(function () {
   $('[data-toggle="tooltip"]').tooltip()
 })
+
+
+function generateTwitterLink(){
+  console.log("Generating.")
+  var twitterURL = new URI("http://twitter.com/share/")
+  console.log(twitterURL)
+  twitterURL.addQuery("url", globals.shareURI)
+  twitterURL.addQuery("text", "Check out my Ice Age Map!")
+  twitterURL.addQuery("hashtags", "paleo")
+  twitterURL = twitterURL.toString()
+  console.log(twitterURL)
+  $(".twitter-share-button").attr("href", twitterURL)
+}
