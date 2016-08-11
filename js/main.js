@@ -1327,11 +1327,10 @@ $(function () {
 
 function generateTwitterLink(){
   console.log("Generating.")
-  $(".twitter-share-button").data('url', globals.shareURI)
-  // var twitterURL = new URI("http://twitter.com/share/")
-  // twitterURL.addQuery("url", globals.shareURI)
-  // twitterURL.addQuery("text", "Check out my Ice Age Map!")
-  // twitterURL.addQuery("hashtags", "paleo")
-  // twitterURL = twitterURL.toString()
-  // $(".twitter-share-button").attr("href", twitterURL)
+  var twitterURL = new URI("http://twitter.com/share/")
+  twitterURL.addQuery("url", globals.shareURI)
+  twitterURL.addQuery("text", "Check out my Ice Age Map!")
+  twitterURL.addQuery("hashtags", "paleo")
+  twitterURL = twitterURL.toString()
+  $(".twitter-share-button").attr("href", twitterURL)
 }
