@@ -177,3 +177,6 @@ th {
   top: 100%;
   left: 0;
 }
+#share-link{
+    word-wrap: break-word;
+}

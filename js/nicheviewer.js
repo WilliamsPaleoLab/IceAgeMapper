@@ -5,7 +5,12 @@ function makeNicheViewer(){
   globals.nvHeight = $(globals.nvPanel._container).height()
   $("#nv-chart").empty()
   //makes the canvas for drawing the chart
-  globals.nvPanel.open()
+  if (globals.openNVPanel){
+    globals.nvPanel.open()
+  }else{
+    globals.nvPanel.close()
+  }
+
   //adds the axes
   console.log("About to make NicheViewer")
   globals.nicheViewer = {}

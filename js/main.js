@@ -1,21 +1,5 @@
 globals = {}
 globals.map = {}
-globals.minYear = 0
-globals.maxYear = 22000
-globals.visibleLayers = ['heatmap', 'sites', 'ice']
-globals.map.layers = {
-  //'Heatmap' : undefined//,
-  // 'Sites' : undefined,
-  // 'Icesheets' : undefined
-}
-globals.TotalField = "Total"
-globals.data = []
-globals.siteLayer = L.layerGroup();
-globals.iceSheets = L.layerGroup();
-globals.sitesVisible = true;
-
-globals.taxonID = -1
-globals.taxon = ""
 
 globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
 globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
@@ -64,12 +48,17 @@ $(".nav-item").hover(function(){
 })
 
 $(document).ready(function(){
+  processQueryString() //parse the URI query
+  load();
+})
+
+function load(){
   createMap(); // load the leaflet map
   loadTaxaFromNeotoma(createSearchWidget) // load the taxa endpoint from neotoma and create an autocomplete search out of it
   createHeatmapLayer() // create a blank layer that we can load into later
   createTimeline();
   loadIceSheets()
-})
+}
 
 function createMap(){
   globals.map.map = L.map('map',
@@ -82,6 +71,8 @@ function createMap(){
   	maxZoom: 8,
     minZoom: 3
   }).addTo(globals.map.map);
+  //set to default or URL requested
+  globals.map.map.setView([globals.centerLat, globals.centerLng], globals.zoom)
   createLayerController() //creates an empty layer controller
   createToolbar()
   createSitePanel()
@@ -116,7 +107,7 @@ function createNicheViewerPanel(){
     .addTo(globals.map.map)
     globals.taxonomyPanel.name = "NV"
     makeBaseNicheViewerPanel()
-    globals.nvPanel.close()
+    //globals.nvPanel.close()
     $(globals.nvPanel._container).find(".leaflet-control-dialog-grabber").append("<i id='nv-panel-title'>NicheViewer</i>")
 }
 
@@ -130,6 +121,7 @@ function createToolbar(){
           }
       },
       addHooks: function () {
+        globals.openNVPanel = true
           globals.nvPanel.open()
           movePanelToFront(globals.nvPanel._container)
       }
@@ -143,6 +135,7 @@ function createToolbar(){
           }
       },
       addHooks: function () {
+        globals.openTaxPanel = true
           globals.taxonomyPanel.open()
           movePanelToFront(globals.taxonomyPanel._container)
       }
@@ -157,13 +150,32 @@ function createToolbar(){
       },
       addHooks: function () {
           //globals.map.map.setView([48.85815, 2.29420], 19);
+            globals.openSitePanel = true;
             globals.sitePanel.open();
             movePanelToFront(globals.sitePanel._container)
       }
   });
 
+  var ShareAction = L.ToolbarAction.extend({
+    options: {
+      toolbarIcon: {
+        html: "<img id='share-icon' src='images/icons/share.svg'/>",
+        tooltip: 'Share',
+        class: 'toolbar-item'
+      }
+    },
+      addHooks: function(){
+        //generate the share url string
+        uri = generateShareURI()
+        uriString = uri.toString()
+        //set it so its visible to the user
+        $("#share-link").text(uriString)
+        $("#share-modal").modal('show')
+      }
+  })
+
   globals.toolbar = new L.Toolbar.Control({
-      actions: [NicheViewerToolAction, SiteToolAction, TaxonomyToolAction], position: 'topright'
+      actions: [NicheViewerToolAction, SiteToolAction, TaxonomyToolAction, ShareAction], position: 'topright'
   }).addTo(globals.map.map);
 
   $("#site-icon").hover(function(){
@@ -189,6 +201,33 @@ function createLayerController(){
   //create the layer controls
   globals.map.layerController = L.control.layers(null, globals.map.layers, {position: 'topright'})
     .addTo(globals.map.map)
+
+  //control add/remove events for the different layers by setting a global variable we can access later
+  globals.map.map.on('overlayadd', function(e){
+    if (e.name == "Icesheets"){
+      console.log("Turning on icesheets")
+      globals.showIce = true
+      styleIceSheets()
+    }
+    if (e.name == "Sites"){
+      globals.showSites = true
+    }
+    if (e.name == "Heatmap"){
+      globals.showHeat = true
+    }
+  })
+  globals.map.map.on('overlayremove', function(e){
+    if (e.name == "Icesheets"){
+      console.log("Turning off icesheets")
+      globals.showIce = false
+    }
+    if (e.name == "Sites"){
+      globals.showSites = false
+    }
+    if (e.name == "Heatmap"){
+      globals.showHeat = false
+    }
+  })
 }
 
 
@@ -257,9 +296,9 @@ function createTimeline(){
     .range([0, height]);
 
     var initialMaxYear = Math.round(globals.timeScale.invert(250));
-
-    globals.maxYear = initialMaxYear;
-    globals.minYear = 0;
+    //
+    // globals.maxYear = initialMaxYear;
+    // globals.minYear = 0;
 
 
   var svg = d3.select("#timeline")
@@ -293,7 +332,7 @@ function createTimeline(){
     globals.timeRect = svg.append('rect')
       .attr('x', 0)
       .attr('y', 0)
-      .attr('height', 250)
+      .attr('height', globals.timeScale(globals.maxYear))
       .attr('width', 5)
       .style('fill', '#3f7e8a')
       .style('stroke', 'black')
@@ -427,17 +466,17 @@ function loadOccurrenceData(taxon){
          getTaxonomy()
          setTimelinePoints(data['data'])
          globals.sitePanel.close()
-         globals.nvPanel.close()
+         //globals.nvPanel.close()
          //NicheViewer stuff
          //make fake nv data (for now)
-        // globals.NVResponse = makeFakeData(100, 12, 12, 3)
+        //globals.NVResponse = makeFakeData(100, 12, 12, 3)
         //  if (globals.NVResponse.success){
         //    globals.NVData = globals.NVResponse.data
         //    makeNicheViewer()
         //  }else{
         //    console.log("Failed to load environmental layers for NicheViewer.")
         //  }
-        getNicheData(globals.data, true)
+        // getNicheData(globals.data, true)
        }else{
          console.log("Server error on Neotoma's end.")
          $("#loading").text("Server error.")
@@ -605,6 +644,7 @@ function updateSites(){
     l = L.circleMarker([sites[i].lat, sites[i].lng, sites[i].siteID], siteMarkerOptions)
     .bindPopup("<h6>" + sites[i].siteName + "</h6>")
     l.site = true;
+    l.siteID = sites[i].siteID
     siteLayer.push(l)
     l.on('click', function(){
       console.log(this)
@@ -613,10 +653,12 @@ function updateSites(){
       globals.map.map.setView(this._latlng)
       movePanelToFront(globals.sitePanel._container)
     })
+    globals.siteMarkers.push(l)
   }
   //see if visible
   //hackiest thing ever
-  globals.sitesVisible = isVisible("Sites")
+    //but its fine
+  globals.sitesVisible = globals.showSites
   console.log("Sites are visible: " + globals.sitesVisible);
   globals.map.layerController.removeLayer(globals.siteLayer)
   globals.siteLayer = L.layerGroup(siteLayer).addTo(globals.map.map)
@@ -684,22 +726,68 @@ function isVisible(layerName){
   return visible
 }
 
+function setVisibleBox(layerName){
+  //turn on checkbox in layer control
+  selectorDiv = $(".leaflet-control-layers-overlays")
+  labs = selectorDiv.find("span")
+  inputs = selectorDiv.find("input")
+  visible = true
+  for (var i =0; i< labs.length; i++){
+    lab = $(labs[i]).text()
+    if (lab == " " + layerName){
+      visible = $(inputs[i]).prop('checked', true)
+      break
+    }
+  }
+}
+
+function unsetVisibleBox(layerName){
+  //turn off checkbox in layer controls
+  selectorDiv = $(".leaflet-control-layers-overlays")
+  labs = selectorDiv.find("span")
+  inputs = selectorDiv.find("input")
+  visible = true
+  for (var i =0; i< labs.length; i++){
+    lab = $(labs[i]).text()
+    if (lab == " " + layerName){
+      visible = $(inputs[i]).prop('checked', false)
+      break
+    }
+  }
+}
+
+
 function displayIceSheets(data){
-  globals.iceSheets = L.geoJson(data).addTo(globals.map.map)
-  globals.map.layerController.addOverlay(globals.iceSheets, "Icesheets")
-  styleIceSheets()
+    globals.iceSheets = L.geoJson(data).addTo(globals.map.map)
+    globals.map.layerController.addOverlay(globals.iceSheets, "Icesheets")
+    styleIceSheets()
+    if (!globals.showIce){
+      //unsetVisibleBox("Icesheets")
+    }
 }
 
 function styleIceSheets(){
-  globals.iceSheets.eachLayer(function(layer){
-    if ((layer.feature.properties.Age >= globals.minYear)
-    && (layer.feature.properties.Age <= globals.maxYear)){
-      layer.setStyle({stroke: false, fillColor: '#E0FFFF', fillOpacity: 0.5})
+  if (globals.showIce){
+    console.log("ice sheets display on")
+    globals.iceSheets.eachLayer(function(layer){
+      if ((layer.feature.properties.Age >= globals.minYear)
+      && (layer.feature.properties.Age <= globals.maxYear)){
+        layer.setStyle({stroke: false, fillColor: '#E0FFFF', fillOpacity: 0.5})
 
-    }else{
-      layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
-    }
-  })
+      }else{
+        layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
+      }
+    })
+  }else{
+    console.log("Ice sheets display off")
+    globals.iceSheets.eachLayer(function(layer){
+        layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
+    })
+
+    globals.map.layerController.removeLayer("Icesheets")
+    unsetVisibleBox("Icesheets")
+  }
+
   globals.iceSheets.bringToBack();
 }
 
@@ -757,6 +845,11 @@ function displayTaxonomy(){
     html += "<h5 class='strong'>" + taxon.TaxonName + "</h5><i class='small'>" + taxon.Author + "</i>"
   } //end loop
   globals.taxonomyPanel.setContent(html)
+  if (globals.openTaxPanel){
+    globals.taxonomyPanel.open()
+  }else{
+    globals.taxonomyPanel.close()
+  }
   movePanelToFront(globals.taxonomyPanel._container)
 }
 
@@ -785,6 +878,8 @@ function displayTaxonomy(){
 // })
 
 function getSiteDetails(siteid){
+  //make sure the popup is open
+  globals.activeSiteID = siteid //so we can catch it later
   var endpoint = "http://api.neotomadb.org/v1/data/datasets?siteid="
   var url = endpoint + siteid
   url += "&taxonname=" + globals.taxon
@@ -807,6 +902,9 @@ function getSiteDetails(siteid){
 
 function displaySiteDetails(details){
   //make sure the popup will open correctly
+  if (details.length == 0){
+    return
+  }
   site = details[0]['Site']
   siteLat = site['LatitudeNorth'] + site['LatitudeSouth'] / 2
   siteLng = site['LongitudeWest'] + site['LongitudeEast'] / 2
@@ -886,8 +984,22 @@ function displaySiteDetails(details){
   }
   html += "</div>"
   globals.sitePanel.setContent(html)
+  if (globals.openSitePanel){
+    globals.sitePanel.open()
+  }else{
+    globals.sitePanel.close()
+  }
+
   $(".leaflet-control-dialog-contents").scrollTop(0)
   movePanelToFront(globals.sitePanel._container)
+  //make sure the popup is open, in case it was called by url
+  for (var i=0; i< globals.siteMarkers.length; i++){
+    siteMarkerID = globals.siteMarkers[i].siteID
+    if (siteMarkerID == globals.activeSiteID){
+      globals.siteMarkers[i].openPopup()
+      break
+    }
+  }
 }
 
 function setTimelinePoints(data){
@@ -948,6 +1060,11 @@ function makeBaseNicheViewerPanel(){
   html += "<div id='nv-chart'>"
   html += "</div>"
   globals.nvPanel.setContent(html)
+  if (globals.openNVPanel){
+    globals.nvPanel.open()
+  }else{
+    globals.nvPanel.close()
+  }
   $(".leaflet-control-dialog-contents").scrollTop(0)
   movePanelToFront(globals.nvPanel._container)
 }
@@ -971,3 +1088,213 @@ function updateTime(){
 function numberWithCommas(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
+
+function generateShareURI(){
+  //document all of the components of the current configuration so we can share it as a URI
+  hostname = new URI().hostname() //do this so we don't pick up anything old
+  protocol = new URI().protocol()
+  port = new URI().port()
+  uri = new URI({
+    hostname:hostname,
+    protocol:protocol,
+    port: port
+  })
+  //get the name of what we're looking at
+  taxon = globals.taxon
+  uri.addQuery('taxon', taxon)
+  //get the map center and zoom
+  center = globals.map.map.getCenter()
+  lat = center['lat']
+  lng = center['lng']
+  zoom = globals.map.map.getZoom()
+  uri.addQuery('lat', lat)
+  uri.addQuery('lng', lng)
+  uri.addQuery('zoom', zoom)
+  //get time extent
+  minyear = Math.round(globals.minYear)
+  maxyear = Math.round(globals.maxYear)
+  uri.addQuery('minYear', minyear)
+  uri.addQuery('maxYear', maxyear)
+  //get UI open components
+  taxonomyIsOpen = globals.taxonomyPanel.isOpen
+  nvIsOpen = globals.nvPanel.isOpen
+  sitesIsOpen = globals.sitePanel.isOpen
+  uri.addQuery('sitePanel', sitesIsOpen)
+  uri.addQuery('nvPanel', nvIsOpen)
+  uri.addQuery('taxonomyPanel',taxonomyIsOpen)
+  //site panel only makes sense to be open if there are details about that site in it
+  if (sitesIsOpen){
+    activeSiteID = globals.activeSiteID
+    uri.addQuery('activeSiteID', activeSiteID)
+  }
+  //get layers on the map
+  siteLayerVisible = globals.showSites
+  iceLayerIsVisible = globals.showIce
+  heatmapIsVisible = globals.showHeat
+  uri.addQuery('showSites', siteLayerVisible)
+  uri.addQuery('showIce', iceLayerIsVisible)
+  uri.addQuery('showHeat', heatmapIsVisible)
+  //could generate a uniqueID here
+  shareID = generateShareID()
+  uri.addQuery('shareid',shareID)
+  uri.normalizeQuery()
+  console.log(uri)
+  return uri
+}
+
+
+function generateShareID() {
+  //not really necessary now, but we could have a db on the backend that uses this, so put it in now
+    return ("00000" + (Math.random()*Math.pow(36,5) << 0).toString(36)).slice(-5)
+}
+
+function processQueryString(){
+  //called on load to process any variables that have been passed in through the url
+  //set global variables, then call load()
+  globals.autoload = false //if this is true, we automatically do the search to neotoma
+  taxon = getURLParameterByName('taxon')
+  if (taxon){
+    globals.taxon = taxon
+    //set the name in the search box
+    $("#searchBar").val(taxon.toProperCase())
+    globals.autoload = true;
+  }
+  minyear = getURLParameterByName('minYear')
+  if (minyear){
+    if (!isNaN(+minyear)){
+          globals.minYear = +minyear
+    }else{
+      globals.minYear = -75
+    }
+  }else{
+    globals.minYear = -75
+  }
+
+  maxyear = getURLParameterByName('maxYear')
+  if (maxyear){
+    if (!isNaN(+maxyear)){
+      globals.maxYear = +maxyear
+    }else{
+      globals.maxYear = 22000
+    }
+  }else{
+    globals.maxYear = 22000
+  }
+  //initialize some stuff.  This could go elsewhere, but other inits happen here, so we will leave it here
+  globals.map.layers = {}
+  globals.TotalField = "Total" //this is a default only --> no way to change it in the app
+  globals.data = []
+  globals.siteLayer = L.layerGroup();
+  globals.iceSheets = L.layerGroup();
+  globals.sitesVisible = true;
+  globals.siteMarkers = []
+
+  //default panel opening
+  //default is off
+  sitePanelOn = getURLParameterByName('sitePanel')
+  if(sitePanelOn == 'true'){
+    globals.openSitePanel = true
+    //if this is true, there should be an activeSiteID param too
+    activeSiteID = getURLParameterByName('activeSiteID')
+    if (activeSiteID){
+      if ((!isNaN(activeSiteID)) && (+activeSiteID > 0)){
+        globals.activeSiteID = activeSiteID
+        getSiteDetails(globals.activeSiteID)
+      }else{
+        globals.activeSiteID = null
+        globals.openSitePanel = false //don't allow auto open unless an id is set
+      }
+    }else{
+      globals.activeSiteID = null
+      globals.openSitePanel = false //don't allow auto open unless an id is set
+    }
+  }else{
+    globals.openSitePanel = false;
+  }
+
+  nvPanelOn = getURLParameterByName('nvPanel')
+  if(nvPanelOn == 'true'){
+    globals.openNVPanel = true
+  }else{
+    globals.openNVPanel = false;
+  }
+
+  taxonomyPanelOn = getURLParameterByName('taxonomyPanel')
+  if(taxonomyPanelOn == 'true'){
+    globals.openTaxPanel = true
+  }else{
+    globals.openTaxPanel = false
+  }
+
+  //get map view
+  centerLat = getURLParameterByName('lat')
+  if (centerLat){
+    if (!isNaN(+centerLat)){
+      globals.centerLat = centerLat
+    }else{
+        globals.centerLat = 39.828175
+    }
+  }else{
+    globals.centerLat = 39.828175
+  }
+  centerLng = getURLParameterByName('lng')
+  if (centerLng){
+    if (!isNaN(+centerLng)){
+      globals.centerLng = centerLng
+    }else{
+      globals.centerLng = -98.5795
+    }
+
+  }else{
+    globals.centerLng = -98.5795
+  }
+  zoom = getURLParameterByName('zoom')
+  if (zoom){
+    if (!isNaN(+zoom)){
+      globals.zoom = zoom
+    }else{
+      globals.zoom = 3
+    }
+  }else{
+    globals.zoom = 3
+  }
+
+  showIce = getURLParameterByName("showIce")
+  if (showIce == "false"){
+    globals.showIce = false
+  }else{
+    globals.showIce = true
+  }
+
+  showHeat = getURLParameterByName('showHeat')
+  if (showHeat == 'false'){
+    globals.showHeat = false
+  }else{
+    globals.showHeat = true
+  }
+  showSites = getURLParameterByName('showSites')
+  if (showSites == 'false'){
+    globals.showSites = false;
+  }else{
+    globals.showSites = true;
+  }
+
+  //go!
+  if (globals.autoload){
+    $("#searchButton").trigger('click'); //load the map components
+  }
+}
+
+function getURLParameterByName(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+String.prototype.toProperCase = function () {
+    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+};

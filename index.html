@@ -71,6 +71,23 @@
 
   </div>
 
+
+  <!-- Small modal -->
+<div class="modal fade bs-example-modal-sm" tabindex="-1" id='share-modal' role="dialog" aria-labelledby="mySmallModalLabel">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <h4 class="modal-title" id="myModalLabel">Share URL</h4>
+      <div class='modal-body'>
+        <textarea id='share-link' style='width:100%; min-height:150px' readonly>http://paleo.geography.wisc.edu</textarea>
+      </div>
+    <div class="modal-footer">
+         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+       </div>
+    </div>
+  </div>
+</div>
+
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.3/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'></script>
@@ -87,6 +104,7 @@
   <script src='lib/tip.js'></script>
   <script src='lib/onResize.js'></script>
   <script src='js/nicheviewer.js'></script>
+  <script src='lib/URI.js'></script>
   <script src='js/main.js'></script>
 
 </body>
