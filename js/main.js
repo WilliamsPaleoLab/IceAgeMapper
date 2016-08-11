@@ -168,9 +168,11 @@ function createToolbar(){
         //generate the share url string
         uri = generateShareURI()
         uriString = uri.toString()
+        //shortenURL(uriString)
         //set it so its visible to the user
         $("#share-link").text(uriString)
         $("#share-modal").modal('show')
+        $("#share-link").select()
       }
   })
 
@@ -1298,3 +1300,29 @@ function getURLParameterByName(name, url) {
 String.prototype.toProperCase = function () {
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 };
+
+
+
+
+function copyLinkToClipboard() {
+	  // create hidden text element, if it doesn't already exist
+   $("#share-link").focus()
+   var succeed;
+   try{
+     succeed = document.execCommand("copy")
+   }catch(e){
+     succeed = false
+     console.log(e)
+   }
+   return succeed
+}
+
+//social media sharing of the share link
+$("#copyToClipboard").on('click', function(){
+  copyLinkToClipboard()
+})
+
+
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
