@@ -216,9 +216,7 @@ function createLayerController(){
   //control add/remove events for the different layers by setting a global variable we can access later
   globals.map.map.on('overlayadd', function(e){
     if (e.name == "Icesheets"){
-      console.log("Turning on icesheets")
       globals.showIce = true
-      styleIceSheets()
     }
     if (e.name == "Sites"){
       globals.showSites = true
@@ -352,8 +350,8 @@ function createTimeline(){
     globals.timeTop = svg.append('line')
       .attr('x1', 0)
       .attr('x2', 10)
-      .attr('y1', 0)
-      .attr('y2', 0)
+      .attr('y1', globals.timeScale(globals.minYear))
+      .attr('y2', globals.timeScale(globals.minYear))
       .style('stroke', 'black')
       .style('stroke-width', 5)
       .style('stroke-opacity', 0.5)
@@ -362,8 +360,8 @@ function createTimeline(){
     globals.timeBottom = svg.append('line')
       .attr('x1', 0)
       .attr('x2', 10)
-      .attr('y1', 250)
-      .attr('y2', 250)
+      .attr('y1', globals.timeScale(globals.maxYear))
+      .attr('y2', globals.timeScale(globals.maxYear))
       .style('stroke', 'black')
       .style('stroke-width', 5)
       .style('stroke-opacity', 0.5)
@@ -594,6 +592,10 @@ function updateHeatmap(){
   globals.heat.setLatLngs(dataset);
   globals.heat.redraw();
   globals.map.layerController.addOverlay(globals.heat, "Heatmap") //add layer to controller
+  updateControlID()
+  if(!globals.showHeat){
+    $("#Heatmap_control").trigger('click')
+  }
 }//end update heat function
 
 function updatePropSymbols(){
@@ -677,6 +679,10 @@ function updateSites(){
     globals.map.map.removeLayer(globals.siteLayer);
   }
   globals.map.layerController.addOverlay(globals.siteLayer, "Sites")
+  updateControlID()
+  if (!globals.showSites){
+    $("#Sites_control").trigger('click')
+  }
 } //end update sites function
 
 function removeSites(){
@@ -715,7 +721,6 @@ function loadIceSheets(){
     },
     success: function(response){
       //load the icesheets
-      console.log("Got icesheet data.")
       displayIceSheets(response)
     }
   })
@@ -735,6 +740,18 @@ function isVisible(layerName){
     }
   }
   return visible
+}
+
+function updateControlID(){
+  controls = $(".leaflet-control-layers-selector")
+  selectorDiv = $(".leaflet-control-layers-overlays")
+  labs = selectorDiv.find("span")
+  inputs = selectorDiv.find("input")
+  visible = true
+  for (var i =0; i< labs.length; i++){
+    lab = $(labs[i]).text().replace(" ", "")
+    $(inputs[i]).attr('id', lab + "_control")
+  }
 }
 
 function setVisibleBox(layerName){
@@ -771,15 +788,14 @@ function unsetVisibleBox(layerName){
 function displayIceSheets(data){
     globals.iceSheets = L.geoJson(data).addTo(globals.map.map)
     globals.map.layerController.addOverlay(globals.iceSheets, "Icesheets")
+    updateControlID()
     styleIceSheets()
     if (!globals.showIce){
-      //unsetVisibleBox("Icesheets")
+      $("#Icesheets_control").trigger('click')
     }
 }
 
 function styleIceSheets(){
-  if (globals.showIce){
-    console.log("ice sheets display on")
     globals.iceSheets.eachLayer(function(layer){
       if ((layer.feature.properties.Age >= globals.minYear)
       && (layer.feature.properties.Age <= globals.maxYear)){
@@ -789,16 +805,6 @@ function styleIceSheets(){
         layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
       }
     })
-  }else{
-    console.log("Ice sheets display off")
-    globals.iceSheets.eachLayer(function(layer){
-        layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
-    })
-
-    globals.map.layerController.removeLayer("Icesheets")
-    unsetVisibleBox("Icesheets")
-  }
-
   globals.iceSheets.bringToBack();
 }
 
@@ -1142,15 +1148,14 @@ function generateShareURI(){
   uri.addQuery('showIce', iceLayerIsVisible)
   uri.addQuery('showHeat', heatmapIsVisible)
   //could generate a uniqueID here
-  shareID = generateShareID()
-  uri.addQuery('shareid',shareID)
+  // shareID = generateShareID()
+  // uri.addQuery('shareid',shareID)
   uri.normalizeQuery()
   console.log(uri)
   return uri
 }
 
-
-function generateShareID() {
+function generateID() {
   //not really necessary now, but we could have a db on the backend that uses this, so put it in now
     return ("00000" + (Math.random()*Math.pow(36,5) << 0).toString(36)).slice(-5)
 }
