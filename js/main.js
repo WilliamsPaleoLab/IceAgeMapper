@@ -1093,14 +1093,8 @@ function numberWithCommas(x) {
 
 function generateShareURI(){
   //document all of the components of the current configuration so we can share it as a URI
-  hostname = new URI().hostname() //do this so we don't pick up anything old
-  protocol = new URI().protocol()
-  port = new URI().port()
-  uri = new URI({
-    hostname:hostname,
-    protocol:protocol,
-    port: port
-  })
+  uri = new URI()
+
   //get the name of what we're looking at
   taxon = globals.taxon
   uri.addQuery('taxon', taxon)
