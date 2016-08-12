@@ -55,7 +55,7 @@ $(document).ready(function(){
 function load(){
   createMap(); // load the leaflet map
   loadTaxaFromNeotoma(createSearchWidget) // load the taxa endpoint from neotoma and create an autocomplete search out of it
-  //createHeatmapLayer() // create a blank layer that we can load into later
+  createHeatmapLayer() // create a blank layer that we can load into later
   createTimeline();
   loadIceSheets()
 }
@@ -469,7 +469,7 @@ function loadOccurrenceData(taxon){
         globals.taxonid = data['data'][0]['TaxonID']
         $("#loading").slideUp()
          //determine what to do with the data
-         createHeatmapLayer();
+         //createHeatmapLayer();
          updateHeatmap()
          updateSites()
          getTaxonomy()
@@ -567,7 +567,7 @@ function createHeatmapLayer(){
   //create a blank heatmap layer
   //remove from layer control if its already defined
   //create the heatmap layer
-  var heat = L.idwLayer([], globals.heatOptions);
+  var heat = L.idwLayer([[0, 0, 0]], globals.heatOptions);
   heat.addTo(globals.map.map);
   globals.map.layers['Heatmap'] = heat;
   globals.heat = heat;
@@ -602,6 +602,9 @@ function updateHeatmap(){
   if(!globals.showHeat){
     $("#Heatmap_control").trigger('click')
   }
+  // globals.iceSheets.bringToFront();
+  // bringMarkersToFront()
+  //L.heat.bringToBack();
 }//end update heat function
 
 function updatePropSymbols(){
@@ -692,6 +695,7 @@ function updateSites(){
   if (!globals.showSites){
     $("#Sites_control").trigger('click')
   }
+  bringMarkersToFront()
 } //end update sites function
 
 function removeSites(){
@@ -733,6 +737,13 @@ function loadIceSheets(){
       displayIceSheets(response)
     }
   })
+}
+
+function bringMarkersToFront(){
+  for (var i=0; i< globals.siteMarkers.length; i++){
+    marker = globals.siteMarkers[i];
+    marker.bringToFront()
+  }
 }
 
 function isVisible(layerName){
