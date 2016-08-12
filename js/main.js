@@ -9,11 +9,11 @@ globals.currentNVXSource = "Community Climate System Model (CCSM)"
 globals.currentNVYSource = "Community Climate System Model (CCSM)"
 
 
-heatOptions = {
-  radius: 17,
-  minOpacity: 0.5,
-  max: 100,
-  blur: 30,
+globals.heatOptions = {
+  opacity: 0.3,
+  maxZoom: 8,
+  cellSize: 100,
+  exp: 2,
 }
 
 siteMarkerOptions = {
@@ -55,7 +55,7 @@ $(document).ready(function(){
 function load(){
   createMap(); // load the leaflet map
   loadTaxaFromNeotoma(createSearchWidget) // load the taxa endpoint from neotoma and create an autocomplete search out of it
-  createHeatmapLayer() // create a blank layer that we can load into later
+  //createHeatmapLayer() // create a blank layer that we can load into later
   createTimeline();
   loadIceSheets()
 }
@@ -227,7 +227,6 @@ function createLayerController(){
   })
   globals.map.map.on('overlayremove', function(e){
     if (e.name == "Icesheets"){
-      console.log("Turning off icesheets")
       globals.showIce = false
     }
     if (e.name == "Sites"){
@@ -245,7 +244,6 @@ function loadTaxaFromNeotoma(callback){
   //load all of the vascular plant taxa from the neotoma database
   $.ajax("http://api.neotomadb.org/v1/data/taxa?taxagroup=VPL", {
     beforeSend: function(){
-      console.log(this.url)
       $("#loading").show();
     },
     dataType: "jsonp",
@@ -255,8 +253,6 @@ function loadTaxaFromNeotoma(callback){
       console.log(error)
     },
     success: function(data){
-      console.log("Success!")
-      console.log(data)
       if (data['success']){
         if (callback){
           callback(data['data'])
@@ -271,7 +267,6 @@ function loadTaxaFromNeotoma(callback){
 
 function createSearchWidget(jsonResponse){
   names = _.pluck(jsonResponse, 'TaxonName')
-  console.log(names)
   var input = document.getElementById("searchBar");
   var awesomplete = new Awesomplete(input, {
     minChars: 0,
@@ -445,9 +440,15 @@ function loadOccurrenceData(taxon){
   globals.taxon =taxon
   $("#loading").show()
   loc = "-167.276413,5.49955,-52.23304,83.162102"
-  $.ajax("http://apidev.neotomadb.org/v1/data/pollen?taxonname=" + taxon + "&bbox=" + loc, {
+  url = "http://apidev.neotomadb.org/v1/data/pollen?taxonname="
+  url += taxon
+  url += "&bbox=" + loc
+  if (globals.aggType == "base"){
+    console.log("Aggregating is in alpha development.")
+    url += "&nametype=base"
+  }
+  $.ajax(url, {
      beforeSend: function(){
-       console.log(this.url)
        $("#loading").slideDown()
      },
      error: function(xhr, status, error){
@@ -459,9 +460,7 @@ function loadOccurrenceData(taxon){
      dataType: "jsonp",
      success: function(data){
        if (data['success']){
-         console.log("Success!")
         globals.data = data['data']
-        console.log(data['data'])
         if (data['data'].length == 0){
           alert("No results were returned.")
           $("#loading").slideUp()
@@ -470,6 +469,7 @@ function loadOccurrenceData(taxon){
         globals.taxonid = data['data'][0]['TaxonID']
         $("#loading").slideUp()
          //determine what to do with the data
+         createHeatmapLayer();
          updateHeatmap()
          updateSites()
          getTaxonomy()
@@ -554,9 +554,7 @@ function getNicheData(dataset, getModern){
       $("#loading").text("Getting niche data...")
     },
     success: function(response){
-      console.log("Got response!")
       globals.NVData = response.data
-      console.log(response)
       makeNicheViewer()
       updateNicheViewerControls()
       $("#loading").slideUp()
@@ -567,8 +565,9 @@ function getNicheData(dataset, getModern){
 
 function createHeatmapLayer(){
   //create a blank heatmap layer
-  console.log("Creating heatmap layer.")
-  var heat = L.heatLayer([], heatOptions);
+  //remove from layer control if its already defined
+  //create the heatmap layer
+  var heat = L.idwLayer([], globals.heatOptions);
   heat.addTo(globals.map.map);
   globals.map.layers['Heatmap'] = heat;
   globals.heat = heat;
@@ -583,13 +582,18 @@ function updateHeatmap(){
     return ((+d.Age > globals.minYear) && (+d.Age <= globals.maxYear));
   })
   dataset = _.map(dataset, function(d){
-    pollenPercentage = (d['Value'] / d[globals.TotalField]) * 100
+    if (d[globals.TotalField] != null){
+      pollenPercentage = (d['Value'] / d[globals.TotalField]) * 100
+    }else{
+      pollenPercentage = 0
+    }
     return [(+d.LatitudeNorth + +d.LatitudeSouth)/2, (+d.LongitudeEast + +d.LongitudeWest)/2, pollenPercentage];
   })
-  //remove from layer control if its already defined
+
   if (globals.heat != undefined){
     globals.map.layerController.removeLayer(globals.heat)
   }
+
   globals.heatmapData = dataset;
   globals.heat.setLatLngs(dataset);
   globals.heat.redraw();
@@ -612,7 +616,11 @@ function updatePropSymbols(){
     if ((age >= globals.minYear) && (age <= globals.maxYear)){
       siteID = s.SiteID
       name = s.SiteName
-      pct = s.Value / s[globals.TotalField] * 100
+      if (s[globals.TotalField] != null){
+        pct = s.Value / s[globals.TotalField] * 100
+      }else{
+        pct = 0
+      }
       lat = (s.LatitudeSouth + s.LatitudeNorth) / 2
       lng = (s.LongitudeEast + s.LongitudeWest) / 2
       opts = psOptions
@@ -624,6 +632,7 @@ function updatePropSymbols(){
     }
     psLayerGroup = L.layerGroup(propSymbols).addTo(globals.map.map)
   }
+
 
 }
 function updateSites(){
@@ -662,7 +671,6 @@ function updateSites(){
     l.siteID = sites[i].siteID
     siteLayer.push(l)
     l.on('click', function(){
-      console.log(this)
       var siteid = this._latlng.alt
       getSiteDetails(siteid);
       globals.map.map.setView(this._latlng)
@@ -674,7 +682,6 @@ function updateSites(){
   //hackiest thing ever
     //but its fine
   globals.sitesVisible = globals.showSites
-  console.log("Sites are visible: " + globals.sitesVisible);
   globals.map.layerController.removeLayer(globals.siteLayer)
   globals.siteLayer = L.layerGroup(siteLayer).addTo(globals.map.map)
   if (!globals.sitesVisible){
@@ -898,7 +905,6 @@ function displayTaxonomy(){
 
 function getSiteDetails(siteid){
   //make sure the popup is open
-  console.log("Getting site details")
   globals.activeSiteID = siteid //so we can catch it later
   var endpoint = "http://api.neotomadb.org/v1/data/datasets?siteid="
   var url = endpoint + siteid
@@ -911,18 +917,15 @@ function getSiteDetails(siteid){
       console.log(error)
     },
     success: function(response){
-      console.log("Got site details.")
       displaySiteDetails(response['data'])
     },
     beforeSend: function(){
-      console.log("Sending site details request.")
     }
   })
 }
 
 function displaySiteDetails(details){
   //make sure the popup will open correctly
-  console.log("Got Site Details")
   globals.openSitePanel = true
   if (details.length == 0){
     return
@@ -966,7 +969,12 @@ function displaySiteDetails(details){
       if ((thisAge == null) || (thisAge == undefined)){
         thisAge = (occ.AgeOlder + occ.AgeYounger)/2
       }
-      pct = (occ.Value / occ[globals.TotalField]) * 100
+      if (occ[globals.TotalField] != null){
+        pct = (occ.Value / occ[globals.TotalField]) * 100
+      }else{
+        pct = 0
+      }
+
       obj = {age: thisAge, value: pct, id:occ.SampleID}
       ages.push(obj)
     }
@@ -1006,13 +1014,10 @@ function displaySiteDetails(details){
   }
   html += "</div>"
   globals.sitePanel.setContent(html)
-  console.log("Got to set content")
   if (globals.openSitePanel){
-    console.log("Opening")
     globals.sitePanel.open()
   }else{
     globals.sitePanel.close()
-    console.log("Closing")
   }
 
   $(".leaflet-control-dialog-contents").scrollTop(0)
@@ -1028,7 +1033,6 @@ function displaySiteDetails(details){
 }
 
 function setTimelinePoints(data){
-  console.log(data)
   d3.selectAll(".tl-point").remove()
   d3.select("#timeline").select("svg").selectAll(".tl-point")
     .data(data)
@@ -1098,7 +1102,6 @@ function onAllPanelResized(){
   newNVWidth = $(globals.nvPanel._container).width()
   newNVHeight = $(globals.nvPanel._container).height()
   if ((newNVHeight != globals.nvHeight) || (newNVWidth != globals.nvWidth)){
-    console.log("Will updated.")
     makeNicheViewer()
   }
 }
@@ -1159,7 +1162,6 @@ function generateShareURI(){
   // shareID = generateShareID()
   // uri.addQuery('shareid',shareID)
   uri.normalizeQuery()
-  console.log(uri)
   return uri
 }
 
@@ -1202,11 +1204,9 @@ function processQueryString(){
   }
   //initialize some stuff.  This could go elsewhere, but other inits happen here, so we will leave it here
   globals.map.layers = {}
-  globals.TotalField = "Total" //this is a default only --> no way to change it in the app
   globals.data = []
   globals.siteLayer = L.layerGroup();
   globals.iceSheets = L.layerGroup();
-  globals.sitesVisible = true;
   globals.siteMarkers = []
 
   //default panel opening
@@ -1299,6 +1299,83 @@ function processQueryString(){
     globals.showSites = true;
   }
 
+  //advanced parameters.  There are no GUI elements to change these, yet, but it gives the option to change if desired
+  sumField = getURLParameterByName("sumField")
+  if (sumField){
+    sumField = sumField.toLowerCase()
+    if(sumField == "total"){
+      globals.TotalField = "Total"
+    }else if (sumField == 'uphe'){
+      globals.TotalField = "UPHE"
+    }else if (sumField == "unid"){
+      globals.TotalField = "UNID"
+    }else if (sumField == "upbr"){
+      globals.TotalField = "UPBR"
+    }else if (sumField == "fung"){
+      globals.TotalField = "FUNG"
+    }else if (sumField == "trsh"){
+      globals.TotalField = "TRSH"
+    }else if (sumField == "aqvp"){
+      globals.TotalField = "AQVP"
+    }else if (sumField == "aqbr"){
+      globals.TotalField = "AQBR"
+    }else if (sumField == "vacr"){
+      globals.TotalField = "VACR"
+    }else if (sumField == "anac"){
+      globals.TotalField = "ANAC"
+    }else if (sumField == "palm"){
+      globals.TotalField = "PALM"
+    }else if (sumField == "succ"){
+      globals.TotalField = "SUCC"
+    }else{
+      globals.TotalField = "Total"
+    }
+  }else{
+    globals.TotalField = "Total"
+  }
+
+  //single taxon or aggregate down?
+  aggType = getURLParameterByName("aggType")
+  if (aggType){
+    if (aggType == "single"){
+      globals.aggType = "single"
+    }else if ((aggType == "base") || (aggType == "multiple")){
+      globals.aggType = "base"
+    }else{
+      globals.aggType = "base"
+    }
+  }else{
+    globals.aggType = "single"
+  }
+  //heatmap options
+
+  heatMax = getURLParameterByName("heatMax")
+  if(heatMax){
+    if (!isNaN(parseFloat(heatMax))){
+      globals.heatMax = heatMax
+    }else{
+      globals.heatMax = 100
+    }
+  }else{
+    globals.heatMax = 100
+  }
+
+  globals.heatOptions['max'] = globals.heatMax
+
+  heatCellSize = getURLParameterByName("heatCellSize")
+  if(heatMax){
+    if (!isNaN(parseFloat(heatCellSize))){
+      globals.heatCellSize = heatCellSize
+    }else{
+      globals.heatCellSize = 100
+    }
+  }else{
+    globals.heatCellSize = 100
+  }
+  globals.heatOptions['cellSize'] = globals.heatCellSize
+
+
+
   //go!
   if (globals.autoload){
     $("#searchButton").trigger('click'); //load the map components
@@ -1330,7 +1407,6 @@ function copyLinkToClipboard() {
      succeed = document.execCommand("copy")
    }catch(e){
      succeed = false
-     console.log(e)
    }
    return succeed
 }
@@ -1347,14 +1423,12 @@ $(function () {
 
 
 function generateTwitterLink(){
-  console.log("Generating.")
   var twitterURL = new URI("http://twitter.com/share/")
   twitterURL.addQuery("url", globals.shareURI)
   twitterURL.addQuery("text", "Check out my Ice Age Map!")
   twitterURL.addQuery("hashtags", "paleo")
   twitterURL = twitterURL.toString()
   $(".twitter-share-button").attr("href", twitterURL)
-  console.log(twitterURL)
 }
 
 function generateEmailLink(){
