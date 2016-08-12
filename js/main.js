@@ -474,7 +474,9 @@ function loadOccurrenceData(taxon){
          updateSites()
          getTaxonomy()
          setTimelinePoints(data['data'])
-         globals.sitePanel.close()
+         if (!globals.openSitePanel){
+           globals.sitePanel.close()
+         }
          //globals.nvPanel.close()
          //NicheViewer stuff
          //make fake nv data (for now)
@@ -896,6 +898,7 @@ function displayTaxonomy(){
 
 function getSiteDetails(siteid){
   //make sure the popup is open
+  console.log("Getting site details")
   globals.activeSiteID = siteid //so we can catch it later
   var endpoint = "http://api.neotomadb.org/v1/data/datasets?siteid="
   var url = endpoint + siteid
@@ -908,8 +911,8 @@ function getSiteDetails(siteid){
       console.log(error)
     },
     success: function(response){
+      console.log("Got site details.")
       displaySiteDetails(response['data'])
-
     },
     beforeSend: function(){
       console.log("Sending site details request.")
@@ -919,6 +922,8 @@ function getSiteDetails(siteid){
 
 function displaySiteDetails(details){
   //make sure the popup will open correctly
+  console.log("Got Site Details")
+  globals.openSitePanel = true
   if (details.length == 0){
     return
   }
@@ -1001,10 +1006,13 @@ function displaySiteDetails(details){
   }
   html += "</div>"
   globals.sitePanel.setContent(html)
+  console.log("Got to set content")
   if (globals.openSitePanel){
+    console.log("Opening")
     globals.sitePanel.open()
   }else{
     globals.sitePanel.close()
+    console.log("Closing")
   }
 
   $(".leaflet-control-dialog-contents").scrollTop(0)
