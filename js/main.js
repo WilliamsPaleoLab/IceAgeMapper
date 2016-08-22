@@ -180,8 +180,21 @@ function createToolbar(){
       }
   })
 
+  var advancedAction = L.ToolbarAction.extend({
+    options: {
+      toolbarIcon: {
+        html: "<span class='glyphicon glyphicon-list'></span>",
+        tooltip: 'Advanced Settings',
+        class: 'toolbar-item'
+      }
+    },
+      addHooks: function(){
+        $("#advanced-modal").modal('show')
+      }
+  })
+
   globals.toolbar = new L.Toolbar.Control({
-      actions: [NicheViewerToolAction, SiteToolAction, TaxonomyToolAction, ShareAction], position: 'topright'
+      actions: [NicheViewerToolAction, SiteToolAction, TaxonomyToolAction, ShareAction, advancedAction], position: 'topright'
   }).addTo(globals.map.map);
 
   $("#site-icon").hover(function(){
@@ -1451,4 +1464,40 @@ function generateEmailLink(){
 
 function generateGPlusLink(){
   $(".g-plus").data('href', globals.shareURI)
+}
+
+
+function changeHeatmapSymbology(type){
+  if (type == 'relative'){
+    m = d3.max(globals.heatmapData, function(d){return d[2]})
+    console.log(m)
+      globals.heatOptions = {
+        opacity: 0.3,
+        maxZoom: 8,
+        cellSize: 100,
+        exp: 2,
+        max: m
+      }
+    globals.heat.setOptions(globals.heatOptions)
+  }else if (type == 'absolute'){
+    globals.heatOptions = {
+      opacity: 0.3,
+      maxZoom: 8,
+      cellSize: 100,
+      exp: 2,
+      max: 100
+    }
+    globals.heat.setOptions(globals.heatOptions)
+  }
+}
+//change the heatmap maximum value
+$(".heatmapSymbologyInput").change(function(){
+  val = $(this).val()
+  changeHeatmapSymbology(val)
+})
+
+function changeTotalField(totalField){
+  globals.totalField = totalField
+  updateHeatmap()
+  globals.heat.setOptions(globals.heatOptions)
 }
