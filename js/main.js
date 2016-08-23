@@ -9,6 +9,9 @@ globals.currentNVXSource = "Community Climate System Model (CCSM)"
 globals.currentNVYSource = "Community Climate System Model (CCSM)"
 
 
+//load the idw module
+var idw = require("idw")
+
 globals.heatOptions = {
   opacity: 0.3,
   maxZoom: 8,
@@ -183,7 +186,7 @@ function createToolbar(){
   var advancedAction = L.ToolbarAction.extend({
     options: {
       toolbarIcon: {
-        html: "<span class='glyphicon glyphicon-list'></span>",
+        html: "<img id='advanced-icon' src='images/icons/advanced.svg'/>",
         tooltip: 'Advanced Settings',
         class: 'toolbar-item'
       }
@@ -201,6 +204,11 @@ function createToolbar(){
     $(this).attr("src", "images/icons/here-black.svg")
   }, function(){
     $(this).attr("src", "images/icons/here.svg")
+  })
+  $("#advanced-icon").hover(function(){
+    $(this).attr("src", "images/icons/advanced-black.svg")
+  }, function(){
+    $(this).attr("src", "images/icons/advanced.svg")
   })
 
   $("#tree-icon").hover(function(){
@@ -490,6 +498,7 @@ function loadOccurrenceData(taxon){
          if (!globals.openSitePanel){
            globals.sitePanel.close()
          }
+         globals.geojsonData = GeoJSON.parse(globals.data, {Point: ['LatitudeNorth', 'LongitudeWest']})
          //globals.nvPanel.close()
          //NicheViewer stuff
          //make fake nv data (for now)
