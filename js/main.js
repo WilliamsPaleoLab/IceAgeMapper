@@ -1,16 +1,22 @@
+//This is main.js for IceAgeMapper
+//Author: Scott Farley
+//UW-Madison
+//MIT License
+
+
 globals = {}
 globals.map = {}
 
-globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
-globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
-globals.currentNVXMod = 0
-globals.currentNVYMod = 0
-globals.currentNVXSource = "Community Climate System Model (CCSM)"
-globals.currentNVYSource = "Community Climate System Model (CCSM)"
+// globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
+// globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
+// globals.currentNVXMod = 0
+// globals.currentNVYMod = 0
+// globals.currentNVXSource = "Community Climate System Model (CCSM)"
+// globals.currentNVYSource = "Community Climate System Model (CCSM)"
 
 
 //load the idw module
-var idw = require("idw")
+// var idw = require("idw")
 
 globals.heatOptions = {
   opacity: 0.3,
