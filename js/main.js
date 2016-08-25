@@ -583,7 +583,7 @@ function getNicheData(dataset, getModern){
     },
     success: function(response){
       globals.NVData = response.data
-      makeNicheViewer()
+      //makeNicheViewer()
       updateNicheViewerControls()
       $("#loading").slideUp()
       $("#loading").text("Loading...")
@@ -595,7 +595,7 @@ function createHeatmapLayer(){
   //create a blank heatmap layer
   //remove from layer control if its already defined
   //create the heatmap layer
-  var heat = L.webGLHeatmap({size: 500000,  opacity: 0.15, alphaRange:0.001});
+  var heat = L.webGLHeatmap({size: 300000,  opacity: 0.15, alphaRange:0.001});
   // heat.addTo(globals.map.map);
   globals.map.map.addLayer(heat)
   globals.map.layers['Heatmap'] = heat;
@@ -1142,7 +1142,7 @@ function onAllPanelResized(){
   newNVWidth = $(globals.nvPanel._container).width()
   newNVHeight = $(globals.nvPanel._container).height()
   if ((newNVHeight != globals.nvHeight) || (newNVWidth != globals.nvWidth)){
-    makeNicheViewer()
+    //makeNicheViewer()
   }
 }
 
