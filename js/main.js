@@ -504,7 +504,7 @@ function loadOccurrenceData(taxon){
          if (!globals.openSitePanel){
            globals.sitePanel.close()
          }
-         globals.geojsonData = GeoJSON.parse(globals.data, {Point: ['LatitudeNorth', 'LongitudeWest']})
+         //globals.geojsonData = GeoJSON.parse(globals.data, {Point: ['LatitudeNorth', 'LongitudeWest']})
          //globals.nvPanel.close()
          //NicheViewer stuff
          //make fake nv data (for now)
@@ -595,8 +595,9 @@ function createHeatmapLayer(){
   //create a blank heatmap layer
   //remove from layer control if its already defined
   //create the heatmap layer
-  var heat = L.idwLayer([[0, 0, 0]], globals.heatOptions);
-  heat.addTo(globals.map.map);
+  var heat = L.webGLHeatmap({size: 500000,  opacity: 0.15, alphaRange:0.001});
+  // heat.addTo(globals.map.map);
+  globals.map.map.addLayer(heat)
   globals.map.layers['Heatmap'] = heat;
   globals.heat = heat;
 }
@@ -611,7 +612,7 @@ function updateHeatmap(){
   })
   dataset = _.map(dataset, function(d){
     if (d[globals.TotalField] != null){
-      pollenPercentage = (d['Value'] / d[globals.TotalField]) * 100
+      pollenPercentage = (d['Value'] / d[globals.TotalField])
     }else{
       pollenPercentage = 0
     }
@@ -623,8 +624,8 @@ function updateHeatmap(){
   }
 
   globals.heatmapData = dataset;
-  globals.heat.setLatLngs(dataset);
-  globals.heat.redraw();
+  globals.heat.setData(dataset);
+  // globals.heat.redraw();
   globals.map.layerController.addOverlay(globals.heat, "Heatmap") //add layer to controller
   updateControlID()
   if(!globals.showHeat){
