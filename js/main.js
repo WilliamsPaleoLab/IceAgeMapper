@@ -7,6 +7,7 @@
 globals = {}
 globals.map = {}
 
+
 // globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
 // globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
 // globals.currentNVXMod = 0
@@ -595,7 +596,7 @@ function createHeatmapLayer(){
   //create a blank heatmap layer
   //remove from layer control if its already defined
   //create the heatmap layer
-  var heat = L.webGLHeatmap({size: 300000,  opacity: 0.15, alphaRange:0.001});
+  var heat = L.webGLHeatmap({size:75, units:'px',  opacity: 0.15, alphaRange:0.0001});
   // heat.addTo(globals.map.map);
   globals.map.map.addLayer(heat)
   globals.map.layers['Heatmap'] = heat;
@@ -604,20 +605,62 @@ function createHeatmapLayer(){
 
 function updateHeatmap(){
   //update the data array
-  dataset = _.filter(globals.data, function(d){
+  newData = {}
+  for (var i=0; i< globals.data.length; i++){
+    d = globals.data[i]
     if ((+d.Age == null) || (+d.Age == "")){
       d.Age = (+d.AgeOlder + d.AgeYounger)/2
     }
-    return ((+d.Age > globals.minYear) && (+d.Age <= globals.maxYear));
-  })
-  dataset = _.map(dataset, function(d){
-    if (d[globals.TotalField] != null){
-      pollenPercentage = (d['Value'] / d[globals.TotalField])
+    if (((+d.Age > globals.minYear) && (+d.Age <= globals.maxYear))){
+      add = true
     }else{
-      pollenPercentage = 0
+      add = false
     }
-    return [(+d.LatitudeNorth + +d.LatitudeSouth)/2, (+d.LongitudeEast + +d.LongitudeWest)/2, pollenPercentage];
-  })
+    siteID = d.SiteID
+    if (add){
+      if (newData[siteID] == undefined){
+        newData[siteID] = {
+          sum : 0,
+          data : d
+        }
+      }
+      newData[siteID].sum += (d['Value'] / d[globals.TotalField])
+    }
+  }
+  dataset = new Array()
+  for (i in newData){
+    d = newData[i]
+    pct = d.sum
+    lat = (d.data.LatitudeNorth + d.data.LatitudeSouth)/2
+    lng = (d.data.LongitudeWest + d.data.LongitudeEast) / 2
+    dataset.push([lat, lng, pct])
+  }
+  if (globals.heatmapSymbology == 'relative'){
+    //linear transform the pct field so that 1 is the max
+    pctMax = d3.max(dataset, function(d){return(d[2])})
+    transformScale = d3.scale.linear()
+      .domain([0, pctMax])
+      .range([0, 1])
+    for (var i=0; i<dataset.length; i++){
+      d = dataset[i][2]
+      x = transformScale(d)
+      dataset[i][2] = x
+    }
+  }
+  // dataset = _.filter(globals.data, function(d){
+  //   if ((+d.Age == null) || (+d.Age == "")){
+  //     d.Age = (+d.AgeOlder + d.AgeYounger)/2
+  //   }
+  //   return ((+d.Age > globals.minYear) && (+d.Age <= globals.maxYear));
+  // })
+  // dataset = _.map(dataset, function(d){
+  //   if (d[globals.TotalField] != null){
+  //     pollenPercentage =
+  //   }else{
+  //     pollenPercentage = 0
+  //   }
+  //   return [(+d.LatitudeNorth + +d.LatitudeSouth)/2, (+d.LongitudeEast + +d.LongitudeWest)/2, pollenPercentage];
+  // })
 
   if (globals.heat != undefined){
     globals.map.layerController.removeLayer(globals.heat)
@@ -724,7 +767,7 @@ function updateSites(){
   if (!globals.showSites){
     $("#Sites_control").trigger('click')
   }
-  bringMarkersToFront()
+  //bringMarkersToFront()
 } //end update sites function
 
 function removeSites(){
