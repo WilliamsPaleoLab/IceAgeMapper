@@ -1202,7 +1202,17 @@ function numberWithCommas(x) {
 
 function generateShareURI(){
   //document all of the components of the current configuration so we can share it as a URI
-  uri = new URI()
+  oldURI = new URI()
+  protocol = oldURI.protocol()
+  hostname = oldURI.hostname()
+  port = oldURI.port()
+  path = oldURI.pathname()
+  uri = new URI({
+    protocol: protocol,
+    hostname: hostname,
+    port:port,
+    path: path
+  })
   //get the name of what we're looking at
   taxon = globals.taxon
   if (taxon){
