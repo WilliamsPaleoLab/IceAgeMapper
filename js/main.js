@@ -1712,6 +1712,7 @@ $(".heatmapSymbologyInput").change(function(){
 function changeTotalField(totalField){
   globals.TotalField = totalField
   updateHeatmap()
+  getSiteDetails(globals.activeSiteID)
 }
 
 
@@ -1721,11 +1722,11 @@ function populateTotalFieldDialog(){
                   "LongitudeWest", "LongitudeEast", "SampleID", "SampleID1", "SiteID", "TaxonID", "VariableUnits", "Total", "TaxonName", "SiteName"]
   for (key in workingItem){
     if (reservedFields.indexOf(key) == -1){
-      $("#totalControl").append("<option value=''" + key + "''>" + key + "</option>")
+      $("#totalControl").append("<option value='" + key + "'>" + key + "</option>")
     }
   }
   $("#totalControl").change(function(){
-    newField = $("#totalControl option:selected").text()
+    newField = $("#totalControl option:selected").val()
     changeTotalField(newField)
     console.log("New Field is " + newField)
   })
