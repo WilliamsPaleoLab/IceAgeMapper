@@ -44,7 +44,7 @@ $("#loading").hide()
 
 
 //jquery element functions
-$(document).keypress(function(e){
+$("#searchBar").keypress(function(e){
   //fire new ajax when enter is clicked
     if (e.which == 13){
         $("#searchButton").trigger('click');
@@ -315,12 +315,17 @@ $("#searchButton").click(function(){
 
 function createTimeline(){
   d3.select("#timeline").empty();
-  var margins = {top: 5, left: 30, right: 5, bottom: 5}
+  var margins = {top: 25, left: 30, right: 5, bottom: 100}
   var height = $("#timeline").height() - margins.top - margins.bottom;
   var width = $("#timeline").width() - margins.left - margins.right;
 
   var minYear = -75;
   var maxYear = 22000;
+
+
+  globals.timelineTip = d3.tip()
+    .attr('class', 'd3-tip')
+    .offset([-10, 0])
 
 
   globals.timeScale = d3.scale.linear()
@@ -338,7 +343,7 @@ function createTimeline(){
       .attr('width', width + margins.right + margins.left)
       .attr('height', height + margins.top + margins.bottom)
       .append("g")
-        .attr("transform", "translate(50," + margins.top + ")");
+        .attr("transform", "translate(50," + margins.top + ")")
 
 
   var xAxis = d3.svg.axis()
@@ -358,6 +363,7 @@ function createTimeline(){
          .style("font-size", '16px')
          .text("Years Before Present")
          .attr('transform', 'rotate(-90 -15,' + height / 2 + ')')
+
 
 
     //create the rectangle
@@ -390,7 +396,13 @@ function createTimeline(){
       .style('stroke-opacity', 0.5)
       .attr('cursor', 'ns-resize')
 
+
+      svg.call(globals.timelineTip)
+
+
+
       function onRectDrag(){
+        updateTooltip()
         initY = +globals.timeRect.attr('y')
         initHeight = +globals.timeRect.attr('height')
         dy = d3.event.dy
@@ -409,6 +421,7 @@ function createTimeline(){
         updateTime()
       }
       function onTopDrag(){
+        updateTooltip()
         initY = +globals.timeTop.attr('y1')
         initHeight = +globals.timeRect.attr('height')
         dy = d3.event.dy
@@ -425,8 +438,13 @@ function createTimeline(){
         globals.minYear = globals.timeScale.invert(+globals.timeTop.attr('y1'))
         globals.maxYear = globals.timeScale.invert(+globals.timeBottom.attr('y1'))
         updateTime()
+        //add a tooltip showing what year you're looking at
+        // Define the div for the tooltip
+        formatMinYear = Math.round(globals.minYear)
+
       }
       function onBottomDrag(){
+        updateTooltip()
         initY = +globals.timeTop.attr('y1')
         initBottom = +globals.timeBottom.attr('y1')
         initHeight = +globals.timeRect.attr('height')
@@ -461,7 +479,112 @@ function createTimeline(){
         globals.timeBottom.call(dragBottomLine);
         globals.timeRect.call(dragRect)
 
+
+      //enable tooltips
+      globals.timeTop.on('mouseover', function(){
+          globals.timelineTip.show()
+      })
+      globals.timeTop.on('mouseout', function(){
+        globals.timelineTip.hide()
+      })
+      globals.timeBottom.on('mouseover', function(){
+        globals.timelineTip.show()
+      })
+      globals.timeBottom.on('mouseout', function(){
+        globals.timelineTip.hide()
+      })
+      globals.timeRect.on('mouseover', function(){
+        globals.timelineTip.show()
+      })
+      globals.timeRect.on('mouseout', function(){
+        globals.timelineTip.hide()
+      })
+
+    function updateTooltip(){
+      globals.timelineTip.html(function(d){
+        minYearFormat = numberWithCommas(Math.round(globals.minYear))
+        maxYearFormat = numberWithCommas(Math.round(globals.maxYear))
+        return ("Min Year: " + minYearFormat + "B.P.<br />" + "Max Year: " + maxYearFormat + " B.P.")
+      })
+    }
+    //add skip buttons so you can go without using the slider
+    html = "<div id='timelineControl'>"
+    html += "<input id='minYearSelect' class='input-sm' type='number' value = '" + globals.minYear + "' max='22000' min='-75'>"
+    html += "<br />"
+    html += "<input id='maxYearSelect' class='input-sm' type='number' value = '" + globals.maxYear + "' max='22000' min='-75'>"
+
+    html += "</div>"
+    $("#timeline").append(html)
+    $("#timelineControl").css({
+      "position" : "absolute",
+      "top" : height + 50 + "px",
+      "left" : margins.left + "px"
+    })
+    //calculate width
+    boxWidth = width - margins.right
+    $("#minYearSelect").css({'width': boxWidth + 'px', 'font-size' : '8px'})
+    $("#maxYearSelect").css({'width': boxWidth + 'px', 'font-size' :  '8px'})
+
+    //make the text boxes work
+    $("#minYearSelect").change(function(){
+        minYear = $(this).val()
+        setMinYear(minYear)
+    })
+    //make the text boxes work
+    $("#maxYearSelect").change(function(){
+      maxYear = $(this).val()
+      setMaxYear(maxYear)
+    })
+
+
   //end createTimeline function
+}
+
+function setMinYear(minYear){
+  //sets the global attribute and deals with moving the time rectangle and also the top and bottom drag lines
+  if (minYear > 22000){
+    minYear = 22000
+  }
+  if (minYear < -75){
+    minYear = -75
+  }
+  yearSpan = globals.maxYear - minYear
+  if (yearSpan < 50){
+    yearSpan = 50
+    minYear = +globals.maxYear - 50
+    $("#minYearSelect").val(minYear)
+  }
+  globals.timeTop.attr('y1', globals.timeScale(minYear))
+  globals.timeTop.attr('y2', globals.timeScale(minYear))
+  globals.minYear = minYear
+  heightSpan = globals.timeScale(yearSpan)
+  globals.timeRect.attr('y', globals.timeScale(globals.minYear)).attr('height', heightSpan)
+  //globals.maxYear = globals.timeScale.invert(+globals.timeRect.attr('height'))
+  globals.timeBottom.attr('y1', globals.timeScale(minYear) + heightSpan)
+  globals.timeBottom.attr('y2', globals.timeScale(minYear) + heightSpan)
+  updateTime()
+}
+function setMaxYear(maxYear){
+  ///sets top and bottom lines and rectangle position, then updates the time in the app
+  if (maxYear > 22000){
+    maxYear = 22000
+  }
+  if (maxYear < -75){
+    maxYear = -75
+  }
+  yearSpan = maxYear - globals.minYear
+  if (yearSpan < 50){
+    yearSpan = 50
+    maxYear = +globals.minYear + 50
+    //reset the text box so it knows we did this adjustment
+    $("#maxYearSelect").val(maxYear)
+  }
+  globals.timeBottom.attr('y1', globals.timeScale(maxYear))
+  globals.timeBottom.attr('y2', globals.timeScale(maxYear))
+  globals.maxYear = maxYear
+  heightSpan = globals.timeScale(yearSpan)
+  globals.timeRect.attr('height', heightSpan)
+  updateTime()
 }
 
 function loadOccurrenceData(taxon){
@@ -1194,6 +1317,9 @@ function updateTime(){
   updateSites()
   styleIceSheets()
   updateNicheViewer()
+  //make sure the text boxes get the most recent values of years
+  $("#maxYearSelect").val(Math.round(globals.maxYear))
+  $("#minYearSelect").val(Math.round(globals.minYear))
 }
 
 function numberWithCommas(x) {

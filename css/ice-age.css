@@ -155,8 +155,14 @@ th {
   background: rgba(0, 0, 0, 0.8);
   color: #fff;
   border-radius: 2px;
-  z-index: 101
+  z-index: 101;
+  width: 150px;
 }
+
+#share-link{
+    word-wrap: break-word;
+}
+
 
 /* Creates a small triangle extender for the tooltip */
 .d3-tip:after {
@@ -176,7 +182,4 @@ th {
   margin: -1px 0 0 0;
   top: 100%;
   left: 0;
-}
-#share-link{
-    word-wrap: break-word;
 }
