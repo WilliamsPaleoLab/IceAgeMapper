@@ -315,7 +315,7 @@ $("#searchButton").click(function(){
 
 function createTimeline(){
   d3.select("#timeline").empty();
-  var margins = {top: 25, left: 30, right: 5, bottom: 100}
+  var margins = {top: 25, left: 30, right: 5, bottom: 125}
   var height = $("#timeline").height() - margins.top - margins.bottom;
   var width = $("#timeline").width() - margins.left - margins.right;
 
@@ -331,12 +331,6 @@ function createTimeline(){
   globals.timeScale = d3.scale.linear()
     .domain([minYear, maxYear])
     .range([0, height]);
-
-    var initialMaxYear = Math.round(globals.timeScale.invert(250));
-    //
-    // globals.maxYear = initialMaxYear;
-    // globals.minYear = 0;
-
 
   var svg = d3.select("#timeline")
     .append("svg")
@@ -369,7 +363,7 @@ function createTimeline(){
     //create the rectangle
     globals.timeRect = svg.append('rect')
       .attr('x', 0)
-      .attr('y', 0)
+      .attr('y', globals.timeScale(globals.minYear))
       .attr('height', globals.timeScale(globals.maxYear))
       .attr('width', 5)
       .style('fill', '#3f7e8a')
@@ -507,11 +501,11 @@ function createTimeline(){
         return ("Min Year: " + minYearFormat + "B.P.<br />" + "Max Year: " + maxYearFormat + " B.P.")
       })
     }
-    //add skip buttons so you can go without using the slider
+    //exact control of years
     html = "<div id='timelineControl'>"
-    html += "<input id='minYearSelect' class='input-sm' type='number' value = '" + globals.minYear + "' max='22000' min='-75'>"
+    html += "<input id='minYearSelect' class='input-sm' type='number' value = '" + globals.minYear + "' max='22000' min='-75' data-toggle='tooltip' title='Set the minimum year (Years B.P.)'>"
     html += "<br />"
-    html += "<input id='maxYearSelect' class='input-sm' type='number' value = '" + globals.maxYear + "' max='22000' min='-75'>"
+    html += "<input id='maxYearSelect' class='input-sm' type='number' value = '" + globals.maxYear + "' max='22000' min='-75' data-toggle='tooltip' title='Set the maximum year (Years B.P.)'>"
 
     html += "</div>"
     $("#timeline").append(html)
@@ -521,6 +515,7 @@ function createTimeline(){
       "left" : margins.left + "px"
     })
     //calculate width
+    //we could do this with a popover if this is too small
     boxWidth = width - margins.right
     $("#minYearSelect").css({'width': boxWidth + 'px', 'font-size' : '8px'})
     $("#maxYearSelect").css({'width': boxWidth + 'px', 'font-size' :  '8px'})
@@ -534,6 +529,47 @@ function createTimeline(){
     $("#maxYearSelect").change(function(){
       maxYear = $(this).val()
       setMaxYear(maxYear)
+    })
+
+    //advance in increments using arrows
+    html = "<div id='timelineArrows' class='row'>"
+    html += "<span class='btn btn-lrg glyphicon glyphicon-chevron-left' id='advanceForward' data-toggle='tooltip' title='Advance interval forward'></span>"
+    html += "<span class='btn btn-lrg glyphicon glyphicon-chevron-right'  id='advanceBackwards' data-toggle='tooltip' title='Advance interval backwards'></span>"
+    html += "</div>"
+    $("#timeline").append(html)
+    $("#timelineArrows").css({
+      "position" : "absolute",
+      "top" : height + 100 + "px",
+      "left" : margins.left + "px",
+      'padding' : '5px',
+
+    })
+
+    //make the buttons work
+    $("#advanceForward").on('click', function(){
+      //figure out what new mins and maxes are
+      timeSpan = globals.maxYear - globals.minYear
+      newMin = globals.minYear - timeSpan
+      if (newMin < -75){
+        newMin = -75
+      }
+      newMax = newMin + timeSpan
+      console.log(timeSpan)
+      setMinYear(newMin)
+      setMaxYear(newMax)
+    })
+
+    $("#advanceBackwards").on('click', function(){
+      //figure out what new mins and maxes are
+      timeSpan = globals.maxYear - globals.minYear
+      newMax = globals.maxYear + timeSpan
+      if (newMax > 22000){
+        newMax = 22000
+      }
+      newMin = newMax - timeSpan
+      console.log(timeSpan)
+      setMinYear(newMin)
+      setMaxYear(newMax)
     })
 
 
@@ -598,6 +634,7 @@ function loadOccurrenceData(taxon){
     console.log("Aggregating is in alpha development.")
     url += "&nametype=base"
   }
+  url += "&ageold=22000&ageyoung=-100"
   $.ajax(url, {
      beforeSend: function(){
        $("#loading").slideDown()
@@ -1635,9 +1672,12 @@ $("#copyToClipboard").on('click', function(){
   copyLinkToClipboard()
 })
 
-
+//enable extra bootstrap functionality
 $(function () {
   $('[data-toggle="tooltip"]').tooltip()
+})
+$(function () {
+  $('[data-toggle="popover"]').popover()
 })
 
 
