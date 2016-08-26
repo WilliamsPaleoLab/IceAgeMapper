@@ -125,7 +125,7 @@ function createToolbar(){
   var NicheViewerToolAction = L.ToolbarAction.extend({
       options: {
           toolbarIcon: {
-              html: "<img id='stats-icon'  data-toggle='tooltip' data-title='Open NicheViewer Panel' src='images/icons/stats.svg'/>",
+              html: "<img id='stats-icon'  data-toggle='tooltip' data-title='Open NicheViewer Panel' data-placement='bottom' src='images/icons/stats.svg'/>",
               class:'toolbar-item'
           }
       },
@@ -189,7 +189,7 @@ function createToolbar(){
   var advancedAction = L.ToolbarAction.extend({
     options: {
       toolbarIcon: {
-        html: "<img id='advanced-icon' data-toggle='tooltip' data-title='Advanced Settings' src='images/icons/advanced.svg'/>",
+        html: "<img id='advanced-icon' data-toggle='tooltip' data-title='Advanced Settings' data-placement='top' src='images/icons/advanced.svg'/>",
         class: 'toolbar-item'
       }
     },
