@@ -554,22 +554,21 @@ function createTimeline(){
         newMin = -75
       }
       newMax = newMin + timeSpan
-      console.log(timeSpan)
       setMinYear(newMin)
       setMaxYear(newMax)
     })
 
     $("#advanceBackwards").on('click', function(){
       //figure out what new mins and maxes are
-      timeSpan = globals.maxYear - globals.minYear
-      newMax = globals.maxYear + timeSpan
+      timeSpan = +globals.maxYear - +globals.minYear
+      newMin = +globals.minYear + timeSpan
+      newMax = newMin + timeSpan
       if (newMax > 22000){
         newMax = 22000
       }
-      newMin = newMax - timeSpan
-      console.log(timeSpan)
-      setMinYear(newMin)
+      newMin = +newMax - +timeSpan
       setMaxYear(newMax)
+      setMinYear(newMin)
     })
 
 
@@ -578,6 +577,7 @@ function createTimeline(){
 
 function setMinYear(minYear){
   //sets the global attribute and deals with moving the time rectangle and also the top and bottom drag lines
+  minYear = +minYear
   if (minYear > 22000){
     minYear = 22000
   }
@@ -586,13 +586,14 @@ function setMinYear(minYear){
   }
   yearSpan = globals.maxYear - minYear
   if (yearSpan < 50){
+    console.log("Setting to min value")
     yearSpan = 50
     minYear = +globals.maxYear - 50
     $("#minYearSelect").val(minYear)
   }
   globals.timeTop.attr('y1', globals.timeScale(minYear))
   globals.timeTop.attr('y2', globals.timeScale(minYear))
-  globals.minYear = minYear
+  globals.minYear = +minYear
   heightSpan = globals.timeScale(yearSpan)
   globals.timeRect.attr('y', globals.timeScale(globals.minYear)).attr('height', heightSpan)
   //globals.maxYear = globals.timeScale.invert(+globals.timeRect.attr('height'))
@@ -617,7 +618,7 @@ function setMaxYear(maxYear){
   }
   globals.timeBottom.attr('y1', globals.timeScale(maxYear))
   globals.timeBottom.attr('y2', globals.timeScale(maxYear))
-  globals.maxYear = maxYear
+  globals.maxYear = +maxYear
   heightSpan = globals.timeScale(yearSpan)
   globals.timeRect.attr('height', heightSpan)
   updateTime()
