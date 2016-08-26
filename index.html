@@ -32,7 +32,7 @@
     <div id='floatingTitle'>
       <h3 class='page-header'>Ice Age Mapper <span class='text-muted'><small>v1.0</small></span></h3>
       <input type='text' id='searchBar' placeholder='Search Neotoma...' />
-      <button class='btn' id='searchButton'><span class='glyphicon glyphicon-search'></span></button>
+      <button class='btn' id='searchButton'><span class='glyphicon glyphicon-search' data-toggle='tooltip' data-title="Search"></span></button>
     </div>
 
     <div id='map'>
@@ -136,55 +136,23 @@
     <h4 class="modal-title" id="myModalLabel">Advanced Settings</h4>
     <div class='modal-body'>
       <h4 class='page-header'>Heatmap Symbology</h4>
-      <label>0% - 100%</label><input type='radio' id='absoluteHeatmapSymbology' class='heatmapSymbologyInput form-control' name='heatmapSymbology' value='absolute' checked /><br />
-      <label>Relative (min to max)</label><input type='radio' id='relativeHeatmapSymbology' class='heatmapSymbologyInput form-control'  name='heatmapSymbology' value='relative'/><br />
+      <form class="form-inline">
+      <div class="form-group">
+        <label for="relative">Relative to Maximum:</label>
+        <input type="radio" name='heatmapSymbology' value='relative' id='absoluteHeatmapSymbology' class="form-control heatmapSymbologyInput" >
+      </div>
+      <br />
+      <div class="form-group">
+        <label for="relative">Percent:</label>
+        <input type="radio" name='heatmapSymbology' value='absolute' id='absoluteHeatmapSymbology' class="form-control heatmapSymbologyInput" checked>
+      </div>
+    </form>
       <h4 class='page-header'>Sum Field</h4>
-      <select class='form-control'>
-        <option>
+      <select class='form-control' id='totalControl'>
+        <option value='Total'>
           Total
         </option>
-        <option>
-          UNID
-        </option>
-        <option>
-          UPBR
-        </option>
-        <option>
-          FUNG
-        </option>
-        <option>
-          SEED
-        </option>
-        <option>
-          TRSH
-        </option>
-        <option>
-          MANG
-        </option>
-        <option>
-          AQVP
-        </option>
-        <option>
-          AQBR
-        </option>
-        <option>
-          VACR
-        </option>
-        <option>
-          ANAC
-        </option>
-        <option>
-          SEED
-        </option>
-        <option>
-          PALM
-        </option>
-        <option>
-          SUCC
-        </option>
       </select>
-      <h4 class='page-header'>Heatmap Cell Size</h4>
-      <label>Cell Size:</label><input type='number' class='form-control' id='heatCellSize' />
   </div>
   <div class="modal-footer">
        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

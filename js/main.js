@@ -125,8 +125,7 @@ function createToolbar(){
   var NicheViewerToolAction = L.ToolbarAction.extend({
       options: {
           toolbarIcon: {
-              html: "<img id='stats-icon'  src='images/icons/stats.svg'/>",
-              tooltip: 'Open Niche Viewer Panel',
+              html: "<img id='stats-icon'  data-toggle='tooltip' data-title='Open NicheViewer Panel' src='images/icons/stats.svg'/>",
               class:'toolbar-item'
           }
       },
@@ -139,8 +138,7 @@ function createToolbar(){
   var TaxonomyToolAction = L.ToolbarAction.extend({
       options: {
           toolbarIcon: {
-              html: "<img id='tree-icon'  src='images/icons/hierarchy.svg'/>",
-              tooltip: 'Open Taxonomy Panel',
+              html: "<img id='tree-icon' data-toggle='tooltip' data-title='Open Taxonomy Panel' src='images/icons/hierarchy.svg'/>",
               class:'toolbar-item'
           }
       },
@@ -153,8 +151,7 @@ function createToolbar(){
   var SiteToolAction = L.ToolbarAction.extend({
       options: {
           toolbarIcon: {
-              html: "<img id='site-icon' src='images/icons/here.svg'/>",
-              tooltip: 'Open Site Details Panel',
+              html: "<img id='site-icon' data-toggle='tooltip' data-title='Open Site Details Panel' src='images/icons/here.svg'/>",
               class:'toolbar-item'
           }
       },
@@ -169,8 +166,7 @@ function createToolbar(){
   var ShareAction = L.ToolbarAction.extend({
     options: {
       toolbarIcon: {
-        html: "<img id='share-icon' src='images/icons/share.svg'/>",
-        tooltip: 'Share',
+        html: "<img id='share-icon'  data-toggle='tooltip' data-title='Share your map' src='images/icons/share.svg'/>",
         class: 'toolbar-item'
       }
     },
@@ -193,8 +189,7 @@ function createToolbar(){
   var advancedAction = L.ToolbarAction.extend({
     options: {
       toolbarIcon: {
-        html: "<img id='advanced-icon' src='images/icons/advanced.svg'/>",
-        tooltip: 'Advanced Settings',
+        html: "<img id='advanced-icon' data-toggle='tooltip' data-title='Advanced Settings' src='images/icons/advanced.svg'/>",
         class: 'toolbar-item'
       }
     },
@@ -325,7 +320,12 @@ function createTimeline(){
 
   globals.timelineTip = d3.tip()
     .attr('class', 'd3-tip')
-    .offset([-10, 0])
+    .offset([150, 50])
+    .html(function(d){
+      minYearFormat = numberWithCommas(Math.round(globals.minYear))
+      maxYearFormat = numberWithCommas(Math.round(globals.maxYear))
+      return ("Min Year: " + minYearFormat + "B.P.<br />" + "Max Year: " + maxYearFormat + " B.P.")
+    })
 
 
   globals.timeScale = d3.scale.linear()
@@ -391,12 +391,11 @@ function createTimeline(){
       .attr('cursor', 'ns-resize')
 
 
-      svg.call(globals.timelineTip)
+      //svg.call(globals.timelineTip)
 
 
 
       function onRectDrag(){
-        updateTooltip()
         initY = +globals.timeRect.attr('y')
         initHeight = +globals.timeRect.attr('height')
         dy = d3.event.dy
@@ -415,7 +414,6 @@ function createTimeline(){
         updateTime()
       }
       function onTopDrag(){
-        updateTooltip()
         initY = +globals.timeTop.attr('y1')
         initHeight = +globals.timeRect.attr('height')
         dy = d3.event.dy
@@ -438,7 +436,6 @@ function createTimeline(){
 
       }
       function onBottomDrag(){
-        updateTooltip()
         initY = +globals.timeTop.attr('y1')
         initBottom = +globals.timeBottom.attr('y1')
         initHeight = +globals.timeRect.attr('height')
@@ -474,33 +471,27 @@ function createTimeline(){
         globals.timeRect.call(dragRect)
 
 
-      //enable tooltips
-      globals.timeTop.on('mouseover', function(){
-          globals.timelineTip.show()
-      })
-      globals.timeTop.on('mouseout', function(){
-        globals.timelineTip.hide()
-      })
-      globals.timeBottom.on('mouseover', function(){
-        globals.timelineTip.show()
-      })
-      globals.timeBottom.on('mouseout', function(){
-        globals.timelineTip.hide()
-      })
-      globals.timeRect.on('mouseover', function(){
-        globals.timelineTip.show()
-      })
-      globals.timeRect.on('mouseout', function(){
-        globals.timelineTip.hide()
-      })
+      // //enable tooltips
+      // globals.timeTop.on('mouseover', function(){
+      //     globals.timelineTip.show()
+      // })
+      // globals.timeTop.on('mouseout', function(){
+      //   globals.timelineTip.hide()
+      // })
+      // globals.timeBottom.on('mouseover', function(){
+      //   globals.timelineTip.show()
+      // })
+      // globals.timeBottom.on('mouseout', function(){
+      //   globals.timelineTip.hide()
+      // })
+      // globals.timeRect.on('mouseover', function(){
+      //   globals.timelineTip.show()
+      // })
+      // globals.timeRect.on('mouseout', function(){
+      //   globals.timelineTip.hide()
+      // })
 
-    function updateTooltip(){
-      globals.timelineTip.html(function(d){
-        minYearFormat = numberWithCommas(Math.round(globals.minYear))
-        maxYearFormat = numberWithCommas(Math.round(globals.maxYear))
-        return ("Min Year: " + minYearFormat + "B.P.<br />" + "Max Year: " + maxYearFormat + " B.P.")
-      })
-    }
+
     //exact control of years
     html = "<div id='timelineControl'>"
     html += "<input id='minYearSelect' class='input-sm' type='number' value = '" + globals.minYear + "' max='22000' min='-75' data-toggle='tooltip' title='Set the minimum year (Years B.P.)'>"
@@ -666,6 +657,7 @@ function loadOccurrenceData(taxon){
          if (!globals.openSitePanel){
            globals.sitePanel.close()
          }
+         populateTotalFieldDialog()
          //globals.geojsonData = GeoJSON.parse(globals.data, {Point: ['LatitudeNorth', 'LongitudeWest']})
          //globals.nvPanel.close()
          //NicheViewer stuff
@@ -1705,26 +1697,11 @@ function generateGPlusLink(){
 
 function changeHeatmapSymbology(type){
   if (type == 'relative'){
-    m = d3.max(globals.heatmapData, function(d){return d[2]})
-    console.log(m)
-      globals.heatOptions = {
-        opacity: 0.3,
-        maxZoom: 8,
-        cellSize: 100,
-        exp: 2,
-        max: m
-      }
-    globals.heat.setOptions(globals.heatOptions)
+    globals.heatmapSymbology = 'relative'
   }else if (type == 'absolute'){
-    globals.heatOptions = {
-      opacity: 0.3,
-      maxZoom: 8,
-      cellSize: 100,
-      exp: 2,
-      max: 100
-    }
-    globals.heat.setOptions(globals.heatOptions)
+    globals.heatmapSymbology = 'absolute'
   }
+  updateHeatmap()
 }
 //change the heatmap maximum value
 $(".heatmapSymbologyInput").change(function(){
@@ -1733,7 +1710,23 @@ $(".heatmapSymbologyInput").change(function(){
 })
 
 function changeTotalField(totalField){
-  globals.totalField = totalField
+  globals.TotalField = totalField
   updateHeatmap()
-  globals.heat.setOptions(globals.heatOptions)
+}
+
+
+function populateTotalFieldDialog(){
+  workingItem = globals.data[0]
+  reservedFields = ['Value', "Age", "AgeOlder", "AgeYounger", "Altitude", "DatasetID", "LatitudeNorth", "LatitudeSouth",
+                  "LongitudeWest", "LongitudeEast", "SampleID", "SampleID1", "SiteID", "TaxonID", "VariableUnits", "Total", "TaxonName", "SiteName"]
+  for (key in workingItem){
+    if (reservedFields.indexOf(key) == -1){
+      $("#totalControl").append("<option value=''" + key + "''>" + key + "</option>")
+    }
+  }
+  $("#totalControl").change(function(){
+    newField = $("#totalControl option:selected").text()
+    changeTotalField(newField)
+    console.log("New Field is " + newField)
+  })
 }
