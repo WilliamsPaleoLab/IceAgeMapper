@@ -88,7 +88,7 @@ Lorenz DJ, Nieto-Lugilde D, Blois JL, Fitzpatrick MC, Williams JW (2016) Downsca
 The application is hosted on the University of Wisconsin, Madison campus.
 
 
-#### Release History
+### Release History
 - ```v1.0.1 Beta```  Stable release (Aug 30, 2016).
 
   * GPU/WebGL heatmap improves performance
@@ -101,3 +101,9 @@ The application is hosted on the University of Wisconsin, Madison campus.
 
 - ```v1.0.0 Alpha``` Pre-AMQUA release to the shc server.  
   * Initial Release.
+
+### Contact
+
+This project is part of Scott Farley's Master's Thesis at UW.  Please shoot me an email if you have any comments or suggestions, or wish to collaborate.
+Contact: sfarley2@wisc.edu 
+
