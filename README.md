@@ -79,7 +79,7 @@ P.J Bartlein, K.H Anderson, P.M Anderson, M.E Edwards, C.J Mock, R.S Thompson, R
 </pre>
 
 - **Taxonomy and Site Information**: Neotoma Paleoecological Database.
-- **Climate Model Output**: Climate Model Output used in the NicheViewer portion of the application is derived from global climate model simulations described [here](http://datadryad.org/resource/doi:10.5061/dryad.1597g).  Ciatation:
+- **Climate Model Output**: Climate Model Output used in the NicheViewer portion of the application is derived from global climate model simulations described [here](http://datadryad.org/resource/doi:10.5061/dryad.1597g).  Raw and processed output files are available from the dryad repository. Ciatation:
 <pre>
 Lorenz DJ, Nieto-Lugilde D, Blois JL, Fitzpatrick MC, Williams JW (2016) Downscaled and debiased climate simulations for North America from 21,000 years ago to 2100AD. Scientific Data 3: 160048. http://dx.doi.org/10.1038/sdata.2016.48
 </pre>
@@ -88,4 +88,16 @@ Lorenz DJ, Nieto-Lugilde D, Blois JL, Fitzpatrick MC, Williams JW (2016) Downsca
 The application is hosted on the University of Wisconsin, Madison campus.
 
 
+#### Release History
+- ```v1.0.1 Beta```  Stable release (Aug 30, 2016).
 
+  * GPU/WebGL heatmap improves performance
+  * Exact temporal window sizing
+  * Temporal window jump
+  * Shareable URLs that reflect current application state
+  * Advanced settings for customizing app parameters
+  * Usability Improvements
+  * Bug Fixes
+
+- ```v1.0.0 Alpha``` Pre-AMQUA release to the shc server.  
+  * Initial Release.
