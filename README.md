@@ -67,20 +67,25 @@ GitHub and we welcome anyone to make contributions to the project.
 - **webgl-heatmap**: Foundation for heatmapping on a canvas using webgl/GPU.
 - **webgl-heatmap-leaflet**: Leaflet pluging for using the webgl heatmap tool on the leaflet context.
 - **URI.js**: URI manipulation for creating and parsing shareable URLs that reflect current application state.
+
+
 #### Data Sources
 - **Paleoecological Data**: The fossil occurrences and abudances come from the [Neotoma Database](http://neotomadb.org) using their [API](http://api.neotomadb.org). 
 Some custom endpoints are used that run off of the Neotoma Development Server and were developed by the folks at Neotoma specifically for this application.
-- **Ice Sheets**: Late Pleistocene Ice Sheets were digitized from [this paper](http://www.sciencedirect.com/science/article/pii/S0277379198000122). Citation:
+- **Ice Sheets**: Late Pleistocene Ice Sheets were digitized from [this paper](http://www.sciencedirect.com/science/article/pii/S0277379198000122). The geojson files are available for your use within the data folder of this repository. Citation:
 <pre>
 P.J Bartlein, K.H Anderson, P.M Anderson, M.E Edwards, C.J Mock, R.S Thompson, R.S Webb, T Webb III, C Whitlock, Paleoclimate simulations for North America over the past 21,000 years: features of the simulated climate and comparisons with paleoenvironmental data, Quaternary Science Reviews, Volume 17, Issues 6–7, 1 April 1998, Pages 549-585, ISSN 0277-3791, http://dx.doi.org/10.1016/S0277-3791(98)00012-2.
 (http://www.sciencedirect.com/science/article/pii/S0277379198000122)
 </pre>
-The geojson files are available for your use within the data folder of this repository.
+
 - **Taxonomy and Site Information**: Neotoma Paleoecological Database.
-- **Climate Model Output**: Climate Model Output used in the NicheViewer portion of the application is derived from global climate model simulations described [here](http://datadryad.org/resource/doi:10.5061/dryad.1597g).
+- **Climate Model Output**: Climate Model Output used in the NicheViewer portion of the application is derived from global climate model simulations described [here](http://datadryad.org/resource/doi:10.5061/dryad.1597g).  Ciatation:
+<pre>
+Lorenz DJ, Nieto-Lugilde D, Blois JL, Fitzpatrick MC, Williams JW (2016) Downscaled and debiased climate simulations for North America from 21,000 years ago to 2100AD. Scientific Data 3: 160048. http://dx.doi.org/10.1038/sdata.2016.48
+</pre>
+
 #### Technology
 The application is hosted on the University of Wisconsin, Madison campus.
-
 
 
 
