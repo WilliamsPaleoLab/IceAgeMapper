@@ -738,7 +738,7 @@ function getNicheData(dataset, getModern){
     success: function(response){
       globals.NVData = response.data
       //makeNicheViewer()
-      updateNicheViewerControls()
+      //updateNicheViewerControls()
       $("#loading").slideUp()
       $("#loading").text("Loading...")
     }
@@ -959,6 +959,14 @@ function loadIceSheets(){
     },
     success: function(response){
       //load the icesheets
+      //first, get a list of the years that we have in the ice dataset
+      //use this in calculating which layer to show
+      globals.iceAges = new Array()
+      for (prop in response.features){
+        iceAge = response.features[prop].properties.Age
+        globals.iceAges.push(iceAge)
+      }
+      //now,display
       displayIceSheets(response)
     }
   })
@@ -1039,13 +1047,28 @@ function displayIceSheets(data){
       $("#Icesheets_control").trigger('click')
     }
 }
+function closest (num, arr) {
+    var curr = arr[0];
+    var diff = Math.abs (num - curr);
+    for (var val = 0; val < arr.length; val++) {
+        var newdiff = Math.abs (num - arr[val]);
+        if (newdiff < diff) {
+            diff = newdiff;
+            curr = arr[val];
+        }
+    }
+    return curr;
+}
 
 function styleIceSheets(){
+  //get the closest ice layer
+  globals.closestIceAge = closest(globals.maxYear, globals.iceAges)
     globals.iceSheets.eachLayer(function(layer){
-      if ((layer.feature.properties.Age >= globals.minYear)
-      && (layer.feature.properties.Age <= globals.maxYear)){
+      if (globals.maxYear < 4000){
+        layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
+      }
+      else if (layer.feature.properties.Age == globals.closestIceAge){
         layer.setStyle({stroke: false, fillColor: '#E0FFFF', fillOpacity: 0.5})
-
       }else{
         layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
       }
@@ -1346,7 +1369,7 @@ function updateTime(){
   updateHeatmap()
   updateSites()
   styleIceSheets()
-  updateNicheViewer()
+  //updateNicheViewer()
   //make sure the text boxes get the most recent values of years
   $("#maxYearSelect").val(Math.round(globals.maxYear))
   $("#minYearSelect").val(Math.round(globals.minYear))
