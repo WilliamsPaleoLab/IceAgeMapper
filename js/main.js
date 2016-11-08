@@ -628,8 +628,10 @@ function loadOccurrenceData(taxon){
   }
   url += "&ageold=22000&ageyoung=-100"
   $.ajax(url, {
-     beforeSend: function(){
+     beforeSend: function(jqXHR){
        $("#loading").slideDown()
+       // set request headers here rather than in the ajax 'headers' object
+      jqXHR.setRequestHeader('Accept-Encoding', 'gzip');
      },
      error: function(xhr, status, error){
        console.log(xhr)
@@ -749,7 +751,7 @@ function createHeatmapLayer(){
   //create a blank heatmap layer
   //remove from layer control if its already defined
   //create the heatmap layer
-  var heat = L.webGLHeatmap({size:75, units:'px',  opacity: 0.15, alphaRange:0.0001});
+  var heat = L.webGLHeatmap({size:75, units:'px',  opacity: 0.5, alphaRange:0.0001});
   // heat.addTo(globals.map.map);
   globals.map.map.addLayer(heat)
   globals.map.layers['Heatmap'] = heat;
