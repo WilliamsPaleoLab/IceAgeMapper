@@ -269,7 +269,11 @@ function loadTaxaFromNeotoma(callback){
     beforeSend: function(){
       $("#loading").show();
     },
+    beforeSend: function(jqXHR){
+      jqXHR.setRequestHeader('Accept-Encoding', 'gzip');
+    },
     dataType: "jsonp",
+    cache: true,
     error: function(xhr, status, error){
       console.log(xhr)
       console.log(status)
@@ -639,6 +643,7 @@ function loadOccurrenceData(taxon){
        console.log(error)
        $("#loading").text("Server error.")
      },
+    cache: true,
      dataType: "jsonp",
      success: function(data){
        if (data['success']){
@@ -954,6 +959,7 @@ function loadIceSheets(){
   //get icesheet geojson
   $.ajax("data/icesheets.json", {
     dataType: "json",
+        cache: true,
     error: function(xhr, status, error){
       console.log(xhr)
       console.log(status)
@@ -1113,7 +1119,8 @@ function getTaxonInfoFromNeotoma(taxonid){
       }
 
     },
-    beforeSend: function(){
+    beforeSend: function(jqXHR){
+      jqXHR.setRequestHeader('Accept-Encoding', 'gzip');
     }
   })
 }
@@ -1171,16 +1178,18 @@ function getSiteDetails(siteid){
   var url = endpoint + siteid
   url += "&taxonname=" + globals.taxon
   $.ajax(url, {
+    cache: true,
     dataType: 'jsonp',
     error: function(xhr, status, error){
       console.log(xhr)
       console.log(status)
       console.log(error)
     },
+    beforeSend: function(jqXHR){
+        jqXHR.setRequestHeader('Accept-Encoding', 'gzip');
+    },
     success: function(response){
       displaySiteDetails(response['data'])
-    },
-    beforeSend: function(){
     }
   })
 }
