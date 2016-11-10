@@ -711,7 +711,14 @@ function loadOccurrenceData(taxon){
          }
          populateTotalFieldDialog()
 
+         try{
+           globals.map.map.removeLayer(globals.map.propSymbols)
+         }catch(err){
+           //pass
+         }
+
          globals.map.propSymbols = L.layerGroup()
+
          globals.map.map.addLayer(globals.map.propSymbols)
         globals.map.layerController.addOverlay(globals.map.propSymbols, "Proportional Symbols") //add layer to controller
 
@@ -862,15 +869,8 @@ function updateHeatmap(){
 
   globals.heatmapData = dataset;
   globals.heat.setData(dataset);
-  // globals.heat.redraw();
-
   updateControlID()
-  // if(!globals.showHeat){
-  //   $("#Heatmap_control").trigger('click')
-  // }
-  // globals.iceSheets.bringToFront();
-  // bringMarkersToFront()
-  //L.heat.bringToBack();
+
 }//end update heat function
 
 function updatePropSymbols(){
@@ -972,11 +972,6 @@ function removeSites(){
   })
 }
 
-function removePropSymbols(){
-  for (layer in globals.propSymbols){
-    globals.map.propSymbols.removeLayer(globals.propSymbols[layer])
-  }
-}
 
 function removeHeatmap(){
   //just sets the lat/lngs of the heatmap to empty so we don't need to recreate the base layer
