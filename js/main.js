@@ -35,9 +35,9 @@ siteMarkerOptions = {
 }
 
 psOptions = {
-  fill: true,
-  fillColor: 'red',
-  strokeColor:'red'
+  fill: false,
+  color: 'black',
+  weight: 0.5
 }
 
 //initial page stuff
@@ -701,6 +701,7 @@ function loadOccurrenceData(taxon){
         $("#loading").slideUp()
          //determine what to do with the data
          //createHeatmapLayer();
+         globals.map.layerController.addOverlay(globals.heat, "Heatmap") //add layer to controller
          updateHeatmap()
          updateSites()
          getTaxonomy()
@@ -709,6 +710,12 @@ function loadOccurrenceData(taxon){
            globals.sitePanel.close()
          }
          populateTotalFieldDialog()
+
+         globals.map.propSymbols = L.layerGroup()
+         globals.map.map.addLayer(globals.map.propSymbols)
+        globals.map.layerController.addOverlay(globals.map.propSymbols, "Proportional Symbols") //add layer to controller
+
+          updatePropSymbols()
          //globals.geojsonData = GeoJSON.parse(globals.data, {Point: ['LatitudeNorth', 'LongitudeWest']})
          //globals.nvPanel.close()
          //NicheViewer stuff
@@ -851,40 +858,23 @@ function updateHeatmap(){
       dataset[i][2] = x
     }
   }
-  // dataset = _.filter(globals.data, function(d){
-  //   if ((+d.Age == null) || (+d.Age == "")){
-  //     d.Age = (+d.AgeOlder + d.AgeYounger)/2
-  //   }
-  //   return ((+d.Age > globals.minYear) && (+d.Age <= globals.maxYear));
-  // })
-  // dataset = _.map(dataset, function(d){
-  //   if (d[globals.TotalField] != null){
-  //     pollenPercentage =
-  //   }else{
-  //     pollenPercentage = 0
-  //   }
-  //   return [(+d.LatitudeNorth + +d.LatitudeSouth)/2, (+d.LongitudeEast + +d.LongitudeWest)/2, pollenPercentage];
-  // })
 
-  if (globals.heat != undefined){
-    globals.map.layerController.removeLayer(globals.heat)
-  }
 
   globals.heatmapData = dataset;
   globals.heat.setData(dataset);
   // globals.heat.redraw();
-  globals.map.layerController.addOverlay(globals.heat, "Heatmap") //add layer to controller
+
   updateControlID()
-  if(!globals.showHeat){
-    $("#Heatmap_control").trigger('click')
-  }
+  // if(!globals.showHeat){
+  //   $("#Heatmap_control").trigger('click')
+  // }
   // globals.iceSheets.bringToFront();
   // bringMarkersToFront()
   //L.heat.bringToBack();
 }//end update heat function
 
 function updatePropSymbols(){
-  removePropSymbols()
+  globals.map.propSymbols.clearLayers()
   propSymbols = []
   for (var i=0; i< globals.data.length; i++){
     s = globals.data[i]
@@ -905,11 +895,11 @@ function updatePropSymbols(){
       opts = psOptions
       opts.radius = makeRadius(pct)
       l = L.circleMarker([lat, lng, siteID], opts)
-        .bindPopup("<h6>" + name + "</h6><p>Relative Abundance: " + pct + "%</p><p>Age: " + age + " Years B.P.</p>")
+        .bindPopup("<h6>" + name + "</h6><p>Relative Abundance: " + Math.round(pct, 2) + "%</p><p>Age: " + age + " Years B.P.</p>")
       propSymbols.push(l)
       l.ps = true
+      globals.map.propSymbols.addLayer(l)
     }
-    psLayerGroup = L.layerGroup(propSymbols).addTo(globals.map.map)
   }
 
 
@@ -983,11 +973,9 @@ function removeSites(){
 }
 
 function removePropSymbols(){
-  globals.map.map.eachLayer(function(layer){
-    if (layer.ps){
-      globals.map.map.removeLayer(layer)
-    }
-  })
+  for (layer in globals.propSymbols){
+    globals.map.propSymbols.removeLayer(globals.propSymbols[layer])
+  }
 }
 
 function removeHeatmap(){
@@ -996,7 +984,8 @@ function removeHeatmap(){
 }
 
 function makeRadius(num){
-  return Math.sqrt(num)
+  return num
+  // return Math.sqrt(num)
 }
 
 function loadIceSheets(){
@@ -1093,7 +1082,7 @@ function unsetVisibleBox(layerName){
 function displayIceSheets(data){
     globals.iceSheets = L.geoJson(data, {
       onEachFeature: function(feature, layer){
-        html = String(feature.properties.Age)
+        html = "<b>Estimated Ice Margin: </b>" + String(feature.properties.Age / 1000) + "kya"
         layer.bindPopup(html)
       }
     }).addTo(globals.map.map)
@@ -1427,6 +1416,7 @@ function onAllPanelResized(){
 
 function updateTime(){
   updateHeatmap()
+  updatePropSymbols()
   updateSites()
   styleIceSheets()
   //updateNicheViewer()
@@ -1785,6 +1775,7 @@ function changeHeatmapSymbology(type){
     globals.heatmapSymbology = 'absolute'
   }
   updateHeatmap()
+  updatePropSymbols()
 }
 //change the heatmap maximum value
 $(".heatmapSymbologyInput").change(function(){
@@ -1796,6 +1787,7 @@ function changeTotalField(totalField){
   globals.TotalField = totalField
   updateHeatmap()
   getSiteDetails(globals.activeSiteID)
+  updatePropSymbols()
 }
 
 
