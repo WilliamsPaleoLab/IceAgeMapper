@@ -7,6 +7,10 @@
 globals = {}
 globals.map = {}
 
+globals.macrostratZoom = 8
+
+globals.showGeo = false
+
 
 // globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
 // globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
@@ -89,11 +93,29 @@ function createMap(){
   createTaxonomyPanel()
   createNicheViewerPanel()
 
+  globals.map.geology = L.geoJson()
+  globals.map.map.addLayer(globals.map.geology)
+ globals.map.layerController.addOverlay(globals.map.geology, "Surface Geology")
   //panel events
   $(".leaflet-control-dialog").on('mousedown', function(){
      movePanelToFront(this)
   })
   globals.map.map.on("dialog:resizeend", onAllPanelResized)
+  //get macrostrat data
+
+  globals.map.map.on("moveend", function(){
+    currentZoom = globals.map.map.getZoom()
+    if (currentZoom == globals.macrostratZoom){
+      console.log("Drawing macrostrat")
+      getMacrostrat()
+    }else{
+      try{
+        globals.map.map.removeLayer(globals.map.geology)
+      }catch(err){
+        console.log("Passing.")
+      }
+    }
+  })
 }
 
 function createSitePanel(){
@@ -247,6 +269,10 @@ function createLayerController(){
     if (e.name == "Heatmap"){
       globals.showHeat = true
     }
+    if (e.name == "Surface Geology"){
+      globals.showGeo = true
+      console.log("Added geo")
+    }
   })
   globals.map.map.on('overlayremove', function(e){
     if (e.name == "Icesheets"){
@@ -258,6 +284,10 @@ function createLayerController(){
     if (e.name == "Heatmap"){
       globals.showHeat = false
     }
+    if (e.name == "Surface Geology"){
+          globals.showGeo = false
+          console.log("Removed geo")
+        }
   })
 }
 
@@ -1047,7 +1077,12 @@ function unsetVisibleBox(layerName){
 
 
 function displayIceSheets(data){
-    globals.iceSheets = L.geoJson(data).addTo(globals.map.map)
+    globals.iceSheets = L.geoJson(data, {
+      onEachFeature: function(feature, layer){
+        html = String(feature.properties.Age)
+        layer.bindPopup(html)
+      }
+    }).addTo(globals.map.map)
     globals.map.layerController.addOverlay(globals.iceSheets, "Icesheets")
     updateControlID()
     styleIceSheets()
@@ -1764,4 +1799,55 @@ function populateTotalFieldDialog(){
     changeTotalField(newField)
     console.log("New Field is " + newField)
   })
+}
+
+
+function getMacrostrat(){
+  console.log(globals.showGeo)
+  if (globals.showGeo){
+  //globals.map.map.removeLayer(globals.map.geology)
+  var bounds = globals.map.map.getBounds()
+  var NE = bounds._northEast
+  var n = NE.lat
+  var e = NE.lng
+  var SW = bounds._southWest
+  var s = SW.lat
+  var w = SW.lng
+  var shape = "POLYGON((" + e + " " + n + "," + w + " " + n + "," + w + " " + s + "," + e + " " + s + "," + e + " " + n + "))"
+  var wkt = new Wkt.Wkt();
+  wkt.read(shape)
+  var wktString = wkt.write()
+  var url = "http://macrostrat.org/api/v2/carto/small?"
+  url += "shape=" + encodeURIComponent(wktString)
+  url += "&format=geojson"
+  $.ajax(url, {
+    success: function(data){
+      rockData = data['success']['data']
+      globals.map.geology = L.geoJson(rockData, {
+        style: function(d){
+          return {
+            color: d.properties.color,
+            weight : 0.25,
+            fillOpacity: 0.35}
+        },
+        onEachFeature: function(feature, layer){
+          var html = "<b>" + feature.properties.name + "</b><br>"
+          html += "Age: " + Math.round(+feature.properties.best_age_top) + "-" + Math.round(+feature.properties.best_age_bottom) + " Mya<br>"
+          layer.bindPopup(html);
+        }
+      })
+        globals.map.map.addLayer(globals.map.geology)
+        globals.map.geology.bringToBack()
+        globals.showGeo = true
+    },
+    beforeSend: function(){
+    },
+    error: function(xhr, status, error){
+      console.log("There was an error.")
+      console.log(xhr)
+      console.log(status)
+      console.log(error)
+    }
+  })
+        }
 }
