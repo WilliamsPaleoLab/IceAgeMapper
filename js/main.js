@@ -47,7 +47,7 @@ psOptions = {
 //hexagon options
 var hexOptions = {
   radius : 25,                            // Size of the hexagons/bins
-  opacity: 0.85,                           // Opacity of the hexagonal layer
+  opacity: 0.50,                           // Opacity of the hexagonal layer
   duration: 50,                          // millisecond duration of d3 transitions (see note below)
   lat: function(d){
     return d[0];
@@ -56,12 +56,18 @@ var hexOptions = {
     return d[1];
   },       // latitude accessor
   value: function(d){
-    return d3.mean(d, function(x){return x.o[2]});
+    v = d3.mean(d, function(x){return (x.o[2] / x.o[3])})
+    v *= 100
+    return v;
   }, // value accessor - derives the bin value
-  colorRange: ['blue', 'green'],
-  onclick: function(d){
-    console.log(d)
+  colorRange: ['white', 'red'],
+  onmouseout: function(d){
+    globals.map.hexbins.hextip.hide()
+  },
+  onmouseover: function(d){
+    globals.map.hexbins.hextip.show(d)
   }
+
 };
 
 //initial page stuff
@@ -392,14 +398,6 @@ function createTimeline(){
   globals.timelineOffset = margins.top
 
 
-  // globals.timelineTip = d3.tip()
-  //   .attr('class', 'd3-tip')
-  //   .offset([150, 50])
-  //   .html(function(d){
-  //     minYearFormat = numberWithCommas(Math.round(globals.minYear))
-  //     maxYearFormat = numberWithCommas(Math.round(globals.maxYear))
-  //     return ("Min Year: " + minYearFormat + "B.P.<br />" + "Max Year: " + maxYearFormat + " B.P.")
-  //   })
 
 
   globals.timeScale = d3.scale.linear()
@@ -762,6 +760,8 @@ function loadOccurrenceData(taxon){
           globals.map.layerController.addOverlay(globals.map.hexbins, "Hexagonal Bins") //add layer to controller
 
           updateHexbins()
+
+
          //globals.geojsonData = GeoJSON.parse(globals.data, {Point: ['LatitudeNorth', 'LongitudeWest']})
          //globals.nvPanel.close()
          //NicheViewer stuff
@@ -878,10 +878,12 @@ function updateHeatmap(){
       if (newData[siteID] == undefined){
         newData[siteID] = {
           sum : 0,
-          data : d
+          data : d,
+          num: 0
         }
       }
       newData[siteID].sum += (d['Value'] / d[globals.TotalField])
+      newData[siteID].num += 1
     }
   }
   dataset = new Array()
@@ -890,19 +892,19 @@ function updateHeatmap(){
     pct = d.sum
     lat = (d.data.LatitudeNorth + d.data.LatitudeSouth)/2
     lng = (d.data.LongitudeWest + d.data.LongitudeEast) / 2
-    dataset.push([lat, lng, pct])
+    dataset.push([lat, lng, pct, d.num])
   }
   if (globals.heatmapSymbology == 'relative'){
-    //linear transform the pct field so that 1 is the max
-    pctMax = d3.max(dataset, function(d){return(d[2])})
-    transformScale = d3.scale.linear()
-      .domain([0, pctMax])
-      .range([0, 1])
-    for (var i=0; i<dataset.length; i++){
-      d = dataset[i][2]
-      x = transformScale(d)
-      dataset[i][2] = x
-    }
+    // //linear transform the pct field so that 1 is the max
+    // pctMax = d3.max(dataset, function(d){return(d[2])})
+    // transformScale = d3.scale.linear()
+    //   .domain([0, pctMax])
+    //   .range([0, 1])
+    // for (var i=0; i<dataset.length; i++){
+    //   d = dataset[i][2]
+    //   x = transformScale(d)
+    //   dataset[i][2] = x
+    // }
   }
 
 
@@ -1945,6 +1947,7 @@ function deleteGeology() {
       globals.map.geology.removeLayer(layer)
     }
 }
+
 
 
 function updateHexbins(){
