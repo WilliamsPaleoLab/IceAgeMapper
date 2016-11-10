@@ -9,9 +9,6 @@ globals.map = {}
 
 globals.macrostratZoom = 8
 
-globals.showGeo = false
-
-
 // globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
 // globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
 // globals.currentNVXMod = 0
@@ -93,9 +90,23 @@ function createMap(){
   createTaxonomyPanel()
   createNicheViewerPanel()
 
-  globals.map.geology = L.geoJson()
+  globals.geologyLayers ={}
+  globals.map.geology = L.geoJson(null, {
+    style: function(d){
+      return {
+        color: d.properties.color,
+        weight : 0.25,
+        fillOpacity: 0.35}
+    },
+    onEachFeature: function(feature, layer){
+      var html = "<b>" + feature.properties.name + "</b><br>"
+      html += "Age: " + Math.round(+feature.properties.best_age_top) + "-" + Math.round(+feature.properties.best_age_bottom) + " Mya<br>"
+      layer.bindPopup(html);
+      globals.geologyLayers[feature.properties.map_id] = layer
+    }
+  })
+
   globals.map.map.addLayer(globals.map.geology)
- globals.map.layerController.addOverlay(globals.map.geology, "Surface Geology")
   //panel events
   $(".leaflet-control-dialog").on('mousedown', function(){
      movePanelToFront(this)
@@ -106,9 +117,11 @@ function createMap(){
   globals.map.map.on("moveend", function(){
     currentZoom = globals.map.map.getZoom()
     if (currentZoom == globals.macrostratZoom){
-      console.log("Drawing macrostrat")
+      globals.map.layerController.addOverlay(globals.map.geology, "Surface Geology")
+
       getMacrostrat()
     }else{
+      globals.map.layerController.removeLayer("Surface Geology")
       try{
         globals.map.map.removeLayer(globals.map.geology)
       }catch(err){
@@ -272,6 +285,7 @@ function createLayerController(){
     if (e.name == "Surface Geology"){
       globals.showGeo = true
       console.log("Added geo")
+      globals.map.geology.bringToBack()
     }
   })
   globals.map.map.on('overlayremove', function(e){
@@ -1111,7 +1125,7 @@ function styleIceSheets(){
         layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
       }
       else if (layer.feature.properties.Age == globals.closestIceAge){
-        layer.setStyle({stroke: false, fillColor: '#E0FFFF', fillOpacity: 0.5})
+        layer.setStyle({stroke: false, fillColor: '#E0FFFF', fillOpacity: 0.75})
       }else{
         layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
       }
@@ -1803,9 +1817,6 @@ function populateTotalFieldDialog(){
 
 
 function getMacrostrat(){
-  console.log(globals.showGeo)
-  if (globals.showGeo){
-  //globals.map.map.removeLayer(globals.map.geology)
   var bounds = globals.map.map.getBounds()
   var NE = bounds._northEast
   var n = NE.lat
@@ -1823,22 +1834,7 @@ function getMacrostrat(){
   $.ajax(url, {
     success: function(data){
       rockData = data['success']['data']
-      globals.map.geology = L.geoJson(rockData, {
-        style: function(d){
-          return {
-            color: d.properties.color,
-            weight : 0.25,
-            fillOpacity: 0.35}
-        },
-        onEachFeature: function(feature, layer){
-          var html = "<b>" + feature.properties.name + "</b><br>"
-          html += "Age: " + Math.round(+feature.properties.best_age_top) + "-" + Math.round(+feature.properties.best_age_bottom) + " Mya<br>"
-          layer.bindPopup(html);
-        }
-      })
-        globals.map.map.addLayer(globals.map.geology)
-        globals.map.geology.bringToBack()
-        globals.showGeo = true
+      updateGeology(rockData)
     },
     beforeSend: function(){
     },
@@ -1849,5 +1845,26 @@ function getMacrostrat(){
       console.log(error)
     }
   })
-        }
+}
+
+
+function addGeology(newGeoJsonData) {
+    globals.map.geology.addData(newGeoJsonData);
+    try{
+      globals.map.geology.bringToBack()
+    }catch(err){
+        //incase the geology layer doesn't currently exist
+    }
+}
+
+function updateGeology(updatedGeoJsonData) {
+    deleteGeology(); // Remove the previously created layer.
+    addGeology(updatedGeoJsonData); // Replace it by the new data.
+}
+
+function deleteGeology() {
+    for (i in globals.geologyLayers){
+      layer = globals.geologyLayers[i]
+      globals.map.geology.removeLayer(layer)
+    }
 }
