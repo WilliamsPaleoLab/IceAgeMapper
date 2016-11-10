@@ -148,6 +148,6 @@ th {
     color: white;
 }
 
-.tooltip{
-  z-index:100000;
+.d3-tip{
+  z-index:10000000000;
 }

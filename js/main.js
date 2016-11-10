@@ -9,6 +9,10 @@ globals.map = {}
 
 globals.macrostratZoom = 8
 
+globals.tlBinSize = 1000
+
+globals.tlWidth = 10
+
 // globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
 // globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
 // globals.currentNVXMod = 0
@@ -39,6 +43,26 @@ psOptions = {
   color: 'black',
   weight: 0.5
 }
+
+//hexagon options
+var hexOptions = {
+  radius : 25,                            // Size of the hexagons/bins
+  opacity: 0.85,                           // Opacity of the hexagonal layer
+  duration: 50,                          // millisecond duration of d3 transitions (see note below)
+  lat: function(d){
+    return d[0];
+  },       // longitude accessor
+  lng: function(d){
+    return d[1];
+  },       // latitude accessor
+  value: function(d){
+    return d3.mean(d, function(x){return x.o[2]});
+  }, // value accessor - derives the bin value
+  colorRange: ['blue', 'green'],
+  onclick: function(d){
+    console.log(d)
+  }
+};
 
 //initial page stuff
 $("#loading").hide()
@@ -314,7 +338,7 @@ function loadTaxaFromNeotoma(callback){
       $("#loading").show();
     },
     beforeSend: function(jqXHR){
-      jqXHR.setRequestHeader('Accept-Encoding', 'gzip');
+      jqXHR.setRequestHeader('Accept-Encoding', 'gzip deflate');
     },
     dataType: "jsonp",
     cache: true,
@@ -365,20 +389,22 @@ function createTimeline(){
   var minYear = -75;
   var maxYear = 22000;
 
+  globals.timelineOffset = margins.top
 
-  globals.timelineTip = d3.tip()
-    .attr('class', 'd3-tip')
-    .offset([150, 50])
-    .html(function(d){
-      minYearFormat = numberWithCommas(Math.round(globals.minYear))
-      maxYearFormat = numberWithCommas(Math.round(globals.maxYear))
-      return ("Min Year: " + minYearFormat + "B.P.<br />" + "Max Year: " + maxYearFormat + " B.P.")
-    })
+
+  // globals.timelineTip = d3.tip()
+  //   .attr('class', 'd3-tip')
+  //   .offset([150, 50])
+  //   .html(function(d){
+  //     minYearFormat = numberWithCommas(Math.round(globals.minYear))
+  //     maxYearFormat = numberWithCommas(Math.round(globals.maxYear))
+  //     return ("Min Year: " + minYearFormat + "B.P.<br />" + "Max Year: " + maxYearFormat + " B.P.")
+  //   })
 
 
   globals.timeScale = d3.scale.linear()
     .domain([minYear, maxYear])
-    .range([0, height]);
+    .range([0 , height]);
 
   var svg = d3.select("#timeline")
     .append("svg")
@@ -395,7 +421,6 @@ function createTimeline(){
 
     svg.append("g")
        .attr("class", "x axis")
-       .attr("transform", "translate(" + 0 + ",0)")
        .call(xAxis)
        .append("text")
          .attr("class", "label")
@@ -679,7 +704,7 @@ function loadOccurrenceData(taxon){
      beforeSend: function(jqXHR){
        $("#loading").slideDown()
        // set request headers here rather than in the ajax 'headers' object
-      jqXHR.setRequestHeader('Accept-Encoding', 'gzip');
+      jqXHR.setRequestHeader('Accept-Encoding', 'gzip deflate');
      },
      error: function(xhr, status, error){
        console.log(xhr)
@@ -713,16 +738,30 @@ function loadOccurrenceData(taxon){
 
          try{
            globals.map.map.removeLayer(globals.map.propSymbols)
+           globals.map.layerController.removeLayer(globals.map.propSymbols)
+         }catch(err){
+           //pass
+         }
+
+         try{
+           globals.map.map.removeLayer(globals.map.hexbins)
+           globals.map.layerController.removeLayer(globals.map.hexbins)
          }catch(err){
            //pass
          }
 
          globals.map.propSymbols = L.layerGroup()
 
-         globals.map.map.addLayer(globals.map.propSymbols)
+        //  globals.map.map.addLayer(globals.map.propSymbols)
         globals.map.layerController.addOverlay(globals.map.propSymbols, "Proportional Symbols") //add layer to controller
 
           updatePropSymbols()
+
+          // Create the hexbin layer and add it to the map
+          globals.map.hexbins = L.hexbinLayer(hexOptions)
+          globals.map.layerController.addOverlay(globals.map.hexbins, "Hexagonal Bins") //add layer to controller
+
+          updateHexbins()
          //globals.geojsonData = GeoJSON.parse(globals.data, {Point: ['LatitudeNorth', 'LongitudeWest']})
          //globals.nvPanel.close()
          //NicheViewer stuff
@@ -895,7 +934,7 @@ function updatePropSymbols(){
       opts = psOptions
       opts.radius = makeRadius(pct)
       l = L.circleMarker([lat, lng, siteID], opts)
-        .bindPopup("<h6>" + name + "</h6><p>Relative Abundance: " + Math.round(pct, 2) + "%</p><p>Age: " + age + " Years B.P.</p>")
+        // .bindPopup("<h6>" + name + "</h6><p>Relative Abundance: " + Math.round(pct, 2) + "%</p><p>Age: " + age + " Years B.P.</p>")
       propSymbols.push(l)
       l.ps = true
       globals.map.propSymbols.addLayer(l)
@@ -1114,7 +1153,12 @@ function styleIceSheets(){
         layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
       }
     })
-  globals.iceSheets.bringToBack();
+  try{
+      globals.iceSheets.bringToBack();
+  }catch(err){
+    //pass
+  }
+
 }
 
 function getTaxonomy(){
@@ -1153,7 +1197,7 @@ function getTaxonInfoFromNeotoma(taxonid){
 
     },
     beforeSend: function(jqXHR){
-      jqXHR.setRequestHeader('Accept-Encoding', 'gzip');
+      jqXHR.setRequestHeader('Accept-Encoding', 'gzip deflate');
     }
   })
 }
@@ -1219,7 +1263,7 @@ function getSiteDetails(siteid){
       console.log(error)
     },
     beforeSend: function(jqXHR){
-        jqXHR.setRequestHeader('Accept-Encoding', 'gzip');
+        jqXHR.setRequestHeader('Accept-Encoding', 'gzip deflate');
     },
     success: function(response){
       displaySiteDetails(response['data'])
@@ -1329,31 +1373,76 @@ function displaySiteDetails(details){
   for (var i=0; i< globals.siteMarkers.length; i++){
     siteMarkerID = globals.siteMarkers[i].siteID
     if (siteMarkerID == globals.activeSiteID){
-      globals.siteMarkers[i].openPopup()
+      try{
+              globals.siteMarkers[i].openPopup()
+      }catch(err){
+        //pass
+      }
       break
     }
   }
 }
 
 function setTimelinePoints(data){
-  d3.selectAll(".tl-point").remove()
-  d3.select("#timeline").select("svg").selectAll(".tl-point")
-    .data(data)
+  bins = []
+  for (i = -50; i<= 22000; i = i + globals.tlBinSize){
+    bins.push(i)
+  }
+  var bin = d3.layout.histogram()
+    .value(function(d) { return d.Age; })
+    .bins(bins);
+
+  var histData = bin(data)
+
+  densityExtent = [1, d3.max(histData, function(d){return d.length})]
+
+  var densityColor = d3.scale.linear()
+    .domain(densityExtent)
+    .range(["white", "steelblue"]);
+
+  globals.timelineTip = d3.tip()
+      .attr('class', 'd3-tip')
+      .direction('w')
+      .html(function(d){
+        return ("<b>" + d.length + "</b> Samples <br />"  + numberWithCommas(d.x) + " - " + numberWithCommas(d.x + d.dx) + " B.P.")
+      })
+  d3.selectAll(".timelineRect").remove()
+  d3.select("#timeline").select("svg").selectAll(".timelineRect")
+    .data(histData)
     .enter()
-    .append('circle')
-      .attr('class', 'tl-point')
-      .attr('r', 1.5)
-      .attr('fill','blue')
-      .attr('cx', function(d){
-          return 46
+    .append('rect')
+      .attr('width', function(d){
+        return 10
       })
-      .attr('cy', function(d){
-          age = d.Age
-          if ((age == null) || (age == undefined)){
-            age = (d.AgeOlder + d.AgeYounger) / 2
-          }
-          return globals.timeScale(age)
+      .attr('x', function(d){
+        return 40
       })
+      .attr('y', function(d){
+        //this actually is d.x because it's supposed to be on a horizontalscale
+        return globals.timeScale(d.x)
+      })
+      .attr('height', function(d){
+        return globals.timeScale(d.dx)
+      })
+      .attr('fill', function(d){
+          return densityColor(d.length)
+      })
+      .attr('stroke', 'none')
+      .attr('class', "timelineRect")
+      .attr('transform','translate(0, ' + globals.timelineOffset + ')' ) //this is fucked up, but it kind of works.
+      .call(globals.timelineTip)
+      .on('mouseover', function(d){
+        globals.timelineTip.show(d)
+        d3.select(this).style('stroke', 'black')
+      })
+      .on('mouseout', function(d){
+        globals.timelineTip.hide()
+        d3.select(this).style('stroke', 'none')
+      })
+
+
+
+
 }
 
 function movePanelToFront(panel){
@@ -1414,6 +1503,7 @@ function updateTime(){
   updatePropSymbols()
   updateSites()
   styleIceSheets()
+  updateHexbins()
   //updateNicheViewer()
   //make sure the text boxes get the most recent values of years
   $("#maxYearSelect").val(Math.round(globals.maxYear))
@@ -1854,4 +1944,9 @@ function deleteGeology() {
       layer = globals.geologyLayers[i]
       globals.map.geology.removeLayer(layer)
     }
+}
+
+
+function updateHexbins(){
+  globals.map.hexbins.data(globals.heatmapData);
 }
