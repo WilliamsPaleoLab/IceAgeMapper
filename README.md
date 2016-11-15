@@ -83,12 +83,21 @@ P.J Bartlein, K.H Anderson, P.M Anderson, M.E Edwards, C.J Mock, R.S Thompson, R
 <pre>
 Lorenz DJ, Nieto-Lugilde D, Blois JL, Fitzpatrick MC, Williams JW (2016) Downscaled and debiased climate simulations for North America from 21,000 years ago to 2100AD. Scientific Data 3: 160048. http://dx.doi.org/10.1038/sdata.2016.48
 </pre>
+- **Surface Geology**: [Macrostrat](https://macrostrat.org/)
 
 #### Technology
 The application is hosted on the University of Wisconsin, Madison campus.
 
 
 ### Release History
+- ```v1.0.2 Alpha```  Features release (Nov 11, 2016).
+
+  * Macrostrat Geology Layer
+  * Hexagonal Binning
+  * Improved performance using compressed responses from Neotoma
+  * Time bar improvements
+  * Bug Fixes
+
 - ```v1.0.1 Beta```  Stable release (Aug 30, 2016).
 
   * GPU/WebGL heatmap improves performance
