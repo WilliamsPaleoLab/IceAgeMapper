@@ -13,6 +13,9 @@ globals.tlBinSize = 1000
 
 globals.tlWidth = 10
 
+
+globals.occurrenceEndpoint = "pollen"
+
 // globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
 // globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
 // globals.currentNVXMod = 0
@@ -43,6 +46,10 @@ psOptions = {
   color: 'black',
   weight: 0.5
 }
+
+globals.displayType = "presence" //alternate value is Abundance
+
+
 
 //hexagon options
 var hexOptions = {
@@ -94,11 +101,26 @@ $(document).ready(function(){
 })
 
 function load(){
+  getNicheVariables() // get a list of variables available for NV
   createMap(); // load the leaflet map
   loadTaxaFromNeotoma(createSearchWidget) // load the taxa endpoint from neotoma and create an autocomplete search out of it
   createHeatmapLayer() // create a blank layer that we can load into later
   createTimeline();
   loadIceSheets()
+  $("#hex-bin-size").change(function(){
+    rad = $("#hex-bin-size").val()
+    hexOptions.radius = rad
+
+    globals.map.layerController.removeLayer(globals.map.hexbins) //add layer to controller
+    globals.map.map.removeLayer(globals.map.hexbins)
+
+    // Create the hexbin layer and add it to the map
+    globals.map.hexbins = L.hexbinLayer(hexOptions)
+
+    globals.map.layerController.addOverlay(globals.map.hexbins, "Hexagonal Bins") //add layer to controller
+    globals.map.map.addLayer(globals.map.hexbins)
+    updateHexbins()
+  })
 }
 
 function createMap(){
@@ -340,11 +362,15 @@ function createLayerController(){
 function loadTaxaFromNeotoma(callback){
   //load all of the vascular plant taxa from the neotoma database
   $.ajax("http://api.neotomadb.org/v1/data/taxa?taxagroup=VPL", {
-    beforeSend: function(){
-      $("#loading").show();
-    },
-    beforeSend: function(jqXHR){
-      jqXHR.setRequestHeader('Accept-Encoding', 'gzip deflate');
+    // beforeSend: function(jqXHR){
+    //   $("#loading").show();
+    //   jqXHR.setRequestHeader('Accept-Encoding', 'deflate');
+    //   jqXHR.setRequestHeader('Cache-Control', 'max-age=1000')
+    // },
+    type: "GET",
+    headers: {
+      'Accept-Encoding': 'gzip',
+      'Cache-Control': 'max-age=1000'
     },
     dataType: "jsonp",
     cache: true,
@@ -356,6 +382,7 @@ function loadTaxaFromNeotoma(callback){
     success: function(data){
       if (data['success']){
         if (callback){
+          globals.allTaxa = data.data
           callback(data['data'])
         }
       }else{
@@ -370,8 +397,8 @@ function createSearchWidget(jsonResponse){
   names = _.pluck(jsonResponse, 'TaxonName')
   var input = document.getElementById("searchBar");
   var awesomplete = new Awesomplete(input, {
-    minChars: 0,
-    maxItems: 5,
+    minChars: 1,
+    maxItems: 7,
     autoFirst: true,
     filter: Awesomplete.FILTER_STARTSWITH
   });
@@ -687,12 +714,36 @@ function setMaxYear(maxYear){
 }
 
 function loadOccurrenceData(taxon){
-  globals.taxon =taxon
+  //figure out what type the taxon is
+  //if it's pollen, hit the pollen endpoint
+  //otherwise, hit the SampleData endpoint
+  for (t in globals.allTaxa){
+    checkTaxon = globals.allTaxa[t]
+    if (checkTaxon.TaxonName == taxon){//check name match
+      if (t.TaxaGroupID == "VPL"){
+        globals.taxaClass = "VPL"
+        globals.occurrenceEndpoint = "pollen"
+      }else {
+        globals.taxaClass = t.TaxaGroupID
+        globals.occurrenceEndpoint = "SampleData"
+      }
+    }
+  }
+
+  globals.taxon = taxon
   $("#loading").show()
   loc = "-167.276413,5.49955,-52.23304,83.162102"
-  url = "http://apidev.neotomadb.org/v1/data/pollen?taxonname="
-  url += taxon
-  url += "&bbox=" + loc
+  if (globals.occurrenceEndpoint == "pollen"){
+      url = "http://apidev.neotomadb.org/v1/data/pollen?taxonname="
+  }else{
+      url = "http://api.neotomadb.org/v1/data/SampleData?taxonname="
+  }
+  url += encodeURIComponent(taxon)
+  if (globals.occurrenceEndpoint == "pollen"){
+      url += "&bbox=" + loc
+  }else if (globals.occurrenceEndpoint == "SampleData"){
+    url += "&loc=" + loc
+  }
   if (globals.aggType == "base"){
     console.log("Aggregating is in alpha development.")
     url += "&nametype=base"
@@ -700,6 +751,7 @@ function loadOccurrenceData(taxon){
   url += "&ageold=22000&ageyoung=-100"
   $.ajax(url, {
      beforeSend: function(jqXHR){
+       console.log(this.url)
        $("#loading").slideDown()
        // set request headers here rather than in the ajax 'headers' object
       jqXHR.setRequestHeader('Accept-Encoding', 'gzip deflate');
@@ -715,6 +767,12 @@ function loadOccurrenceData(taxon){
      success: function(data){
        if (data['success']){
         globals.data = data['data']
+        //go to niche viewer data service
+        // getNicheData()
+        if (globals.occurrenceEndpoint != "pollen"){
+          processSampleData()
+        }
+
         if (data['data'].length == 0){
           alert("No results were returned.")
           $("#loading").slideUp()
@@ -724,8 +782,15 @@ function loadOccurrenceData(taxon){
         $("#loading").slideUp()
          //determine what to do with the data
          //createHeatmapLayer();
-         globals.map.layerController.addOverlay(globals.heat, "Heatmap") //add layer to controller
-         updateHeatmap()
+         if (globals.occurrenceEndpoint != "pollen"){
+           updateSites()
+           getTaxonomy()
+           setTimelinePoints(data['data'])
+        }else{
+          //this is pollen
+
+            globals.map.layerController.addOverlay(globals.heat, "Heatmap") //add layer to controller
+            updateHeatmap()
          updateSites()
          getTaxonomy()
          setTimelinePoints(data['data'])
@@ -760,20 +825,7 @@ function loadOccurrenceData(taxon){
           globals.map.layerController.addOverlay(globals.map.hexbins, "Hexagonal Bins") //add layer to controller
 
           updateHexbins()
-
-
-         //globals.geojsonData = GeoJSON.parse(globals.data, {Point: ['LatitudeNorth', 'LongitudeWest']})
-         //globals.nvPanel.close()
-         //NicheViewer stuff
-         //make fake nv data (for now)
-        //globals.NVResponse = makeFakeData(100, 12, 12, 3)
-        //  if (globals.NVResponse.success){
-        //    globals.NVData = globals.NVResponse.data
-        //    makeNicheViewer()
-        //  }else{
-        //    console.log("Failed to load environmental layers for NicheViewer.")
-        //  }
-        // getNicheData(globals.data, true)
+        }
        }else{
          console.log("Server error on Neotoma's end.")
          $("#loading").text("Server error.")
@@ -784,70 +836,6 @@ function loadOccurrenceData(taxon){
 
 
 counter = 0
-function getNicheData(dataset, getModern){
-  //gets niche data from the server to make the niche diagram
-  //if getModern is true, will get both the modern (BP 0) and past values for each site in the argument dataset
-  request = {
-    locations: []
-  }
-  $("#loading").slideDown()
-  $("#loadprogress").attr('value', 0)
-  $("#loadprogress").attr('max', dataset.length)
-  totalCounter = dataset.length
-
-  //form the post data payload
-  for (item in dataset){
-    site = dataset[item]
-    siteID = site['SiteID']
-    siteName = site['SiteName']
-    longitude = (site['LongitudeEast'] + site['LongitudeWest']) / 2
-    latitude = (site['LatitudeNorth'] + site['LatitudeSouth']) / 2
-    yearsBP = site['Age']
-    if ((yearsBP == null) || (yearsBP == undefined)){
-      yearsBP = (site['AgeOlder'] + site['AgeYounger']) / 2
-    }
-    obj = {siteID:siteID, siteName:siteName, latitude:latitude, longitude:longitude, yearsBP:yearsBP}
-    request.locations.push(obj)
-    // $.ajax("http://localhost:8080/data", {
-    //   data: obj,
-    //   contentType: "json",
-    //   method: 'GET',
-    //   success: function(response){
-    //     counter += 1;
-    //     console.log(counter)
-    //     $("#loadprogress").attr('value', counter)
-    //   },
-    //   error: function(){
-    //     console.log(error)
-    //   },
-    //   beforeSend: function(){
-    //     $("#loading").show()
-    //   }
-    // })
-  }
-  //wmake the ajax request
-  $.ajax("http://130.211.157.239:8080/data", {
-    data: JSON.stringify(request),
-    method: "POST",
-    contentType: "application/json",
-    error: function(xhr, status, error){
-      console.log(xhr)
-      console.log(status)
-      console.log(error)
-    },
-    beforeSend: function(){
-      $("#loading").slideDown()
-      $("#loading").text("Getting niche data...")
-    },
-    success: function(response){
-      globals.NVData = response.data
-      //makeNicheViewer()
-      //updateNicheViewerControls()
-      $("#loading").slideUp()
-      $("#loading").text("Loading...")
-    }
-  })
-}
 
 function createHeatmapLayer(){
   //create a blank heatmap layer
@@ -915,7 +903,12 @@ function updateHeatmap(){
 }//end update heat function
 
 function updatePropSymbols(){
-  globals.map.propSymbols.clearLayers()
+  try{
+      globals.map.propSymbols.clearLayers()
+  }catch(err){
+    //pass
+  }
+
   propSymbols = []
   for (var i=0; i< globals.data.length; i++){
     s = globals.data[i]
@@ -947,7 +940,7 @@ function updatePropSymbols(){
 }
 function updateSites(){
   //add circleMarkers to the map where the sites are
-
+  console.log("Updating sites...")
   removeSites()
   siteIds = []
   sites = []
@@ -1467,17 +1460,11 @@ function round2(num){
 function makeBaseNicheViewerPanel(){
   html = "<div class='col-xs-12' id='nv-controls'>"
   html += "<div class='col-xs-6' id='axis-1-controls'>"
-  html += "<h4>X Axis</h4>"
-  html += "<label>Data Source</label><br /><select id='x-source-dropdown' class='source-dropdown'></select></br />"
-  html += "<label>Variable</label><br /><select id='x-variable-dropdown' class='variable-dropdown'></select><br />"
+  html += "<label>Data Source</label><br /><select id='source-dropdown' class='source-dropdown'></select></br />"
+  html += "<label>Variable</label><br /><select id='variable-dropdown' class='variable-dropdown'></select><br />"
   // html += "<label>Variable Modifier</label><select id='x-modifier-dropdown' class='modifier-dropdown'></select><br />"
   html += "</div>"
   html += "<div class='col-xs-6' id='axis-2-controls'>"
-  html += "<h4>Y Axis</h4>"
-  html += "<label>Data Source</label><br /><select id='y-source-dropdown' class='source-dropdown'></select></br />"
-  html += "<label>Variable</label><br /><select id='y-variable-dropdown' class='variable-dropdown'></select><br />"
-  // html += "<label>Variable Modifier</label><select id='y-modifier-dropdown' class='modifier-dropdown'></select><br />"
-  html += "</div>"
   html += "</div>"
   html += "<hr />"
   html += "<div id='nv-chart'>"
@@ -1952,4 +1939,83 @@ function deleteGeology() {
 
 function updateHexbins(){
   globals.map.hexbins.data(globals.heatmapData);
+}
+
+
+
+function processSampleData(){
+  newArray = []
+  for (i in globals.data){
+    item = globals.data[i]
+    item['AgeOlder'] = item['SampleAgeOlder']
+    item['AgeYounger'] = item['SampleAgeYounger']
+    item['DatasetID'] = item['DatasetID']
+    item['SiteID'] = item['DatasetID']
+    item['SiteName'] = "API doesn't support site names."
+    item['LatitudeNorth'] = item['SiteLatitudeNorth']
+    item['LatitudeSouth'] = item['SiteLatitudeSouth']
+    item['LongitudeWest'] = item['SiteLongitudeWest']
+    item['LongitudeEast'] = item['SiteLongitudeEast']
+  }
+}
+
+function processNeotomaForNDS(variableID, sourceID){
+  sendData = []
+  for (item in globals.data){
+    site = globals.data[item]
+    lat = (site.LatitudeNorth + site.LatitudeSouth) / 2
+    lng = (site.LongitudeWest + site.LongitudeEast) / 2
+    age = site.Age
+    if (age === undefined){
+      age = (site.AgeOlder + site.AgeYounger) / 2
+    }
+    if (!age){
+      age = 0
+    }
+    pt = {
+      latitude: lat,
+      longitude: lng,
+      year: age
+    }
+    sendData.push(pt)
+  }
+  dat = {
+    variableID: variableID,
+    sourceID: sourceID,
+    points: sendData
+  }
+  return dat
+}
+
+function getNicheVariables(){
+  var host = "http://localhost:10010/variables"
+  $.ajax(host, {
+    success: function(data){
+      console.log(data)
+      $(".source-dropdown").empty()
+      $(".variable-dropdown").empty()
+      $(".source-dropdown").append("<option>CCSM3</option>")
+      for (var i=0; i < data.data.length; i++){
+        html = "<option data-varid=" + data.data[i].variableid + ">"
+        html += data.data[i].variabledescription
+        html += "</option>"
+        $("#variable-dropdown").append(html)
+      }
+      makeNicheViewer()
+      $("#variable-dropdown").change(function(){
+        theVar = $("#variable-dropdown option:selected").data('varid')
+        console.log(theVar)
+          makeNicheHistogram(theVar)
+      })
+      // makeNicheHistogram(12)
+    },
+    error: function(xhr, status, error){
+      console.log("THERE WAS AN ERROR")
+      console.log(xhr.responseText)
+    },
+    beforeSend: function(){
+      console.log(this.url)
+    },
+    contentType: "json"
+  })
 }
