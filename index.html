@@ -47,6 +47,32 @@ label {
   z-index:10000;
 }
 
+nav{
+  z-index: 100000;
+}
+.iam-header{
+  display: inline;
+  padding: 0px;
+  color: white;
+}
+
+.container-fluid{
+  background-color: black;
+  padding: 5px;
+}
+.navbar{
+  min-height: 0px!important;
+}
+
+#bottom-chart{
+  height:100%;
+  width:100%;
+}
+
+svg{
+  height:100%;
+  width: 100%;
+}
 
   </style>
 
@@ -55,14 +81,36 @@ label {
 
 <body>
 
-  <div class="ui-layout-north">North</div>
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <!-- <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button> -->
+        <h3 class='iam-header' >Ice Age Mapper <span class='text-muted'><small>v2.0</small></span></h3>
+      </div>
+    </div><!--/.container-fluid -->
+  </nav>
+
   <div class="ui-layout-west">
     <div id='map'>
 
     </div>
   </div>
-  <div class="ui-layout-center"><div class="wrapper">Center</div></div>
-  <div class="ui-layout-south">South</div>
+  <div class="ui-layout-center">
+    <!--tabs should go here-->
+    <div id='niche-viewer'>
+
+    </div>
+  </div>
+  <div class="ui-layout-south">
+    <div id='bottom-chart'>
+
+    </div>
+  </div>
 
 
   <script src="https://code.jquery.com/jquery-3.1.1.js" integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA=" crossorigin="anonymous"></script>
@@ -71,6 +119,7 @@ label {
   <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
   <script src="lib/jquery.layout_and_plugins.js"></script>
+  <script src="https://d3js.org/d3-brush.v1.min.js"></script>
 
   <script>
 globals = {}
@@ -102,7 +151,8 @@ function createLayout(initWidth){
     west__togglerLength_open:		105,
     west__togglerContent_closed:	toggleButtons,
     west__togglerContent_open:		toggleButtons,
-    west__onresize: resizeMapPanel
+    west__onresize: resizeMapPanel,
+    south__size: '20%'
   });
 
   myLayout.togglers.west
@@ -142,6 +192,90 @@ $( function() {
   $( document ).tooltip({track: true});
 } );
   </script>
+
+  <script>
+
+var svg = d3.select("#bottom-chart").append('svg'),
+    margin = {top: 20, right: 50, bottom: 30, left: 50},
+    width = +$("body").width() - margin.left - margin.right,
+    height = (+$("body").height() * 0.08) - margin.top - margin.bottom,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var currentRange;
+
+var x = d3.scaleLinear()
+    .rangeRound([0, width]);
+
+var y = d3.scaleLinear()
+    .rangeRound([height, 0]);
+
+var line = d3.line()
+    .x(function(d) { return x(d.YearsBP); })
+    .y(function(d) { return y(d.TempC); });
+
+var brush = d3.brushX()
+.extent([[0, 0], [width, height]])
+  .on("brush end", brushed);
+
+ xMap = function(d) { return x(d.YearsBP); }
+ yMap = function(d){return y(d.TempC)}
+
+ var inRange = function(d) {
+    if(!currentRange || d.YearsBP < currentRange[0] || d.YearsBP > currentRange[1] ) {
+        return 0;
+    } else {
+        return 6;
+    }
+}
+
+d3.csv("data/greenlandT.csv", function(d) {
+  d.TempC = +d.TempC;
+  d.YearsBP = +d.YearsBP;
+  return d;
+}, function(error, data) {
+  if (error) throw error;
+
+  x.domain(d3.extent(data, function(d) { return d.YearsBP; }));
+  y.domain(d3.extent(data, function(d) { return d.TempC; }));
+
+  g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+  g.append("g")
+      .attr("class", "axis axis--y")
+      .call(d3.axisLeft(y))
+    .append("text")
+      .attr("fill", "#000")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .style("text-anchor", "end")
+      .text("Temperature (C)");
+
+  g.append("path")
+      .datum(data)
+      .attr("class", "line")
+      .attr("d", line)
+      .style('stroke', 'red')
+      .style('fill', 'none');
+
+  var gBrush = g.append("g")
+          .attr("class", "brush")
+          .call(brush);
+
+});
+
+function brushed() {
+  var s = d3.event.selection;
+  if (s == null) {
+  } else {
+    var sx = s.map(x.invert);
+  }
+  currentRange = sx
+}
+</script>
 
 
 </body>
