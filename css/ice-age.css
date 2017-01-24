@@ -1,4 +1,8 @@
-<style>
+html, body{
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
 
 #map{
   height: 100%;
@@ -6,39 +10,36 @@
   padding: 0px;
 }
 
+.ui-layout-east{
+    padding-top: 25px;
+}
 .ui-layout-west{
   padding: 0px;
-}
-.ui-layout-pane {
-background:	#EEE;
-}
-.ui-layout-west {
-background:	#CFC;
+  padding-top: 25px;
 }
 .ui-layout-center {
-background:	#FFC;
-padding:	0; /* IMPORTANT - remove padding so pane can 'collapse' to 0-width */
+  padding:	0; /* IMPORTANT - remove padding so pane can 'collapse' to 0-width */
 }
-.ui-layout-center > .wrapper {
-  padding:	10px;
+.ui-layout-pane			{
+  border-width:			0;
 }
-.ui-layout-pane			{ border-width:			0; }
-.ui-layout-north		{ border-bottom-width:	1px; }
-.ui-layout-south		{ border-top-width:		1px; }
-.ui-layout-resizer-west { border-width:			0 1px; }
-.ui-layout-toggler-west { border-width:			0; }
+.ui-layout-south		{
+  border-top-width:		1px;
+}
+
+.ui-layout-toggler-south {
+  display: none;
+}
+.ui-layout-resizer-west {
+  border-width:			0 1px;
+}
+.ui-layout-toggler-west {
+  border-width:			0;
+}
 .ui-layout-toggler-west div {
-width:	8px;
-height:	35px; /* 3x 35 = 105 total height */
+  width:	8px;
+  height:	35px; /* 3x 35 = 105 total height */
 }
-.ui-layout-toggler-west .btnCenter	{ background: #00C; }
-.ui-layout-toggler-west .btnWest	{ background: #090; }
-.ui-layout-toggler-west .btnBoth	{ background: #C00; }
-
-body, html, .ui-layout-south{
-overflow: hidden;
-}
-
 
 nav{
 z-index: 100000;
@@ -52,35 +53,58 @@ color: white;
 }
 
 .container-fluid{
-background-color: black;
-padding: 5px;
+  background-color: black;
+  padding: 5px;
 }
+
+
+#searchButtonRow{
+  margin-top: 5%;
+}
+#otherResourcesRow{
+  margin-top: 10%;
+}
+
+#addDataButton{
+  margin-left: 10%;
+}
+
+#headerRow{
+  display: inline;
+}
+#dropdown-menu{
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+
+.verticalLine-left {
+border-left: thin solid black ;
+}
+
 .navbar{
-min-height: 0px!important;
+margin-bottom: 0px;
 }
 
-#bottom-chart{
-height:100%;
-width:100%;
+#main {
+  position: relative;
+  height:		100%;
+  width:		100%;
 }
 
-#bottom-chart>svg{
-height:100%;
-width: 100%;
+.cover{
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  opacity: 50%;
+  z-index: 1999;
 }
 
-
-#addData{
-color: cyan!important;
+.cover-full{
+    background-color:rgba(0, 175, 195, 1);
 }
 
-.modal{
-z-index: 120012010201;
+.cover-half{
+    background-color:rgba(0, 175, 195, 0.5);
 }
-
-#niche-viewer{
-position:absolute;
-top: 15%;
-}
-
-</style>

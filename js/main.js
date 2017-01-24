@@ -6,69 +6,6 @@
 
 console.log("Welcome to Ice Age Mapper.\n\tRunning script version 2.1.\n\tLead Author: Scott Farley\n\tUniversity of Wisconsin, Madison")
 
-
-globals = {}
-
-globals.data = {} //all data gets held here
-
-
-globals.config = {
-  //this holds rules for static configuration of the application
-  //variables go in here if they will be consistent from session to session and user to user
-  map: {
-    primaryTileURL: 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', //where to go to get tiles
-    maxZoom: 8, //max zoom level of map
-  }, //end map
-  layout: {
-    margins: {
-      timePanel: {
-        left: 50,
-        right: 25,
-        top: 0,
-        bottom: 50
-      }
-    },//end margins
-  },//end layout
-  dataSources: {
-    taxa: "data/taxa.json",
-    ecolGroups: "http://api.neotomadb.org/v1/dbtables/ecolGroupTypes?fields=EcolGroupID,EcolGroup",
-    occurrences: "http://api.neotomadb.org/v1/data/SampleData"
-  },
-  searchSwitch: "search",
-  searchGeoBounds: [-167, 5, -50, 90],
-  searchAgeBounds: [-250, 22000]
-}//end config
-
-
-globals.state = {//this holds all relevant info to be shared and saved.
-  //variables go in here if they might be modified by the user during a session
-  sitePanel : { //left-hand panel configuration that holds details about the user-selected site
-    open: false, //is the panel open?
-    siteID: -1,//database ID of the site the user selected
-  },
-  timePanel :{ //bottom panel that contains temporal brushing and browsing
-    axis: 1, //multiple y-axes may be chosen, each with the same x-axis --> browsing is the same
-            //1. Greenland Northern Hemisphere Temprature
-            //2. Number of Samples per 500 Years --> histogram layout
-  },
-  time : { //temporal filter controls
-    minYear: -Infinity, //most recent year in current filter
-    maxYear: Infinity, //most distant year in current filter
-    interval: Infinity //the interval in years between min and max years, so the user can set only one of the above
-  },
-  map : { //main map panel configuration
-    center: [-90, 30], //center of the map
-    zoom: 4, //zoom level of map
-    showIce: true, //show the ice sheets during browsing
-  },
-  analytics: { //right hand panel with analytics charts
-    open: false //is the panel open?
-  }
-}
-
-globals.elements = {} //dom elements we should keep track of
-
-
 function loadTaxa(callback){
   //loads the taxa file specified in the configuration object
   //runs the callback specified in the arguments
@@ -132,8 +69,10 @@ function populateTaxaAutocomplete(){
 
 function initialize(){
   //initialization routines
-  loadTaxa(populateTaxaAutocomplete)
-  loadEcolGroups(populateEcolGroupDropdown)
+  createLayout()//load the page layout
+  loadTaxa(populateTaxaAutocomplete) //load the taxa file
+  loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
+  createMap() //create the map in the center div
 }
 
 $(document).ready(function(){
@@ -177,9 +116,76 @@ function getOccurrenceData(){
 }
 
 function processOccurrences(){
-  console.log(
-    "ready to process"
-  )
+  for (var i=0; i < globals.data.occurrences.length; i++){
+     lat = (globals.data.occurrences [i]['SiteLatitudeNorth'] + globals.data.occurrences [i]['SiteLatitudeSouth'])/2
+     lng = (globals.data.occurrences[i]['SiteLongitudeWest'] + globals.data.occurrences [i]['SiteLongitudeEast'])/2
+     globals.data.occurrences [i]['latitude'] = lat
+     globals.data.occurrences[i]['longitude'] = lng
+     globals.data.occurrences[i]['age'] = globals.data.occurrences[i]['SampleAge']
+     if (globals.data.occurrences[i]['age'] == null){
+       globals.data.occurrences[i]['age'] = (globals.data.occurrences[i]['SampleAgeYounger'] + globals.data.occurrences[i]['SampleAgeOlder'])/2
+     }
+   }
+
+   //prepare data to be crossfiltered.
+   globals.filters.occurrences = crossfilter(globals.data.occurrences)
+
+   //dimensions to be filtered
+   globals.filters.occurrenceValueDimension = globals.filters.occurrences.dimension(function(d){return d.Value})
+   globals.filters.occurrenceYearDimension = globals.filters.occurrences.dimension(function(d){return d.age})
+   putPointsOnMap()
+}
+
+function putPointsOnMap(){
+  globals.map.removeLayer(globals.map.ptsLayer)
+  pts = []
+  for (var i=0; i < globals.data.occurrences.length; i++){
+    d = globals.data.occurrences[i]
+    m = L.circleMarker([d['latitude'], d['longitude']])
+    m.age = d.age
+    pts.push(m)
+  }
+  globals.map.ptsLayer = L.layerGroup(pts)
+  globals.map.addLayer(globals.map.ptsLayer)
+
+  globals.filters.mapMarkers = crossfilter(pts)
+  globals.filters.mapYearDimension = globals.filters.mapMarkers.dimension(function(d){return d.age})
+}
+
+function createMap(){
+  //load a leaflet map into the map div
+  //use the tileset described in the configuration object
+  globals.map = L.map('map', {
+    zoomControl: false
+  }).setView(globals.state.map.center, globals.state.map.zoom);
+  L.tileLayer(globals.config.map.primaryTileURL).addTo(globals.map);
+  globals.map.ptsLayer = L.layerGroup()
+}
+
+
+//set up the layout
+//use the parameters in the configuration object
+function createLayout(){
+		globals.layout = $('body').layout({
+      south: {
+        size: globals.config.layout.southPanelSize,
+        resizable: globals.config.layout.southPanelResizable,
+        initClosed: !globals.state.layout.southPanelIsOpen,
+        closable: globals.config.layout.southPanelClosable
+      },
+      west: {
+        size: globals.config.layout.westPanelSize,
+        resizable: globals.config.layout.westPanelResizable,
+        initClosed: !globals.state.layout.westPanelIsOpen,
+        closable: globals.config.layout.westPanelClosable
+      },
+      east: {
+        size: globals.config.layout.eastPanelSize,
+        resizable: globals.config.layout.eastPanelResizable,
+        initClosed: !globals.state.layout.eastPanelIsOpen,
+        closable: globals.config.layout.eastPanelClosable
+      }
+    });
 }
 
 //Events
@@ -205,4 +211,11 @@ $("#searchButton").click(function(){
   //start search
   getOccurrenceData()
   //do loading stuff
+  $(".cover").removeClass("cover-full").addClass("cover-half")
+  $(".cover").show()
 })
+
+//hide loading screen when load is finished
+Pace.on("done", function(){
+    $(".cover").fadeOut(500);
+});

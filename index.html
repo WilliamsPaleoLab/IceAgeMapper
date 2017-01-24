@@ -7,36 +7,21 @@
   <link rel='stylesheet' href="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.1/dc.css" />
   <link rel='stylesheet' href="css/awesomplete.css" />
   <link rel='stylesheet' href="css/loading.css" />
+  <link rel='stylesheet' href="css/layout-default.css" />
+  <!-- <link rel='stylesheet' href="css/jquery-ui.min.css" /> -->
   <link rel='stylesheet' href="css/ice-age.css" />
 
 </head>
 
 <style>
-  #searchButtonRow{
-    margin-top: 5%;
-  }
-  #otherResourcesRow{
-    margin-top: 10%;
-  }
 
-  #addDataButton{
-    margin-left: 10%;
-  }
 
-  #headerRow{
-    display: inline;
-  }
-  #dropdown-menu{
-    padding-top: 0px;
-    padding-bottom: 0px;
-  }
-
-  .verticalLine-left {
-  border-left: thin solid black ;
-}
 </style>
 
 <body>
+  <div class='cover cover-full'>
+    <!--hide page on load-->
+  </div>
 
   <nav class="navbar navbar-default">
     <div class="container-fluid">
@@ -69,6 +54,20 @@
       </ul>
     </div><!--/.container-fluid -->
   </nav>
+
+	<div class="ui-layout-west">West</div>
+  <div class="ui-layout-east">East</div>
+	<div class="ui-layout-center">
+    <div class="wrapper">
+      <!--here goes the map -->
+      <div id='map'>
+
+      </div>
+    </div>
+  </div>
+	<div class="ui-layout-south">South</div>
+
+
 
 
 <!-- Modal -->
@@ -131,13 +130,13 @@
   <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+  <script src="lib/jquery-ui.min.js"></script>
   <script src="lib/jquery.layout_and_plugins.js"></script>
   <script src="lib/crossfilter.min.js"></script>
   <script src="lib/awesomplete.js"></script>
   <script src="lib/pace.js"></script>
+  <script src="js/state.js"></script>
   <script src="js/main.js"></script>
-
-
 
 </body>
 </html>
