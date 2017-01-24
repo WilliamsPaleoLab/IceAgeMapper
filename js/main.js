@@ -1,5 +1,14 @@
 globals = {}
 
+console.log("Running script...")
+
+globals.climate = {}
+
+globals.climate.varA = 35
+globals.climate.varB = 34
+globals.climate.sourceA = 6
+globals.climate.sourceB = 6
+
 globals.config = {
   //this holds rules for static configuration of the application
   //variables go in here if they will be consistent from session to session and user to user
@@ -111,12 +120,14 @@ function initialize(){
   //4. Draw the greenland temperature curve in the bottom panel
   //5. Get taxa names from Neotoma
   //Parse the query string to check for state parameters
+  //setup niche-viewer in righthand panel
   processQueryString()
   getEcolGroups()
   createLayout();
   createMap();
   setupSouthSVG();
   drawSouthTempGraph();
+  setupEastSVG()
 }
 
 
@@ -164,6 +175,7 @@ function setupSouthSVG(){
       globals.dataYearDimension.filterRange(globals.currentRange)
       updateMapPoints()
     }
+updateNVPoints()
   }
 }
 
@@ -175,6 +187,25 @@ function updateMapPoints(){
   filteredMarkers = globals.map.pointsYears.top(Infinity)
   globals.map.ptsLayer = L.layerGroup(filteredMarkers)
   globals.map.addLayer(globals.map.ptsLayer)
+}
+
+function updateNVPoints(){
+  dots = globals.eastChart.svg.selectAll(".dot")
+    .data(globals.climYear.top(Infinity))
+
+    dots.enter().append("svg:g")
+      .attr("class", "dot")
+      .append("circle")
+
+    dots.transition().duration(500)
+    .selectAll("circle")
+    .attr("cx", function(d){return d.a})
+    .attr("cy", function(d){return d.bug})
+
+    dots.exit().transition().duration(500)
+    .selectAll("circle")
+    .attr("height", 0)
+    .remove();
 }
 
 function drawSouthTempGraph(){
@@ -306,6 +337,7 @@ function loadOccurrences(taxonid, callback){
       globals.occurrenceData = response['data']
        processData()
        addPoints()
+       getClimateData(globals.occurrenceData)
     }
   })
 }
@@ -343,17 +375,119 @@ function addPoints(){
   globals.map.addLayer( globals.map.ptsLayer)
 
   globals.map.cfPoints = crossfilter(pts)
+  // globals.map.cfPoints = globals.map.cfPoints .group(function(d){return d.DatasetID})
   globals.map.pointsYears = globals.map.cfPoints.dimension(function(d){return d.age})
+  console.log("Done adding points")
 }
 
 
 
-function filterTime(){
 
+function getClimateData(pts){
+
+  sendPts = []
+  for (var i = 0; i < pts.length; i++){
+    p = {
+      latitude :pts[i]['latitude'],
+      longitude : pts[i]['longitude'],
+      year : Math.round(pts[i]['age']),
+      id : pts[i]['DatasetID']
+    }
+    sendPts.push(p)
+  }
+
+
+
+  function getClim(variable, source) {
+    payload = {
+        "variableID": variable,
+         "sourceID": source,
+         "points" : sendPts
+      }
+
+    payload = JSON.stringify(payload)
+    return $.ajax({
+        url: "http://grad.geography.wisc.edu:8080/data",
+        method: "POST",
+        dataType: "json",
+        data: payload,
+        contentType: "application/json",
+        success: function(r){
+          console.log("Got climate return")
+        },
+        beforeSend: function(){
+          console.log(payload)
+        }
+    });
+  }
+
+  $.when(getClim(34, 6), getClim(34, 6)).done(mergeClimateData.bind(this));
 }
 
-function drawSouthHist(){
+function mergeClimateData(a, b){
+  console.log(this)
+  mergeResponse = []
+  console.log(a)
+  console.log(b)
+  aData = a[0]['data']
+  bData = b[0]['data']
+  for (i =0; i<aData.length;i++){
+    p = {
+      a: aData[i]['value'],
+      b: bData[i]['value'],
+      year: bData[i]['yearbp'],
+      aID: +aData[i]['id'],
+      bID: + bData[i]['id']
+    }
+    mergeResponse.push(p)
+  }
+  globals.climData = mergeResponse
+  globals.climcf = crossfilter(globals.climData)
+  globals.climDS = globals.climcf.dimension(function(d){return d.id})
+  globals.climYear = globals.climcf.dimension(function(d){return d.year})
+  console.log(globals.climData)
+  drawClim()
+}
 
+function setupEastSVG(){
+  globals.eastChart = {}
+  globals.eastChart.margin = {top: 20, right: 20, bottom: 30, left: 40}
+  globals.eastChart.width = globals.pageLayout.panes.center.outerWidth() - globals.eastChart.margin.left - globals.eastChart.margin.right,
+  globals.eastChart.height = globals.pageLayout.panes.center.outerHeight() * 0.5 - globals.eastChart.margin.top - globals.eastChart.margin.bottom;
+
+  globals.eastX = d3.scaleLinear().range([0, globals.eastChart.width]);
+  globals.eastY = d3.scaleLinear().range([globals.eastChart.height, 0]);
+
+  globals.eastChart.svg = d3.select("#niche-viewer").append("svg")
+    .attr("width", globals.eastChart.width + globals.eastChart.margin.left + globals.eastChart.margin.right)
+    .attr("height", globals.eastChart.height + globals.eastChart.margin.top + globals.eastChart.margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + globals.eastChart.margin.left + "," + globals.eastChart.margin.top + ")");
+}
+
+function drawClim(){
+  globals.eastChart.svg.empty()
+  // Scale the range of the data
+  globals.eastX.domain(d3.extent(globals.climDS.top(Infinity), function(d) { return d.a; }));
+  globals.eastY.domain(d3.extent(globals.climDS.top(Infinity), function(d) { return d.b; }));
+
+  // Add the scatterplot
+  globals.eastChart.svg.selectAll("dot")
+      .data(globals.climDS.top(Infinity))
+    .enter().append("circle")
+      .attr("r", 5)
+      .attr("cx", function(d) { return globals.eastX(d.a); })
+      .attr("cy", function(d) { return globals.eastX(d.b); });
+
+      // Add the X Axis
+    globals.eastChart.svg.append("g")
+        .attr("transform", "translate(0," + globals.eastChart.height + ")")
+        .call(d3.axisBottom(globals.eastX));
+
+    // Add the Y Axis
+    globals.eastChart.svg.append("g")
+        .call(d3.axisLeft(globals.eastY));
 }
 
 
@@ -385,6 +519,13 @@ function processQueryString(){
   }
 }
 
+function resizeEastChart(){
+  $("#niche-viewer").empty()
+  setupEastSVG()
+  if (globals.climDS != undefined){
+      drawClim()
+  }
+}
 
 /////////////////////////////////
 /////////////////////////////////
@@ -397,6 +538,7 @@ $(document).ready(function(){
 //Events//
 $(window).resize(function(){
   resizeSouthChart();
+  resizeEastChart()
 })
 
 $("#ecolGroupSelect").change(function(){
