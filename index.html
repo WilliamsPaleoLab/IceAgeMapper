@@ -8,6 +8,7 @@
   <link rel='stylesheet' href="css/awesomplete.css" />
   <link rel='stylesheet' href="css/loading.css" />
   <link rel='stylesheet' href="css/layout-default.css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" />
   <link rel='stylesheet' href="css/jquery-ui.min.css" />
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/dc/1.7.5/dc.css"/>
   <link rel='stylesheet' href="css/ice-age.css" />
@@ -34,10 +35,11 @@
           <span class="icon-bar"></span>
         </button>
         <div id='headerRow' class='col-xs-12'>
-          <h3 class='iam-header' id='iam-header'>Ice Age Mapper <span class='text-muted'><small>v2.0</small></span></h3>
+          <h3 class='iam-header' id='iam-header'>Ice Age <strong><i>Explorer</i></strong> <span class='text-muted'><small>v2.0</small></span></h3>
           <button type="button" class="btn btn-success" id='addDataButton' data-toggle="modal" data-target="#addDataModal">
           <span class='glyphicon glyphicon-plus'></span>Add Data
         </button>
+        <label class='text-muted' id='taxonid'></label>
         </div>
       </div>
       <ul class="nav navbar-nav navbar-right">
@@ -60,13 +62,31 @@
   <div class="ui-layout-east">
     <div class='container' id='analyticsContainer'>
       <!-- analytics charts -->
+      <div class='dc-chart col-xs-12' id='alt-lat-bubble'>
+
+      </div>
+      <h4 class='page-header'>Altitude Distribution</h4>
       <div class='dc-chart col-xs-12' id='altitudeChart'>
 
       </div>
+      <h4 class='page-header'>Latitude Distribution</h4>
       <div class='dc-chart col-xs-12' id='latitudeChart'>
 
       </div>
+      <h4 class='page-header'>Age Distribution</h4>
+      <div class='dc-chart col-xs-12' id='ageChart'>
+
+      </div>
+      <h4 class='page-header'>Abundance Distribution</h4>
       <div class='dc-chart col-xs-12' id='abundanceChart'>
+
+      </div>
+      <h4 class='page-header'>Principle Investigators</h4>
+      <div class='dc-chart col-xs-12' id='PIChart'>
+
+      </div>
+      <h4 class='page-header'>Record Types</h4>
+      <div class='dc-chart col-xs-12' id='recordTypeChart'>
 
       </div>
     </div>
@@ -79,7 +99,11 @@
       </div>
     </div>
   </div>
-	<div class="ui-layout-south">South</div>
+	<div class="ui-layout-south">
+    <div class='row' id='tempContainer'>
+
+    </div>
+</div>
 
 
 
@@ -148,11 +172,13 @@
   <script src="lib/jquery-ui.min.js"></script>
   <script src="lib/jquery.layout_and_plugins.js"></script>
   <script src="https://cdn.rawgit.com/crossfilter/reductio/master/reductio.min.js"></script>
+  <script src= "//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+  <script src="http://d3js.org/queue.v1.min.js"></script>
   <script src="lib/crossfilter.min.js"></script>
   <script src="lib/awesomplete.js"></script>
   <script src="lib/pace.js"></script>
   <script src="js/state.js"></script>
-    <script src="lib/dc.js"></script>
+  <script src="lib/dc.js"></script>
   <script src="js/main.js"></script>
 
 </body>

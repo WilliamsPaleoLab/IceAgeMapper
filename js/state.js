@@ -15,7 +15,9 @@ globals.config = {
   dataSources: { //URIs of data used in AJAX calls
     taxa: "data/taxa.json", //customized file with names of taxa to improve performanc
     ecolGroups: "http://api.neotomadb.org/v1/dbtables/ecolGroupTypes?fields=EcolGroupID,EcolGroup", //names and ids of ecological groups in neotoma
-    occurrences: "http://api.neotomadb.org/v1/data/SampleData" //endpoint for occurrence data
+    occurrences: "http://api.neotomadb.org/v1/data/SampleData", //endpoint for occurrence data
+    datasets: "http://api.neotomadb.org/v1/data/datasets", //endpoint for dataset metadata
+    sites: "http://api.neotomadb.org/v1/data/sites"//endpoint for site-level meta
   },
   searchSwitch: "search",
   searchGeoBounds: [-167, 5, -50, 90], //corresponds to the `loc` parameter in the Neotoma API
@@ -35,6 +37,7 @@ globals.config = {
     //controls for analytics charts on right hand panel
     latitudeDomainMin: 0, //min of latitude bar chart axis
     latitudeDomainMax: 90, //max of latitude bar chart axis
+    latitudeDomainResolution: 2.5,
     altitudeDomainMin: 0, //min of altitude bar chart axis
     altitudeDomainMax: 5000, //max of altitude bar chart axis
     abundanceDomainMin: 0, //min of abundance axis
@@ -78,3 +81,6 @@ globals.state = {//this holds all relevant info to be shared and saved.
 }
 
 globals.elements = {} //dom elements we should keep track of
+
+toastr.options.progressBar = true;
+toastr.options.timeOut = 500;

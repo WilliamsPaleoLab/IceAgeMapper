@@ -111,11 +111,36 @@ margin-bottom: 0px;
 
 #analyticsContainer{
   overflow-y:auto;
+  width:100%;
+  overflow-x: hidden;
 }
 
 .dc-chart{
   height: 33%;
-  background-color: cyan;
-  border: thin solid red;
+  /*background-color: cyan;
+  border: thin solid red;*/
   margin-bottom: 10px;
+}
+
+#temp-container{
+  height: 100%;
+  width: 100%;
+}
+
+
+
+body { font: 12px Arial;}
+
+path {
+    stroke: steelblue;
+    stroke-width: 2;
+    /*fill: none;*/
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: grey;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
 }
