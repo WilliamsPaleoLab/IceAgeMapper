@@ -108,3 +108,14 @@ margin-bottom: 0px;
 .cover-half{
     background-color:rgba(0, 175, 195, 0.5);
 }
+
+#analyticsContainer{
+  overflow-y:auto;
+}
+
+.dc-chart{
+  height: 33%;
+  background-color: cyan;
+  border: thin solid red;
+  margin-bottom: 10px;
+}

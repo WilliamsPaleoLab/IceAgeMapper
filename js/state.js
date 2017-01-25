@@ -12,24 +12,35 @@ globals.config = {
     primaryTileURL: 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', //where to go to get tiles
     maxZoom: 8, //max zoom level of map
   }, //end map
-  dataSources: {
-    taxa: "data/taxa.json",
-    ecolGroups: "http://api.neotomadb.org/v1/dbtables/ecolGroupTypes?fields=EcolGroupID,EcolGroup",
-    occurrences: "http://api.neotomadb.org/v1/data/SampleData"
+  dataSources: { //URIs of data used in AJAX calls
+    taxa: "data/taxa.json", //customized file with names of taxa to improve performanc
+    ecolGroups: "http://api.neotomadb.org/v1/dbtables/ecolGroupTypes?fields=EcolGroupID,EcolGroup", //names and ids of ecological groups in neotoma
+    occurrences: "http://api.neotomadb.org/v1/data/SampleData" //endpoint for occurrence data
   },
   searchSwitch: "search",
-  searchGeoBounds: [-167, 5, -50, 90],
-  searchAgeBounds: [-250, 22000],
+  searchGeoBounds: [-167, 5, -50, 90], //corresponds to the `loc` parameter in the Neotoma API
+  searchAgeBounds: [-250, 22000], //corresponds to the ageYoung and ageOld parameters in the Neotoma API
   layout: {
-    southPanelSize: '25%',
-    eastPanelSize: '30%',
-    westPanelSize: '25%',
-    southPanelResizable: false,
-    eastPanelResizable: false,
-    westPanelResizable: false,
-    southPanelClosable: false,
-    eastPanelClosable: true,
-    westPanelClosable: true
+    southPanelSize: '25%', //percent of page width for bottom panel
+    eastPanelSize: '30%', //percent of page width for analytics panel
+    westPanelSize: '25%', //percent of page width for left (site details) panel
+    southPanelResizable: false, //can you resize the bottom panel?
+    eastPanelResizable: true, //can you resize the right hand panel?
+    westPanelResizable: true, //can you resize the left hand panel?
+    southPanelClosable: false, //can you close the bottom panel?
+    eastPanelClosable: true, //can you close the right hand panel?
+    westPanelClosable: true //can you close the left hand panel?
+  },
+  analytics: {
+    //controls for analytics charts on right hand panel
+    latitudeDomainMin: 0, //min of latitude bar chart axis
+    latitudeDomainMax: 90, //max of latitude bar chart axis
+    altitudeDomainMin: 0, //min of altitude bar chart axis
+    altitudeDomainMax: 5000, //max of altitude bar chart axis
+    abundanceDomainMin: 0, //min of abundance axis
+    abundanceDomainMax: 100,//max of abundance axis
+    timeDomainMin: 0, //min of time bar chart axis
+    timeDomainMax: 22000 //max of time bar chart axis
   }
 }//end config
 
@@ -57,7 +68,7 @@ globals.state = {//this holds all relevant info to be shared and saved.
     showIce: true, //show the ice sheets during browsing
   },
   analytics: { //right hand panel with analytics charts
-    open: false //is the panel open?
+    open: false //is the panel open?,
   },
   layout: {
     eastPanelIsOpen: true,

@@ -73,6 +73,7 @@ function initialize(){
   loadTaxa(populateTaxaAutocomplete) //load the taxa file
   loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
   createMap() //create the map in the center div
+  createAnalyticsCharts() //setup visual analytics charts on the righthand panel
 }
 
 $(document).ready(function(){
@@ -133,7 +134,25 @@ function processOccurrences(){
    //dimensions to be filtered
    globals.filters.occurrenceValueDimension = globals.filters.occurrences.dimension(function(d){return d.Value})
    globals.filters.occurrenceYearDimension = globals.filters.occurrences.dimension(function(d){return d.age})
-   putPointsOnMap()
+   globals.filters.occurrenceLatitudeDimension = globals.filters.occurrences.dimension(function(d){return d.latitude})
+
+   //summarize
+   globals.filters.occurrenceLatitudeSummary = globals.filters.occurrenceLatitudeDimension.group().reduceCount()
+   globals.filters.occurrenceAltitudeSummary = globals.filters.occurrence
+
+   //callbacks to be completed once data has been processed
+   putPointsOnMap() //put circles on map
+
+   //update chart data
+   globals.elements.latitudeChart
+    .dimension(globals.filters.occurrenceLatitudeDimension)
+    .group(globals.filters.occurrenceLatitudeSummary);
+
+    redrawAnalytics()
+}
+
+function redrawAnalytics(){
+  dc.renderAll();
 }
 
 function putPointsOnMap(){
@@ -188,13 +207,25 @@ function createLayout(){
     });
 }
 
+function createAnalyticsCharts(){
+  //initialize DOM elements for analytics charts on the right panel
+  globals.elements.latitudeChart = dc.barChart("#latitudeChart")
+    .width($("#analyticsContainer").width())
+    .height($("#latitudeChart").height())
+    .x(d3.scale.linear().domain([globals.config.analytics.latitudeDomainMin,globals.config.analytics.latitudeDomainMax]))
+    .brushOn(false)
+}
+
+function applySavedState(){
+
+}
+
 //Events
 //on a change of the dropdown, filter the taxa and put them in the next dropdown
 $("#ecolGroupSelect").change(function(){
   selectedGrp = $("#ecolGroupSelect :selected").val()
   filterAndPopulateTaxaDropdown(selectedGrp)
   globals.config.searchSwitch = "browse"
-  $("")
 })
 //toggle the search switch when the user searches with the search bar
 //or browses with the dropdowns
