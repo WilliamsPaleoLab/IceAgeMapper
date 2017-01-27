@@ -24,7 +24,7 @@ globals.config = {
   searchAgeBounds: [-250, 22000], //corresponds to the ageYoung and ageOld parameters in the Neotoma API
   layout: {
     southPanelSize: '25%', //percent of page width for bottom panel
-    eastPanelSize: '30%', //percent of page width for analytics panel
+    eastPanelSize: '50%', //percent of page width for analytics panel
     westPanelSize: '25%', //percent of page width for left (site details) panel
     southPanelResizable: false, //can you resize the bottom panel?
     eastPanelResizable: true, //can you resize the right hand panel?
@@ -43,7 +43,13 @@ globals.config = {
     abundanceDomainMin: 0, //min of abundance axis
     abundanceDomainMax: 100,//max of abundance axis
     timeDomainMin: 0, //min of time bar chart axis
-    timeDomainMax: 22000 //max of time bar chart axis
+    timeDomainMax: 22000, //max of time bar chart axis
+    colorYoung: "blue", //color to represent earliest dates on bubble chart
+    colorOld:'red', //color to represent oldest dates on bubble chart
+    timeBinSize: 500, //how big are the time bins in the analytics charts? --> years
+    latitudeBinSize: 0.5, //how big are the latitude bins in the analytics charts? --> degrees
+    abundanceBinSize: 1,//how big are the abundance bins in the analytics charts? --> TODO: this gets weird with mammal/pollen percent.
+    altitudeBinSize: 500 //altitude bins --> meters
   }
 }//end config
 
@@ -75,12 +81,10 @@ globals.state = {//this holds all relevant info to be shared and saved.
   },
   layout: {
     eastPanelIsOpen: true,
-    southPanelIsOpen: true,
+    southPanelIsOpen: false,
     westPanelIsOpen: false
   }
 }
 
 globals.elements = {} //dom elements we should keep track of
-
-toastr.options.progressBar = true;
-toastr.options.timeOut = 500;
+                      //anatyics chart elements are here

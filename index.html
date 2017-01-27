@@ -61,34 +61,44 @@
 	<div class="ui-layout-west">West</div>
   <div class="ui-layout-east">
     <div class='container' id='analyticsContainer'>
-      <!-- analytics charts -->
-      <div class='dc-chart col-xs-12' id='alt-lat-bubble'>
+      <div class='row '>
+        <h5 class='page-header'>Summary</h5>
+        <a class='reset'
+          href='javascript:myChart.filterAll();dc.redrawAll();'
+          style='visibility: hidden;'>reset</a>
+        <div id='alt-lat-Chart' class = "dc-chart col-xs-12">
 
+        </div>
       </div>
-      <h4 class='page-header'>Altitude Distribution</h4>
-      <div class='dc-chart col-xs-12' id='altitudeChart'>
 
-      </div>
-      <h4 class='page-header'>Latitude Distribution</h4>
-      <div class='dc-chart col-xs-12' id='latitudeChart'>
+      <div class='row col-xs-12 dashboard-row '>
 
-      </div>
-      <h4 class='page-header'>Age Distribution</h4>
-      <div class='dc-chart col-xs-12' id='ageChart'>
+        <div class='dc-chart col-xs-6' id='latitudeChart'>
+            <h5 class='page-header'>Latitude Distribution</h5>
+        </div>
 
-      </div>
-      <h4 class='page-header'>Abundance Distribution</h4>
-      <div class='dc-chart col-xs-12' id='abundanceChart'>
+        <div class='dc-chart col-xs-6' id='ageChart'>
+            <h5 class='page-header'>Age Distribution</h5>
+        </div>
+      </div> <!-- end row -->
 
+      <div class='row dashboard-row'>
+        <div class='dc-chart col-xs-12' id='abundanceChart'>
+            <h5 class='page-header'>Abundance Distribution</h5>
+        </div>
       </div>
-      <h4 class='page-header'>Principle Investigators</h4>
-      <div class='dc-chart col-xs-12' id='PIChart'>
 
-      </div>
-      <h4 class='page-header'>Record Types</h4>
-      <div class='dc-chart col-xs-12' id='recordTypeChart'>
 
-      </div>
+      <div class='row col-xs-12 dashboard-row'>
+        <div class='dc-chart col-xs-6' id='PIChart'>
+              <h5 class='page-header'>Principle Investigators</h5>
+        </div>
+
+        <div class='dc-chart col-xs-6' id='recordTypeChart'>
+            <h5 class='page-header'>Record Types</h5>
+        </div>
+      </div> <!-- end row-->
+
     </div>
   </div>
 	<div class="ui-layout-center">

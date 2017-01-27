@@ -121,6 +121,7 @@ function getOccurrenceData(callback){
 }
 
 function processNeotomaData(){
+  internalID = 0
   for (var i=0; i < globals.data.occurrences.length; i++){
      lat = (globals.data.occurrences [i]['SiteLatitudeNorth'] + globals.data.occurrences [i]['SiteLatitudeSouth'])/2
      lng = (globals.data.occurrences[i]['SiteLongitudeWest'] + globals.data.occurrences [i]['SiteLongitudeEast'])/2
@@ -130,56 +131,237 @@ function processNeotomaData(){
      if (globals.data.occurrences[i]['age'] == null){
        globals.data.occurrences[i]['age'] = (globals.data.occurrences[i]['SampleAgeYounger'] + globals.data.occurrences[i]['SampleAgeOlder'])/2
      }
+     globals.data.occurrences[i]._id = internalID
+     internalID += 1
    }
 
-   //prepare data to be crossfiltered.
-   globals.filters.occurrences = crossfilter(globals.data.occurrences)
-
-   //dimensions to be filtered
-   globals.filters.occurrenceValueDimension = globals.filters.occurrences.dimension(function(d){if (d.VariableUnits == "NISP") {return d.Value}else{return "NA"}})
-   globals.filters.occurrenceAgeDimension = globals.filters.occurrences.dimension(function(d){return Math.round(d.age/1000)*1000})
-   globals.filters.occurrenceLatitudeDimension = globals.filters.occurrences.dimension(function(d){return Math.round(d.latitude/2)*2})
-   globals.filters.occurrenceAltitudeDimension = globals.filters.occurrences.dimension(function(d){return Math.round(d.DatasetMeta.Site.altitude/1000)*1000})
-   globals.filters.occurrencePIDimension = globals.filters.occurrences.dimension(function(d){
-            if (d.DatasetMeta.DatasetPIs.length != 0){
-              return d.DatasetMeta.DatasetPIs[0].ContactName
-            }else{
-              return "None Listed."
-            }})
-   globals.filters.occurrenceRecordTypeDimension = globals.filters.occurrences.dimension(function(d){return d.VariableUnits})
-
-   //summarize
-   globals.filters.occurrenceLatitudeSummary = globals.filters.occurrenceLatitudeDimension.group().reduceCount()
-   globals.filters.occurrenceAltitudeSummary = globals.filters.occurrenceAltitudeDimension.group().reduceCount()
-   globals.filters.occurrenceValueSummary = globals.filters.occurrenceValueDimension.group().reduceCount()
-   globals.filters.occurrenceAgeSummary = globals.filters.occurrenceAgeDimension.group().reduceCount()
-   globals.filters.occurrencePISummary = globals.filters.occurrencePIDimension.group().reduceCount()
-   globals.filters.occurrenceRecordTypeSummary = globals.filters.occurrenceRecordTypeDimension.group().reduceCount()
+   crossFilterData() //prepare data for filtering and plotting with crossfilter library
 
    //callbacks to be completed once data has been processed
    putPointsOnMap() //put circles on map
 
-   //update chart data
+   datafyAnalyticsCharts() //update charts with data
+
+  redrawAnalytics()
+
+  globals.map.on('moveend', function(){
+    //filter the bubble chart (id dimension)
+    //on visible map bounds
+    bounds = globals.map.getBounds();
+    N = bounds._northEast['lat']
+    E = bounds._northEast['lng']
+    S = bounds._southWest['lat']
+    W = bounds._southWest['lng']
+
+    ids = []
+    layerList = globals.map.ptsLayer._layers
+    for ( i in layerList){
+      thisLayer = layerList[i]
+      if (isInMapBounds(thisLayer)){
+        ids.push(thisLayer._id)
+      }
+    }
+    globals.elements.bubbleChart.filterAll()
+    globals.elements.bubbleChart.filter([ids])
+    dc.redrawAll()
+  })
+}
+
+function crossFilterData(){
+  //establish dimensions and groupings of neotoma data for putting into the analytics charts
+  //prepare data to be crossfiltered.
+  globals.filters.occurrences = crossfilter(globals.data.occurrences)
+
+  //dimensions to be filtered
+
+  //bin by the record type
+  //so we can make a pie chart of the different record types
+  //facilitates visualization of both mammal and pollen data
+  globals.filters.occurrenceValueDimension = globals.filters
+        .occurrences
+        .dimension(function(d){
+          if (d.VariableUnits == "NISP") {
+            return d.Value
+          }else{
+            return 0
+        }})
+
+  //bin by age
+  globals.filters.occurrenceAgeDimension = globals.filters
+        .occurrences
+        .dimension(
+          function(d){
+            return d.age
+          })
+
+  //bin by latitude
+  globals.filters.occurrenceLatitudeDimension = globals.filters
+        .occurrences
+        .dimension(function(d){
+          return d.latitude
+        })
+  //bin by altitude
+  globals.filters.occurrenceAltitudeDimension = globals.filters
+        .occurrences
+        .dimension(function(d){
+          return d.altitude
+        })
+
+  //bin the investigators together
+  //filitates sorting by datasetPI
+  globals.filters.occurrencePIDimension = globals.filters
+      .occurrences
+      .dimension(function(d){
+        //TODO: Not working.
+        if ((d.DatasetMeta.DatasetPIs[0] != undefined)){
+          return d.DatasetMeta.DatasetPIs[0].ContactName
+        }else{
+          return "None Listed"
+        }
+
+       })
+
+  //bin by abundance
+  //should return something not a percent for non-percentage data
+  //TODO: need to get total field first
+  globals.filters.occurrenceRecordTypeDimension = globals.filters
+        .occurrences
+        .dimension(function(d){
+          return d.VariableUnits
+        })
+
+  //summarize into groups
+
+  //histogram the latitude bins
+  globals.filters.occurrenceLatitudeSummary = globals.filters.occurrenceLatitudeDimension.group(
+    function(d){
+      x = Math.round(d / globals.config.analytics.latitudeBinSize)* globals.config.analytics.latitudeBinSize
+      return x
+    }
+  ).reduceCount()
+
+  // group altitude bins
+  globals.filters.occurrenceAltitudeSummary = globals.filters.occurrenceAltitudeDimension.group(function(d){
+    return Math.round(d / globals.config.analytics.altitudeBinSize) * globals.config.analytics.altitudeBinSize
+  }).reduceCount()
+
+  //group abundance bins
+  globals.filters.occurrenceValueSummary = globals.filters.occurrenceValueDimension.group(function(d){
+    return Math.round(d/ globals.config.analytics.abundanceBinSize) * globals.config.analytics.abundanceBinSize
+  }).reduceCount()
+
+  //group age bins
+  globals.filters.occurrenceAgeSummary = globals.filters.occurrenceAgeDimension.group(function(d){
+    return Math.round(d/globals.config.analytics.timeBinSize)*globals.config.analytics.timeBinSize
+  }).reduceCount()
+
+  //group PIs
+  globals.filters.occurrencePISummary = globals.filters.occurrencePIDimension.group().reduceCount()
+  //group record types
+  globals.filters.occurrenceRecordTypeSummary = globals.filters.occurrenceRecordTypeDimension.group().reduceCount()
+
+  //create a custom dimension to make the bubble chart work
+  globals.filters.idDimension = globals.filters.occurrences.dimension(function(d){return d._id})
+
+  //customize the reduce function to reduce multiple values
+  //for the bubble chart, returns
+    //altitude(sum, average)
+    //latitude(sum, average)
+    //age(sum, average)
+    //value(sum, average)
+    //count
+  globals.filters.multiDimension = globals.filters.idDimension.group().reduce(
+    //add
+    function(p, v){
+      ++p.count;
+      p.altitude_sum += v.altitude;
+      p.altitude_average = p.altitude_sum / p.count;
+      p.latitude_sum += v.latitude;
+      p.latitude_average = p.latitude_sum / p.count;
+      p.age_sum += v.age
+      p.age_average = p.age_sum / p.count;
+      p.value_sum += v.Value;
+      p.value_average = p.value_sum / p.count;
+      return p;
+    },
+    //remove
+    function(p, v){
+      --p.count;
+      p.altitude_sum -= v.altitude;
+      p.altitude_average = p.altitude_sum / p.count;
+      p.latitude_sum -= v.latitude;
+      p.latitude_average = p.latitude_sum / p.count;
+      p.age_sum -= v.age
+      p.age_average = p.age_sum / p.count;
+      p.value_sum -= v.Value;
+      p.value_average = p.value_sum / p.count;
+      return p;
+    },
+    //initialize
+    function(p, v){
+      return {count:0,
+        altitude_sum: 0,
+        altitude_average:0,
+        latitude_sum: 0,
+        latitude_average: 0,
+        age_sum: 0,
+        age_average: 0,
+        value_sum: 0,
+        value_average: 0}
+    }
+  )
+}
+
+genericAverageReduce = {
+  add: function(p, v){ //add record
+    ++p.count
+    p.latitude_sum += v.latitude
+    p.latitude = p.latitude / p.count
+  },
+  remove: function(p, v){//remove record
+    --p.count
+    p.latitude_sum -= v.latitude
+    p.latitude = p.latitude / p.count
+  },
+  init: function(p, v){
+    //initialize group
+    return({count: 0, latitude_sum: 0, latitude: 0})
+  }
+}
+
+function redrawAnalytics(){
+  //wrapper function to update charts with new data
+  dc.renderAll();
+  dc.redrawAll();
+}
+
+
+function datafyAnalyticsCharts(){
+  //put new data into the analytics charts
+  //  //update chart data
+  //  globals.elements.altitudeChart
+  //     .dimension(globals.filters.occurrenceAltitudeDimension)
+  //     .group(globals.filters.occurrenceAltitudeSummary)
+  //      .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.DatasetMeta.Site.Altitude})))
+   //
+
    globals.elements.latitudeChart
     .dimension(globals.filters.occurrenceLatitudeDimension)
     .group(globals.filters.occurrenceLatitudeSummary)
     .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.latitude})))
-
-
-  globals.elements.altitudeChart
-     .dimension(globals.filters.occurrenceLatitudeDimension)
-     .group(globals.filters.occurrenceLatitudeSummary)
-      .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.DatasetMeta.Site.Altitude})))
+    .xUnits(function(start, end, xDomain) { return (end - start) / globals.config.analytics.latitudeBinSize; })
 
   globals.elements.ageChart
     .dimension(globals.filters.occurrenceAgeDimension)
     .group(globals.filters.occurrenceAgeSummary)
-      .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.age})))
+    .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.age})))
+    .xUnits(function(start, end, xDomain) { return (end - start) / globals.config.analytics.timeBinSize; })
 
   globals.elements.abundanceChart
     .dimension(globals.filters.occurrenceValueDimension)
     .group(globals.filters.occurrenceValueSummary)
       .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.Value})))
+      .xUnits(function(start, end, xDomain) { return (end - start) / globals.config.analytics.abundanceBinSize; })
 
   globals.elements.PIChart
     .dimension(globals.filters.occurrencePIDimension)
@@ -189,32 +371,13 @@ function processNeotomaData(){
     .dimension(globals.filters.occurrenceRecordTypeSummary)
     .group(globals.filters.occurrenceRecordTypeSummary)
 
+  globals.elements.bubbleChart
+  .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.latitude})))
+  .y(d3.scale.linear().domain([1, d3.max(globals.data.occurrences, function(d){return d.altitude})]))
+  .r(d3.scale.linear().domain(d3.extent([0, 100])))
+  .dimension(globals.filters.idDimension)
+  .group(globals.filters.multiDimension)
 
-  // globals.elements.bubble
-  //   // .dimension(globals.filters.occurrenceValueDimension)
-  //   // .group(globals.filters.occurrenceValueSummary)
-  //   // .colors(d3.scale.category10())
-  //   // .keyAccessor(function(p){return p.value.latitude})
-  //   // .valueAccessor(function(p){
-  //   //   console.log(p.value)
-  //   //   return p.value.DatasetMeta.Site.Altitude})
-  //   // .radiusValueAccessor(function(p){return p.value.Value})
-  //   .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.latitude})))
-  //   .y(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.DatasetMeta.Site.Altitude})))
-  //   .r(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.Value})))
-  //   .elasticY(true)
-  //   .maxBubbleRelativeSize(0.07)
-  //   .renderHorizontalGridLines(true)
-  //   .renderVerticalGridLines(true)
-  //   .renderLabel(true)
-  //   .renderTitle(true)
-
-
-  redrawAnalytics()
-}
-
-function redrawAnalytics(){
-  dc.renderAll();
 }
 
 function putPointsOnMap(){
@@ -224,13 +387,11 @@ function putPointsOnMap(){
     d = globals.data.occurrences[i]
     m = L.circleMarker([d['latitude'], d['longitude']])
     m.age = d.age
+    m._id = d._id
     pts.push(m)
   }
   globals.map.ptsLayer = L.layerGroup(pts)
   globals.map.addLayer(globals.map.ptsLayer)
-
-  globals.filters.mapMarkers = crossfilter(pts)
-  globals.filters.mapYearDimension = globals.filters.mapMarkers.dimension(function(d){return d.age})
 }
 
 function createMap(){
@@ -274,25 +435,26 @@ function createAnalyticsCharts(){
   //TODO: decide if global config or extent is better for x axes
 
 
-  //initialize DOM elements for analytics charts on the right panel
+  // //initialize DOM elements for analytics charts on the right panel
+  // globals.elements.3Chart = dc.barChart("#altitudeChart")
+  //   .width($("#analyticsContainer").width())
+  //   .height($("#altitudeChart").height())
+  //   // .brushOn(false)
+  //   .elasticY(true)
+  //   .xAxisLabel("Altitude (meters)")
+  //   .yAxisLabel("Frequency")
+
+
   globals.elements.latitudeChart = dc.barChart("#latitudeChart")
-    .width($("#analyticsContainer").width())
+    .width($("#latitudeChart").width())
     .height($("#latitudeChart").height())
     // .brushOn(false)
     .elasticY(true)
     .xAxisLabel("Latitude")
     .yAxisLabel("Frequency")
-
-  globals.elements.altitudeChart = dc.barChart("#altitudeChart")
-    .width($("#analyticsContainer").width())
-    .height($("#altitudeChart").height())
-    // .brushOn(false)
-    .elasticY(true)
-    .xAxisLabel("Altitude (meters)")
-    .yAxisLabel("Frequency")
-
+    .on('filtered', filterMap)
   globals.elements.ageChart = dc.barChart("#ageChart")
-      .width($("#analyticsContainer").width())
+      .width($("#ageChart").width())
       .height($("#ageChart").height())
       .margins({bottom: 50, top: 10, left: 40, right: 50})
       // .brushOn(false)
@@ -305,38 +467,74 @@ function createAnalyticsCharts(){
                 })
       .xAxisLabel("Age (years BP)")
       .yAxisLabel("Frequency")
+      .on('filtered', filterMap)
 
   globals.elements.abundanceChart = dc.barChart("#abundanceChart")
-      .width($("#analyticsContainer").width())
+      .width($("#abundanceChart").width())
       .height($("#abundanceChart").height())
       // .brushOn(true)
       .elasticY(true)
       .xAxisLabel("Relative Abundance")
       .yAxisLabel("Frequency")
+      .on('filtered', filterMap)
 
   globals.elements.PIChart = dc.pieChart("#PIChart")
-      .width($("#analyticsContainer").width())
+      .width($("#PIChart").width())
       .height($("#PIChart").height())
       .innerRadius(25)
       .renderLabel(false)
+      .on('filtered', filterMap)
 
 
   globals.elements.recordTypeChart = dc.pieChart("#recordTypeChart")
-      .width($("#analyticsContainer").width())
+      .width($("#PIChart").width())
       .height($("#PIChart").height())
       .innerRadius(25)
       .slicesCap(17)
       .renderTitle(true)
-      .renderLabel(true);
+      .renderLabel(false);
 
-    // globals.elements.bubble = dc.scatterPlot("#alt-lat-bubble")
-    //   .width($("#analyticsContainer").width())
-    //   .height($("#alt-lat-bubble").height())
-    //   .x(d3.scale.linear().domain([globals.config.analytics.latitudeDomainMin,globals.config.analytics.latitudeDomainMax]))
-    //   .brushOn(false)
-    //   .elasticY(true)
-    //   .xAxisLabel("Latitude (&deg;N)")
-    //   .yAxisLabel("Altitude (meters)")
+
+  //color scale for bubble chart ages
+  var colorScale = d3.scale.linear()
+  .domain([0, globals.config.analytics.timeDomainMax])
+  .range([globals.config.analytics.colorYoung,globals.config.analytics.colorOld ])
+
+
+  globals.elements.bubbleChart = dc.bubbleChart("#alt-lat-Chart")
+    .width($("#alt-lat-Chart").width())
+    .height($("#alt-lat-Chart").height())
+    .colors(colorScale)
+    // .brushOn(true)
+    .keyAccessor(function (p) {
+        return p.value.latitude_average;
+    })
+    .valueAccessor(function (p) {
+        return p.value.altitude_average;
+    })
+    .radiusValueAccessor(function (p) {
+        return p.value.count;
+    })
+    .colorAccessor(function (p) {
+        return p.value.age_average;
+    })
+    // .elasticY(true)
+    .yAxisPadding(1)
+    .xAxisPadding(1)
+    .label(function (p) {
+        return p.key;
+        })
+
+    .renderTitle(true)
+    .renderLabel(true)
+    .xAxisLabel("Latitude")
+    .yAxisLabel("Altitude")
+    .on('filtered', filterMap)
+}
+
+
+function filterMap(){
+  //get the filter values
 
 }
 
@@ -382,6 +580,11 @@ function mergeMeta(){
       if (datID == occID){
         occ['DatasetMeta'] = dat
         globals.data.occurrences[i] = occ
+        if (+dat.Site.Altitude > -1){
+          globals.data.occurrences[i].altitude = +dat.Site.Altitude
+        }else{
+          globals.data.occurrences[i].altitude = 0 //TODO: remove?
+        }
       }
     }
   }
@@ -569,7 +772,15 @@ function brushed(){
 }
 
 
+
+
+
 //hide loading screen when load is finished
 Pace.on("done", function(){
     $(".cover").fadeOut(2500);
 });
+
+//is a layer in the map bounds?
+function isInMapBounds(marker){
+  return globals.map.getBounds().contains(marker.getLatLng());
+}

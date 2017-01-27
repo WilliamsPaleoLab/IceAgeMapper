@@ -116,9 +116,7 @@ margin-bottom: 0px;
 }
 
 .dc-chart{
-  height: 33%;
-  /*background-color: cyan;
-  border: thin solid red;*/
+  height: 20%;
   margin-bottom: 10px;
 }
 
@@ -143,4 +141,24 @@ path {
     stroke: grey;
     stroke-width: 1;
     shape-rendering: crispEdges;
+}
+.dashboard-row{
+  /*margin-top: 10%;*/
+  margin-bottom: 10%;
+}
+h5{
+  margin-top: 1%;
+}
+
+
+.dc-chart .selected circle{
+  stroke-width: 0;
+  stroke: none;
+}
+.dc-chart .deselected circle{
+  stroke-width: 0.5;
+  stroke: gray;
+  stroke-opacity: 0.5;
+  fill: none;
+  radius: 1
 }
