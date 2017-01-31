@@ -144,27 +144,34 @@ function processNeotomaData(){
 
   redrawAnalytics()
 
-  globals.map.on('moveend', function(){
-    //filter the bubble chart (id dimension)
-    //on visible map bounds
-    bounds = globals.map.getBounds();
-    N = bounds._northEast['lat']
-    E = bounds._northEast['lng']
-    S = bounds._southWest['lat']
-    W = bounds._southWest['lng']
+  // globals.map.on('moveend', function(){
+  //   //filter the bubble chart (id dimension)
+  //   //on visible map bounds
+  //
+  //   inBounds = getMarkersInBounds()
+  //   globals.elements.bubbleChart.filterAll()
+  //   globals.elements.bubbleChart.filter([inBounds])
+  //   dc.redrawAll()
+  // })
+}
 
-    ids = []
-    layerList = globals.map.ptsLayer._layers
-    for ( i in layerList){
-      thisLayer = layerList[i]
-      if (isInMapBounds(thisLayer)){
-        ids.push(thisLayer._id)
-      }
+function getMarkersInBounds(){
+  //returns a list of the internal ids of the markers in the current map view
+  bounds = globals.map.getBounds();
+  N = bounds._northEast['lat']
+  E = bounds._northEast['lng']
+  S = bounds._southWest['lat']
+  W = bounds._southWest['lng']
+
+  ids = []
+  layerList = globals.map.ptsLayer._layers
+  for ( i in layerList){
+    thisLayer = layerList[i]
+    if (isInMapBounds(thisLayer)){
+      ids.push(thisLayer._id)
     }
-    globals.elements.bubbleChart.filterAll()
-    globals.elements.bubbleChart.filter([ids])
-    dc.redrawAll()
-  })
+  }
+  return ids
 }
 
 function crossFilterData(){
@@ -220,6 +227,13 @@ function crossFilterData(){
         }
 
        })
+
+   //bin and return the geographic information
+   globals.filters.occurrenceGeoDimension = globals.filters
+       .occurrences
+       .dimension(function(d){
+         return L.latLng(d.latitude, d.longitude)
+        })
 
   //bin by abundance
   //should return something not a percent for non-percentage data
@@ -310,6 +324,9 @@ function crossFilterData(){
         value_average: 0}
     }
   )
+
+  //group by geo
+  globals.filters.geoSummary = globals.filters.occurrenceGeoDimension.group().reduceCount();
 }
 
 genericAverageReduce = {
@@ -373,7 +390,7 @@ function datafyAnalyticsCharts(){
 
   globals.elements.bubbleChart
   .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.latitude})))
-  .y(d3.scale.linear().domain([1, d3.max(globals.data.occurrences, function(d){return d.altitude})]))
+  .y(d3.scale.linear().domain([0, d3.max(globals.data.occurrences, function(d){return d.altitude}) + 100]))
   .r(d3.scale.linear().domain(d3.extent([0, 100])))
   .dimension(globals.filters.idDimension)
   .group(globals.filters.multiDimension)
@@ -381,27 +398,26 @@ function datafyAnalyticsCharts(){
 }
 
 function putPointsOnMap(){
-  globals.map.removeLayer(globals.map.ptsLayer)
-  pts = []
-  for (var i=0; i < globals.data.occurrences.length; i++){
-    d = globals.data.occurrences[i]
-    m = L.circleMarker([d['latitude'], d['longitude']])
-    m.age = d.age
-    m._id = d._id
-    pts.push(m)
-  }
-  globals.map.ptsLayer = L.layerGroup(pts)
-  globals.map.addLayer(globals.map.ptsLayer)
+  globals.elements.marker = dc_leaflet.markerChart("#map")
+    .dimension(globals.filters.occurrenceGeoDimension )
+    .group(globals.filters.geoSummary)
+    .width($("#map").width())
+    .height($("#map").height())
+    .center([30,-90])
+    .zoom(3)
+    .cluster(true)
+    // .tiles(globals.config.map.primaryTileURL)
 }
 
 function createMap(){
   //load a leaflet map into the map div
   //use the tileset described in the configuration object
-  globals.map = L.map('map', {
-    zoomControl: false
-  }).setView(globals.state.map.center, globals.state.map.zoom);
-  L.tileLayer(globals.config.map.primaryTileURL).addTo(globals.map);
-  globals.map.ptsLayer = L.layerGroup()
+  // globals.map = L.map('map', {
+  //   zoomControl: false,
+  //   maxZoom: globals.config.map.maxZoom
+  // }).setView(globals.state.map.center, globals.state.map.zoom);
+  // L.tileLayer(globals.config.map.primaryTileURL).addTo(globals.map);
+  // globals.map.ptsLayer = L.layerGroup()
 }
 
 
@@ -504,6 +520,7 @@ function createAnalyticsCharts(){
   globals.elements.bubbleChart = dc.bubbleChart("#alt-lat-Chart")
     .width($("#alt-lat-Chart").width())
     .height($("#alt-lat-Chart").height())
+    .margins({top: 25, right: 50, bottom: 30, left: 40})
     .colors(colorScale)
     // .brushOn(true)
     .keyAccessor(function (p) {
@@ -519,14 +536,14 @@ function createAnalyticsCharts(){
         return p.value.age_average;
     })
     // .elasticY(true)
-    .yAxisPadding(1)
-    .xAxisPadding(1)
+    .yAxisPadding(10)
+    .xAxisPadding(10)
     .label(function (p) {
         return p.key;
         })
 
     .renderTitle(true)
-    .renderLabel(true)
+    .renderLabel(false)
     .xAxisLabel("Latitude")
     .yAxisLabel("Altitude")
     .on('filtered', filterMap)
@@ -535,7 +552,25 @@ function createAnalyticsCharts(){
 
 function filterMap(){
   //get the filter values
-
+  // bubbleFilter = [globals.elements.bubbleChart.filter()];
+  //
+  // if (bubbleFilter[0] == null){
+  //   console.log("hellow")
+  //   newLayers = globals.map.allPoints
+  // }else{
+  //   layerList = globals.map.ptsLayer._layers
+  //   newLayers = []
+  //   for ( i in layerList){
+  //     thisLayer = layerList[i]
+  //     thisID = thisLayer._id
+  //     if (bubbleFilter.indexOf(thisID) > -1){
+  //       newLayers.push(thisLayer)
+  //     }
+  //   }
+  // }//end else
+  // globals.map.removeLayer(globals.map.ptsLayer)
+  // globals.map.ptsLayer = L.layerGroup(newLayers).addTo(globals.map)
+  console.log("Passing function.")
 }
 
 function getDatasets(callback){
@@ -588,7 +623,11 @@ function mergeMeta(){
       }
     }
   }
-  processNeotomaData()
+  if (globals.data.occurrences.length != 0){
+      processNeotomaData()
+  }else{
+      toastr.warning("No records were found. Please try another search.", "No Data!")
+  }
 }
 
 function applySavedState(){
@@ -599,15 +638,14 @@ function applySavedState(){
     globals.taxonid = taxonid
     globals.state.searchSwitch = "browse"
     loadNeotomaData();  //proceed with load
-  }else{ //if taxonid isn't set, check for taxonname
-    taxonname = getParameterByName("taxonname")
-    if ((taxonname  != undefined) && (taxonname != "")){
-      globals.taxonname = taxonname
-      globals.state.searchSwitch = "search"
-      loadNeotomaData();  //proceed with load
-    }else{
-        toastr.warning("Invalid taxon name in URL query.")
-    }
+    return
+  }
+  taxonname = getParameterByName("taxonname")
+  if ((taxonname != undefined) && (taxonname != "")){
+    globals.taxonname = taxonname
+    globals.state.searchSwitch = "search"
+    loadNeotomaData();  //proceed with load
+    return
   }
   //otherwise, don't do anything
 }
@@ -779,6 +817,9 @@ function brushed(){
 Pace.on("done", function(){
     $(".cover").fadeOut(2500);
 });
+
+
+// setTimeout(function(){ globals.map.invalidateSize()}, 10);
 
 //is a layer in the map bounds?
 function isInMapBounds(marker){
