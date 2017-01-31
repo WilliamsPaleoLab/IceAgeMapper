@@ -22,7 +22,9 @@ globals.config = {
     zoomToBoundsOnClick: true,
     sizeRMin: 15,  //minimum radius of the proportional Symbols
     sizeRMax: 100, // maximum radius of the proportional symbols
-    maxClusterRadius: 50//maximum size of the cluster in screen pixels (spans all zoom levels)
+    maxClusterRadius: 50,//maximum size of the cluster in screen pixels (spans all zoom levels),
+    clusterFill: 'steelblue',
+    markerFill: 'steelblue'
   }, //end map
   dataSources: { //URIs of data used in AJAX calls
     taxa: "data/taxa.json", //customized file with names of taxa to improve performanc
