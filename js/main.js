@@ -1,1785 +1,706 @@
-//This is main.js for IceAgeMapper
+//this is Ice Age Mapper
+//main script
+//Version 2.1
 //Author: Scott Farley
-//UW-Madison
-//MIT License
+//University of Wisconsin, Madison
 
+console.log("Welcome to Ice Age Mapper.\n\tRunning script version 2.1.\n\tLead Author: Scott Farley\n\tUniversity of Wisconsin, Madison")
 
-globals = {}
-globals.map = {}
-
-globals.macrostratZoom = 8
-
-globals.tlBinSize = 1000
-
-globals.tlWidth = 10
-
-
-globals.occurrenceEndpoint = "pollen"
-
-// globals.currentNVXVar = "JanuaryMinimum Temperature  [C]  (Decadal Average)"
-// globals.currentNVYVar = "July Maximum Temperature  [C] (Decadal Average)"
-// globals.currentNVXMod = 0
-// globals.currentNVYMod = 0
-// globals.currentNVXSource = "Community Climate System Model (CCSM)"
-// globals.currentNVYSource = "Community Climate System Model (CCSM)"
-
-
-//load the idw module
-// var idw = require("idw")
-
-globals.heatOptions = {
-  opacity: 0.3,
-  maxZoom: 8,
-  cellSize: 100,
-  exp: 2,
+function loadTaxa(callback){
+  //loads the taxa file specified in the configuration object
+  //runs the callback specified in the arguments
+  $.getJSON(globals.config.dataSources.taxa, function(data){
+    globals.data.taxa = data
+    callback(data)
+  })
 }
 
-siteMarkerOptions = {
-  radius: 2.5,
-  fill: true,
-  fillColor: 'seetlblue',
-  strokeColor: 'steelblue'
+function loadEcolGroups(callback){
+  //load the ecological groups from the file specified in the configuration object
+  $.getJSON(globals.config.dataSources.ecolGroups, function(data){
+    globals.data.ecolGroups = data['data']
+    callback(data )
+  })
 }
 
-psOptions = {
-  fill: false,
-  color: 'black',
-  weight: 0.5
-}
-
-globals.displayType = "presence" //alternate value is Abundance
-
-
-
-//hexagon options
-var hexOptions = {
-  radius : 25,                            // Size of the hexagons/bins
-  opacity: 0.50,                           // Opacity of the hexagonal layer
-  duration: 50,                          // millisecond duration of d3 transitions (see note below)
-  lat: function(d){
-    return d[0];
-  },       // longitude accessor
-  lng: function(d){
-    return d[1];
-  },       // latitude accessor
-  value: function(d){
-    v = d3.mean(d, function(x){return (x.o[2] / x.o[3])})
-    v *= 100
-    return v;
-  }, // value accessor - derives the bin value
-  colorRange: ['white', 'red'],
-  onmouseout: function(d){
-    globals.map.hexbins.hextip.hide()
-  },
-  onmouseover: function(d){
-    globals.map.hexbins.hextip.show(d)
+function populateEcolGroupDropdown(){
+  //populate the ecological groups dropdown menu
+  //add a new <option> for each group in the response
+  $("#ecolGroupSelect").empty() //clear the list
+  for (var i = 0; i < globals.data.ecolGroups.length; i++){
+    grp = globals.data.ecolGroups[i]
+    html = "<option value='" + grp['EcolGroupID'] + "'>" + grp['EcolGroup'] + "</option>"
+    $("#ecolGroupSelect").append(html)
   }
+  filterAndPopulateTaxaDropdown(globals.data.ecolGroups[0])
+}
 
-};
+function filterAndPopulateTaxaDropdown(toFilter){
+  //filter the taxa list
+  //put the filtered list into the taxa dropdown
+  filteredTaxa = _.filter(globals.data.taxa, function(d){
+    return ((d.EcolGroups.indexOf(toFilter) > -1))
+  })
 
-//initial page stuff
-$("#loading").hide()
-
-
-//jquery element functions
-$("#searchBar").keypress(function(e){
-  //fire new ajax when enter is clicked
-    if (e.which == 13){
-        $("#searchButton").trigger('click');
+  //add an <option> to the dropdown for each of the filtered taxa
+  $("#taxonSelect").empty()
+  for (var i=0; i < filteredTaxa.length; i++){
+    t = filteredTaxa[i]
+    html = "<option value='" + t['TaxonID'] + "'>" + t['TaxonName']
+    if (t['Extinct']){
+      html += "  <span class='text-muted'>(extinct) </span>"
     }
-});
+    html += "</option>"
+    $("#taxonSelect").append(html)
+  }
+}
 
-$(".nav-item").hover(function(){
-  $(this).toggleClass("nav-hover")
-}, function(){
-  $(this).toggleClass("nav-hover")
-})
+function populateTaxaAutocomplete(){
+  //populate the search bar, and make it so it autocompletes when a user starts typing
+  //add taxa to the data list first
+  taxaNames = _.pluck(globals.data.taxa, "TaxonName")
+  input = document.getElementById("taxaAutocomplete")
+  globals.elements.taxaAutocomplete = new Awesomplete(input, {
+    list: taxaNames,
+    minChars: 2,
+    filter: Awesomplete.FILTER_STARTSWITH
+  })
+}
+
+function initialize(){
+  //initialization routines
+  createLayout()//load the page layout
+  loadTaxa(populateTaxaAutocomplete) //load the taxa file
+  loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
+  drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
+  createMap() //create the map in the center div
+  createAnalyticsCharts() //setup visual analytics charts on the righthand panel
+  applySavedState() //get the state settings from URL query
+}
 
 $(document).ready(function(){
-  processQueryString() //parse the URI query
-  load();
+  //called on page load
+  initialize()
 })
 
-function load(){
-  getNicheVariables() // get a list of variables available for NV
-  createMap(); // load the leaflet map
-  loadTaxaFromNeotoma(createSearchWidget) // load the taxa endpoint from neotoma and create an autocomplete search out of it
-  createHeatmapLayer() // create a blank layer that we can load into later
-  createTimeline();
-  loadIceSheets()
-  $("#hex-bin-size").change(function(){
-    rad = $("#hex-bin-size").val()
-    hexOptions.radius = rad
 
-    globals.map.layerController.removeLayer(globals.map.hexbins) //add layer to controller
-    globals.map.map.removeLayer(globals.map.hexbins)
-
-    // Create the hexbin layer and add it to the map
-    globals.map.hexbins = L.hexbinLayer(hexOptions)
-
-    globals.map.layerController.addOverlay(globals.map.hexbins, "Hexagonal Bins") //add layer to controller
-    globals.map.map.addLayer(globals.map.hexbins)
-    updateHexbins()
+function getOccurrenceData(callback){
+  //make an AJAX call to Neotoma API
+  //get SampleData for the taxon specified by the user
+  //use the name in the search bar (if globals.config.searchSwitch is in search mode)
+  //or the id in the selected dropdown option (if the searchSwitch is in browse mode)
+  endpoint = globals.config.dataSources.occurrences
+  if (globals.config.searchSwitch == "browse"){
+    //this is browse mode
+    //the user was using the browse dropdowns
+    query = "?taxonids=" + globals.taxonid
+  }else if(globals.config.searchSwitch == "search"){
+    //this is search mode
+    //the user was using the search text entry
+    //use the text instead of the id to support wildcard characters
+    query = "?taxonname=" + globals.taxonname
+  }
+  endpoint += query
+  //limit to bounding box set in configuration object
+  endpoint += "&loc=" + globals.config.searchGeoBounds[0] + "," + globals.config.searchGeoBounds[1] + "," + globals.config.searchGeoBounds[2] + "," + globals.config.searchGeoBounds[3]
+  //limit to ages set in configuration object
+  endpoint += "&ageold=" + globals.config.searchAgeBounds[1]
+  endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
+  $.getJSON(endpoint, function(data){
+    //on success of Neotoma query
+    //check to make sure Neotoma returned okay, often it doesn't
+    if (data['success']){
+      globals.data.occurrences = data['data']
+      toastr.success("Received " + data['data'].length + " occurrences from Neotoma.", "Occurrences Received.")
+      callback(null)
+    }else{
+        toastr.error("Unexpected Neotoma Server Error. It's their fault. Please come back later.", "Server Error")
+        callback(error)
+    }
   })
+}
+
+function processNeotomaData(){
+  internalID = 0
+  for (var i=0; i < globals.data.occurrences.length; i++){
+     lat = (globals.data.occurrences [i]['SiteLatitudeNorth'] + globals.data.occurrences [i]['SiteLatitudeSouth'])/2
+     lng = (globals.data.occurrences[i]['SiteLongitudeWest'] + globals.data.occurrences [i]['SiteLongitudeEast'])/2
+     globals.data.occurrences [i]['latitude'] = lat
+     globals.data.occurrences[i]['longitude'] = lng
+     globals.data.occurrences[i]['age'] = globals.data.occurrences[i]['SampleAge']
+     if (globals.data.occurrences[i]['age'] == null){
+       globals.data.occurrences[i]['age'] = (globals.data.occurrences[i]['SampleAgeYounger'] + globals.data.occurrences[i]['SampleAgeOlder'])/2
+     }
+     globals.data.occurrences[i]._id = internalID
+     internalID += 1
+   }
+
+   crossFilterData() //prepare data for filtering and plotting with crossfilter library
+
+   //callbacks to be completed once data has been processed
+   putPointsOnMap() //put circles on map
+
+   datafyAnalyticsCharts() //update charts with data
+
+  redrawAnalytics()
+
+  // globals.map.on('moveend', function(){
+  //   //filter the bubble chart (id dimension)
+  //   //on visible map bounds
+  //
+  //   inBounds = getMarkersInBounds()
+  //   globals.elements.bubbleChart.filterAll()
+  //   globals.elements.bubbleChart.filter([inBounds])
+  //   dc.redrawAll()
+  // })
+}
+
+function getMarkersInBounds(){
+  //returns a list of the internal ids of the markers in the current map view
+  bounds = globals.map.getBounds();
+  N = bounds._northEast['lat']
+  E = bounds._northEast['lng']
+  S = bounds._southWest['lat']
+  W = bounds._southWest['lng']
+
+  ids = []
+  layerList = globals.map.ptsLayer._layers
+  for ( i in layerList){
+    thisLayer = layerList[i]
+    if (isInMapBounds(thisLayer)){
+      ids.push(thisLayer._id)
+    }
+  }
+  return ids
+}
+
+function crossFilterData(){
+  //establish dimensions and groupings of neotoma data for putting into the analytics charts
+  //prepare data to be crossfiltered.
+  globals.filters.occurrences = crossfilter(globals.data.occurrences)
+
+  //dimensions to be filtered
+
+  //bin by the record type
+  //so we can make a pie chart of the different record types
+  //facilitates visualization of both mammal and pollen data
+  globals.filters.occurrenceValueDimension = globals.filters
+        .occurrences
+        .dimension(function(d){
+          if (d.VariableUnits == "NISP") {
+            return d.Value
+          }else{
+            return 0
+        }})
+
+  //bin by age
+  globals.filters.occurrenceAgeDimension = globals.filters
+        .occurrences
+        .dimension(
+          function(d){
+            return d.age
+          })
+
+  //bin by latitude
+  globals.filters.occurrenceLatitudeDimension = globals.filters
+        .occurrences
+        .dimension(function(d){
+          return d.latitude
+        })
+  //bin by altitude
+  globals.filters.occurrenceAltitudeDimension = globals.filters
+        .occurrences
+        .dimension(function(d){
+          return d.altitude
+        })
+
+  //bin the investigators together
+  //filitates sorting by datasetPI
+  globals.filters.occurrencePIDimension = globals.filters
+      .occurrences
+      .dimension(function(d){
+        //TODO: Not working.
+        if ((d.DatasetMeta.DatasetPIs[0] != undefined)){
+          return d.DatasetMeta.DatasetPIs[0].ContactName
+        }else{
+          return "None Listed"
+        }
+
+       })
+
+   //bin and return the geographic information
+   globals.filters.occurrenceGeoDimension = globals.filters
+       .occurrences
+       .dimension(function(d){
+         return L.latLng(d.latitude, d.longitude)
+        })
+
+  //bin by abundance
+  //should return something not a percent for non-percentage data
+  //TODO: need to get total field first
+  globals.filters.occurrenceRecordTypeDimension = globals.filters
+        .occurrences
+        .dimension(function(d){
+          return d.VariableUnits
+        })
+
+  //summarize into groups
+
+  //histogram the latitude bins
+  globals.filters.occurrenceLatitudeSummary = globals.filters.occurrenceLatitudeDimension.group(
+    function(d){
+      x = Math.round(d / globals.config.analytics.latitudeBinSize)* globals.config.analytics.latitudeBinSize
+      return x
+    }
+  ).reduceCount()
+
+  // group altitude bins
+  globals.filters.occurrenceAltitudeSummary = globals.filters.occurrenceAltitudeDimension.group(function(d){
+    return Math.round(d / globals.config.analytics.altitudeBinSize) * globals.config.analytics.altitudeBinSize
+  }).reduceCount()
+
+  //group abundance bins
+  globals.filters.occurrenceValueSummary = globals.filters.occurrenceValueDimension.group(function(d){
+    return Math.round(d/ globals.config.analytics.abundanceBinSize) * globals.config.analytics.abundanceBinSize
+  }).reduceCount()
+
+  //group age bins
+  globals.filters.occurrenceAgeSummary = globals.filters.occurrenceAgeDimension.group(function(d){
+    return Math.round(d/globals.config.analytics.timeBinSize)*globals.config.analytics.timeBinSize
+  }).reduceCount()
+
+  //group PIs
+  globals.filters.occurrencePISummary = globals.filters.occurrencePIDimension.group().reduceCount()
+  //group record types
+  globals.filters.occurrenceRecordTypeSummary = globals.filters.occurrenceRecordTypeDimension.group().reduceCount()
+
+  //create a custom dimension to make the bubble chart work
+  globals.filters.idDimension = globals.filters.occurrences.dimension(function(d){return d._id})
+
+  //customize the reduce function to reduce multiple values
+  //for the bubble chart, returns
+    //altitude(sum, average)
+    //latitude(sum, average)
+    //age(sum, average)
+    //value(sum, average)
+    //count
+  globals.filters.multiDimension = globals.filters.idDimension.group().reduce(
+    //add
+    function(p, v){
+      ++p.count;
+      p.altitude_sum += v.altitude;
+      p.altitude_average = p.altitude_sum / p.count;
+      p.latitude_sum += v.latitude;
+      p.latitude_average = p.latitude_sum / p.count;
+      p.age_sum += v.age
+      p.age_average = p.age_sum / p.count;
+      p.value_sum += v.Value;
+      p.value_average = p.value_sum / p.count;
+      return p;
+    },
+    //remove
+    function(p, v){
+      --p.count;
+      p.altitude_sum -= v.altitude;
+      p.altitude_average = p.altitude_sum / p.count;
+      p.latitude_sum -= v.latitude;
+      p.latitude_average = p.latitude_sum / p.count;
+      p.age_sum -= v.age
+      p.age_average = p.age_sum / p.count;
+      p.value_sum -= v.Value;
+      p.value_average = p.value_sum / p.count;
+      return p;
+    },
+    //initialize
+    function(p, v){
+      return {count:0,
+        altitude_sum: 0,
+        altitude_average:0,
+        latitude_sum: 0,
+        latitude_average: 0,
+        age_sum: 0,
+        age_average: 0,
+        value_sum: 0,
+        value_average: 0}
+    }
+  )
+
+  //group by geo
+  globals.filters.geoSummary = globals.filters.occurrenceGeoDimension.group().reduceCount();
+}
+
+genericAverageReduce = {
+  add: function(p, v){ //add record
+    ++p.count
+    p.latitude_sum += v.latitude
+    p.latitude = p.latitude / p.count
+  },
+  remove: function(p, v){//remove record
+    --p.count
+    p.latitude_sum -= v.latitude
+    p.latitude = p.latitude / p.count
+  },
+  init: function(p, v){
+    //initialize group
+    return({count: 0, latitude_sum: 0, latitude: 0})
+  }
+}
+
+function redrawAnalytics(){
+  //wrapper function to update charts with new data
+  dc.renderAll();
+  dc.redrawAll();
+}
+
+
+function datafyAnalyticsCharts(){
+  //put new data into the analytics charts
+  //  //update chart data
+  //  globals.elements.altitudeChart
+  //     .dimension(globals.filters.occurrenceAltitudeDimension)
+  //     .group(globals.filters.occurrenceAltitudeSummary)
+  //      .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.DatasetMeta.Site.Altitude})))
+   //
+
+   globals.elements.latitudeChart
+    .dimension(globals.filters.occurrenceLatitudeDimension)
+    .group(globals.filters.occurrenceLatitudeSummary)
+    .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.latitude})))
+    .xUnits(function(start, end, xDomain) { return (end - start) / globals.config.analytics.latitudeBinSize; })
+
+  globals.elements.ageChart
+    .dimension(globals.filters.occurrenceAgeDimension)
+    .group(globals.filters.occurrenceAgeSummary)
+    .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.age})))
+    .xUnits(function(start, end, xDomain) { return (end - start) / globals.config.analytics.timeBinSize; })
+
+  globals.elements.abundanceChart
+    .dimension(globals.filters.occurrenceValueDimension)
+    .group(globals.filters.occurrenceValueSummary)
+      .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.Value})))
+      .xUnits(function(start, end, xDomain) { return (end - start) / globals.config.analytics.abundanceBinSize; })
+
+  globals.elements.PIChart
+    .dimension(globals.filters.occurrencePIDimension)
+    .group(globals.filters.occurrencePISummary)
+
+  globals.elements.recordTypeChart
+    .dimension(globals.filters.occurrenceRecordTypeSummary)
+    .group(globals.filters.occurrenceRecordTypeSummary)
+
+  globals.elements.bubbleChart
+  .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.latitude})))
+  .y(d3.scale.linear().domain([0, d3.max(globals.data.occurrences, function(d){return d.altitude}) + 100]))
+  .r(d3.scale.linear().domain(d3.extent([0, 100])))
+  .dimension(globals.filters.idDimension)
+  .group(globals.filters.multiDimension)
+
+}
+
+function putPointsOnMap(){
+  globals.elements.marker = dc_leaflet.markerChart("#map")
+    .dimension(globals.filters.occurrenceGeoDimension )
+    .group(globals.filters.geoSummary)
+    .width($("#map").width())
+    .height($("#map").height())
+    .center([30,-90])
+    .zoom(3)
+    .cluster(true)
+    // .tiles(globals.config.map.primaryTileURL)
 }
 
 function createMap(){
-  globals.map.map = L.map('map',
-  {zoomControl:false,
-    fullscreenControl: true
-  }).setView([39.828175, -98.5795], 3);
+  //load a leaflet map into the map div
+  //use the tileset described in the configuration object
+  // globals.map = L.map('map', {
+  //   zoomControl: false,
+  //   maxZoom: globals.config.map.maxZoom
+  // }).setView(globals.state.map.center, globals.state.map.zoom);
+  // L.tileLayer(globals.config.map.primaryTileURL).addTo(globals.map);
+  // globals.map.ptsLayer = L.layerGroup()
+}
 
-  L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
-  	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
-  	maxZoom: 8,
-    minZoom: 3
-  }).addTo(globals.map.map);
-  //set to default or URL requested
-  globals.map.map.setView([globals.centerLat, globals.centerLng], globals.zoom)
-  createLayerController() //creates an empty layer controller
-  createToolbar()
-  createSitePanel()
-  createTaxonomyPanel()
-  createNicheViewerPanel()
 
-  globals.geologyLayers ={}
-  globals.map.geology = L.geoJson(null, {
-    style: function(d){
-      return {
-        color: d.properties.color,
-        weight : 0.25,
-        fillOpacity: 0.35}
-    },
-    onEachFeature: function(feature, layer){
-      var html = "<b>" + feature.properties.name + "</b><br>"
-      html += "Age: " + Math.round(+feature.properties.best_age_top) + "-" + Math.round(+feature.properties.best_age_bottom) + " Mya<br>"
-      layer.bindPopup(html);
-      globals.geologyLayers[feature.properties.map_id] = layer
-    }
-  })
+//set up the layout
+//use the parameters in the configuration object
+function createLayout(){
+		globals.layout = $('body').layout({
+      south: {
+        size: globals.config.layout.southPanelSize,
+        resizable: globals.config.layout.southPanelResizable,
+        initClosed: !globals.state.layout.southPanelIsOpen,
+        closable: globals.config.layout.southPanelClosable
+      },
+      west: {
+        size: globals.config.layout.westPanelSize,
+        resizable: globals.config.layout.westPanelResizable,
+        initClosed: !globals.state.layout.westPanelIsOpen,
+        closable: globals.config.layout.westPanelClosable
+      },
+      east: {
+        size: globals.config.layout.eastPanelSize,
+        resizable: globals.config.layout.eastPanelResizable,
+        initClosed: !globals.state.layout.eastPanelIsOpen,
+        closable: globals.config.layout.eastPanelClosable
+      }
+    });
+}
 
-  globals.map.map.addLayer(globals.map.geology)
-  //panel events
-  $(".leaflet-control-dialog").on('mousedown', function(){
-     movePanelToFront(this)
-  })
-  globals.map.map.on("dialog:resizeend", onAllPanelResized)
-  //get macrostrat data
+function createAnalyticsCharts(){
+  //reset the config
+  //TODO: decide if global config or extent is better for x axes
 
-  globals.map.map.on("moveend", function(){
-    currentZoom = globals.map.map.getZoom()
-    if (currentZoom == globals.macrostratZoom){
-      globals.map.layerController.addOverlay(globals.map.geology, "Surface Geology")
 
-      getMacrostrat()
+  // //initialize DOM elements for analytics charts on the right panel
+  // globals.elements.3Chart = dc.barChart("#altitudeChart")
+  //   .width($("#analyticsContainer").width())
+  //   .height($("#altitudeChart").height())
+  //   // .brushOn(false)
+  //   .elasticY(true)
+  //   .xAxisLabel("Altitude (meters)")
+  //   .yAxisLabel("Frequency")
+
+
+  globals.elements.latitudeChart = dc.barChart("#latitudeChart")
+    .width($("#latitudeChart").width())
+    .height($("#latitudeChart").height())
+    // .brushOn(false)
+    .elasticY(true)
+    .xAxisLabel("Latitude")
+    .yAxisLabel("Frequency")
+    .on('filtered', filterMap)
+  globals.elements.ageChart = dc.barChart("#ageChart")
+      .width($("#ageChart").width())
+      .height($("#ageChart").height())
+      .margins({bottom: 50, top: 10, left: 40, right: 50})
+      // .brushOn(false)
+      .elasticY(true)
+      .on('renderlet', function (chart) {
+                    chart.selectAll("g.x text")
+                      .attr('dx', '-30')
+                      .attr('transform', "rotate(-45)")
+                      .attr('text-anchor','end')
+                })
+      .xAxisLabel("Age (years BP)")
+      .yAxisLabel("Frequency")
+      .on('filtered', filterMap)
+
+  globals.elements.abundanceChart = dc.barChart("#abundanceChart")
+      .width($("#abundanceChart").width())
+      .height($("#abundanceChart").height())
+      // .brushOn(true)
+      .elasticY(true)
+      .xAxisLabel("Relative Abundance")
+      .yAxisLabel("Frequency")
+      .on('filtered', filterMap)
+
+  globals.elements.PIChart = dc.pieChart("#PIChart")
+      .width($("#PIChart").width())
+      .height($("#PIChart").height())
+      .innerRadius(25)
+      .renderLabel(false)
+      .on('filtered', filterMap)
+
+
+  globals.elements.recordTypeChart = dc.pieChart("#recordTypeChart")
+      .width($("#PIChart").width())
+      .height($("#PIChart").height())
+      .innerRadius(25)
+      .slicesCap(17)
+      .renderTitle(true)
+      .renderLabel(false);
+
+
+  //color scale for bubble chart ages
+  var colorScale = d3.scale.linear()
+  .domain([0, globals.config.analytics.timeDomainMax])
+  .range([globals.config.analytics.colorYoung,globals.config.analytics.colorOld ])
+
+
+  globals.elements.bubbleChart = dc.bubbleChart("#alt-lat-Chart")
+    .width($("#alt-lat-Chart").width())
+    .height($("#alt-lat-Chart").height())
+    .margins({top: 25, right: 50, bottom: 30, left: 40})
+    .colors(colorScale)
+    // .brushOn(true)
+    .keyAccessor(function (p) {
+        return p.value.latitude_average;
+    })
+    .valueAccessor(function (p) {
+        return p.value.altitude_average;
+    })
+    .radiusValueAccessor(function (p) {
+        return p.value.count;
+    })
+    .colorAccessor(function (p) {
+        return p.value.age_average;
+    })
+    // .elasticY(true)
+    .yAxisPadding(10)
+    .xAxisPadding(10)
+    .label(function (p) {
+        return p.key;
+        })
+
+    .renderTitle(true)
+    .renderLabel(false)
+    .xAxisLabel("Latitude")
+    .yAxisLabel("Altitude")
+    .on('filtered', filterMap)
+}
+
+
+function filterMap(){
+  //get the filter values
+  // bubbleFilter = [globals.elements.bubbleChart.filter()];
+  //
+  // if (bubbleFilter[0] == null){
+  //   console.log("hellow")
+  //   newLayers = globals.map.allPoints
+  // }else{
+  //   layerList = globals.map.ptsLayer._layers
+  //   newLayers = []
+  //   for ( i in layerList){
+  //     thisLayer = layerList[i]
+  //     thisID = thisLayer._id
+  //     if (bubbleFilter.indexOf(thisID) > -1){
+  //       newLayers.push(thisLayer)
+  //     }
+  //   }
+  // }//end else
+  // globals.map.removeLayer(globals.map.ptsLayer)
+  // globals.map.ptsLayer = L.layerGroup(newLayers).addTo(globals.map)
+  console.log("Passing function.")
+}
+
+function getDatasets(callback){
+  //this gets dataset metdata
+  //useful for some analytics since more is returned, and taxonname/taxonid is a parameter
+  endpoint = globals.config.dataSources.datasets
+  if (globals.config.searchSwitch == "browse"){
+    //this is browse mode
+    //the user was using the browse dropdowns
+    query = "?taxonids=" + globals.taxonid
+  }else if(globals.config.searchSwitch == "search"){
+    //this is search mode
+    //the user was using the search text entry
+    //use the text instead of the id to support wildcard characters
+    query = "?taxonname=" + globals.taxonname
+  }
+  //geoBounds
+  endpoint += query + "&loc="+ globals.config.searchGeoBounds[0] + "," + globals.config.searchGeoBounds[1] + "," + globals.config.searchGeoBounds[2] + "," + globals.config.searchGeoBounds[3]
+  //limit to ages set in configuration object
+  endpoint += "&ageold=" + globals.config.searchAgeBounds[1]
+  endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
+  $.getJSON(endpoint, function(data){
+    //check neotoma server success
+    if (data['success']){
+      globals.data.datasetMeta = data['data']
+      callback(null)
+      toastr.success("Received " + data['data'].length + " datasets from Neotoma.", "Datasets Recevied.")
     }else{
-      globals.map.layerController.removeLayer("Surface Geology")
-      try{
-        globals.map.map.removeLayer(globals.map.geology)
-      }catch(err){
-        console.log("Passing.")
-      }
+      toastr.error("Unexpected Neotoma Server Error. It's their fault. Please come back later.", "Server Error")
+      callback(error)
     }
   })
 }
 
-function createSitePanel(){
-  globals.sitePanel = L.control.dialog({anchor: [180, 25], initOpen: false})
-              .setContent("<h6>Click on a site to retrieve details about it.")
-              .addTo(globals.map.map)
-  globals.sitePanel.name = "SitePanel"
-  $(globals.sitePanel._container).find(".leaflet-control-dialog-grabber").append("</i id='site-panel-title'>Site Information</i>")
-}
-
-function createTaxonomyPanel(){
-  globals.taxonomyPanel = L.control.dialog({ anchor: [150, -5], initOpen: false})
-    .setContent("<h6>Search for a taxon to retrieve its taxonomic hierarchy.</h6>")
-    .addTo(globals.map.map)
-    globals.taxonomyPanel.name = "TaxonomyPanel"
-    $(globals.taxonomyPanel._container).find(".leaflet-control-dialog-grabber").append("<i id='taxonomy-panel-title'>Taxonomy</i>")
-}
-
-function createNicheViewerPanel(){
-  globals.nvPanel = L.control.dialog({ anchor: [400, -5], minSize: [350, 350], maxSize: [1000000, 1000000], size: [500,500], initOpen: false})
-    .addTo(globals.map.map)
-    globals.taxonomyPanel.name = "NV"
-    makeBaseNicheViewerPanel()
-    //globals.nvPanel.close()
-    $(globals.nvPanel._container).find(".leaflet-control-dialog-grabber").append("<i id='nv-panel-title'>NicheViewer</i>")
-}
-
-function createToolbar(){
-  var NicheViewerToolAction = L.ToolbarAction.extend({
-      options: {
-          toolbarIcon: {
-              html: "<img id='stats-icon'  data-toggle='tooltip' data-title='Open NicheViewer Panel' data-placement='bottom' src='images/icons/stats.svg'/>",
-              class:'toolbar-item'
-          }
-      },
-      addHooks: function () {
-        globals.openNVPanel = true
-          globals.nvPanel.open()
-          movePanelToFront(globals.nvPanel._container)
-      }
-  });
-  var TaxonomyToolAction = L.ToolbarAction.extend({
-      options: {
-          toolbarIcon: {
-              html: "<img id='tree-icon' data-toggle='tooltip' data-title='Open Taxonomy Panel' src='images/icons/hierarchy.svg'/>",
-              class:'toolbar-item'
-          }
-      },
-      addHooks: function () {
-        globals.openTaxPanel = true
-          globals.taxonomyPanel.open()
-          movePanelToFront(globals.taxonomyPanel._container)
-      }
-  });
-  var SiteToolAction = L.ToolbarAction.extend({
-      options: {
-          toolbarIcon: {
-              html: "<img id='site-icon' data-toggle='tooltip' data-title='Open Site Details Panel' src='images/icons/here.svg'/>",
-              class:'toolbar-item'
-          }
-      },
-      addHooks: function () {
-          //globals.map.map.setView([48.85815, 2.29420], 19);
-            globals.openSitePanel = true;
-            globals.sitePanel.open();
-            movePanelToFront(globals.sitePanel._container)
-      }
-  });
-
-  var ShareAction = L.ToolbarAction.extend({
-    options: {
-      toolbarIcon: {
-        html: "<img id='share-icon'  data-toggle='tooltip' data-title='Share your map' src='images/icons/share.svg'/>",
-        class: 'toolbar-item'
-      }
-    },
-      addHooks: function(){
-        //generate the share url string
-        globals.shareURI = generateShareURI()
-
-        uriString = globals.shareURI.toString()
-        generateTwitterLink() //make sure the twitter link is right
-        generateEmailLink() //make sure the email link is right
-        generateGPlusLink()
-        //set it so its visible to the user
-        $("#share-link").text(uriString)
-        $("#share-modal").modal('show')
-        $("#share-link").select()
-        window.history.pushState("Ice Age Mapper", "Ice Age Mapper", globals.shareURI) //put page state in url history so we can return if we leave (i.e., go to twitter)
-      }
-  })
-
-  var advancedAction = L.ToolbarAction.extend({
-    options: {
-      toolbarIcon: {
-        html: "<img id='advanced-icon' data-toggle='tooltip' data-title='Advanced Settings' data-placement='top' src='images/icons/advanced.svg'/>",
-        class: 'toolbar-item'
-      }
-    },
-      addHooks: function(){
-        $("#advanced-modal").modal('show')
-      }
-  })
-
-  globals.toolbar = new L.Toolbar.Control({
-      actions: [NicheViewerToolAction, SiteToolAction, TaxonomyToolAction, ShareAction, advancedAction], position: 'topright'
-  }).addTo(globals.map.map);
-
-  $("#site-icon").hover(function(){
-    $(this).attr("src", "images/icons/here-black.svg")
-  }, function(){
-    $(this).attr("src", "images/icons/here.svg")
-  })
-  $("#advanced-icon").hover(function(){
-    $(this).attr("src", "images/icons/advanced-black.svg")
-  }, function(){
-    $(this).attr("src", "images/icons/advanced.svg")
-  })
-
-  $("#tree-icon").hover(function(){
-    $(this).attr("src", "images/icons/hierarchy-black.svg")
-  }, function(){
-    $(this).attr("src", "images/icons/hierarchy.svg")
-  })
-
-  $("#stats-icon").hover(function(){
-    $(this).attr("src", "images/icons/stats-black.svg")
-  }, function(){
-    $(this).attr("src", "images/icons/stats.svg")
-  })
-  $("#share-icon").hover(function(){
-    $(this).attr("src", "images/icons/share-black.svg")
-  }, function(){
-    $(this).attr("src", "images/icons/share.svg")
-  })
-}
-
-function createLayerController(){
-  //create the layer controls
-  globals.map.layerController = L.control.layers(null, globals.map.layers, {position: 'topright'})
-    .addTo(globals.map.map)
-
-  //control add/remove events for the different layers by setting a global variable we can access later
-  globals.map.map.on('overlayadd', function(e){
-    if (e.name == "Icesheets"){
-      globals.showIce = true
-    }
-    if (e.name == "Sites"){
-      globals.showSites = true
-    }
-    if (e.name == "Heatmap"){
-      globals.showHeat = true
-    }
-    if (e.name == "Surface Geology"){
-      globals.showGeo = true
-      console.log("Added geo")
-      globals.map.geology.bringToBack()
-    }
-  })
-  globals.map.map.on('overlayremove', function(e){
-    if (e.name == "Icesheets"){
-      globals.showIce = false
-    }
-    if (e.name == "Sites"){
-      globals.showSites = false
-    }
-    if (e.name == "Heatmap"){
-      globals.showHeat = false
-    }
-    if (e.name == "Surface Geology"){
-          globals.showGeo = false
-          console.log("Removed geo")
+function mergeMeta(){
+  for (var i=0; i < globals.data.occurrences.length; i++){
+    for (var j=0; j < globals.data.datasetMeta.length; j++){
+      occ = globals.data.occurrences[i];
+      dat = globals.data.datasetMeta[j];
+      datID = dat['DatasetID']
+      occID = occ['DatasetID']
+      if (datID == occID){
+        occ['DatasetMeta'] = dat
+        globals.data.occurrences[i] = occ
+        if (+dat.Site.Altitude > -1){
+          globals.data.occurrences[i].altitude = +dat.Site.Altitude
+        }else{
+          globals.data.occurrences[i].altitude = 0 //TODO: remove?
         }
-  })
-}
-
-
-
-function loadTaxaFromNeotoma(callback){
-  //load all of the vascular plant taxa from the neotoma database
-  $.ajax("http://api.neotomadb.org/v1/data/taxa?taxagroup=VPL", {
-    // beforeSend: function(jqXHR){
-    //   $("#loading").show();
-    //   jqXHR.setRequestHeader('Accept-Encoding', 'deflate');
-    //   jqXHR.setRequestHeader('Cache-Control', 'max-age=1000')
-    // },
-    type: "GET",
-    headers: {
-      'Accept-Encoding': 'gzip',
-      'Cache-Control': 'max-age=1000'
-    },
-    dataType: "jsonp",
-    cache: true,
-    error: function(xhr, status, error){
-      console.log(xhr)
-      console.log(status)
-      console.log(error)
-    },
-    success: function(data){
-      if (data['success']){
-        if (callback){
-          globals.allTaxa = data.data
-          callback(data['data'])
-        }
-      }else{
-        console.log("Server error on Neotoma's end.")
-      }
-
-    }
-  })
-}
-
-function createSearchWidget(jsonResponse){
-  names = _.pluck(jsonResponse, 'TaxonName')
-  var input = document.getElementById("searchBar");
-  var awesomplete = new Awesomplete(input, {
-    minChars: 1,
-    maxItems: 7,
-    autoFirst: true,
-    filter: Awesomplete.FILTER_STARTSWITH
-  });
-  awesomplete.list = names;
-  $("#loading").slideUp()
-}
-
-$("#searchButton").click(function(){
-  s = $("#searchBar").val()
-  if (s != ""){
-    loadOccurrenceData(s);
-  }
-})
-
-function createTimeline(){
-  d3.select("#timeline").empty();
-  var margins = {top: 25, left: 30, right: 5, bottom: 125}
-  var height = $("#timeline").height() - margins.top - margins.bottom;
-  var width = $("#timeline").width() - margins.left - margins.right;
-
-  var minYear = -75;
-  var maxYear = 22000;
-
-  globals.timelineOffset = margins.top
-
-
-
-
-  globals.timeScale = d3.scale.linear()
-    .domain([minYear, maxYear])
-    .range([0 , height]);
-
-  var svg = d3.select("#timeline")
-    .append("svg")
-      .attr('width', width + margins.right + margins.left)
-      .attr('height', height + margins.top + margins.bottom)
-      .append("g")
-        .attr("transform", "translate(50," + margins.top + ")")
-
-
-  var xAxis = d3.svg.axis()
-    .scale(globals.timeScale)
-    .orient("right");
-
-
-    svg.append("g")
-       .attr("class", "x axis")
-       .call(xAxis)
-       .append("text")
-         .attr("class", "label")
-         .attr("y", height / 2)
-         .attr("x", -10)
-         .style("text-anchor", "middle")
-         .style("font-size", '16px')
-         .text("Years Before Present")
-         .attr('transform', 'rotate(-90 -15,' + height / 2 + ')')
-
-
-
-    //create the rectangle
-    globals.timeRect = svg.append('rect')
-      .attr('x', 0)
-      .attr('y', globals.timeScale(globals.minYear))
-      .attr('height', globals.timeScale(globals.maxYear))
-      .attr('width', 5)
-      .style('fill', '#3f7e8a')
-      .style('stroke', 'black')
-      .attr('cursor', 'ns-resize')
-
-    globals.timeTop = svg.append('line')
-      .attr('x1', 0)
-      .attr('x2', 10)
-      .attr('y1', globals.timeScale(globals.minYear))
-      .attr('y2', globals.timeScale(globals.minYear))
-      .style('stroke', 'black')
-      .style('stroke-width', 5)
-      .style('stroke-opacity', 0.5)
-      .attr('cursor', 'ns-resize')
-
-    globals.timeBottom = svg.append('line')
-      .attr('x1', 0)
-      .attr('x2', 10)
-      .attr('y1', globals.timeScale(globals.maxYear))
-      .attr('y2', globals.timeScale(globals.maxYear))
-      .style('stroke', 'black')
-      .style('stroke-width', 5)
-      .style('stroke-opacity', 0.5)
-      .attr('cursor', 'ns-resize')
-
-
-      //svg.call(globals.timelineTip)
-
-
-
-      function onRectDrag(){
-        initY = +globals.timeRect.attr('y')
-        initHeight = +globals.timeRect.attr('height')
-        dy = d3.event.dy
-        newY = initY + dy
-        if (newY < 0){
-          return
-        }
-        if (newY + initHeight > height){
-          return
-        }
-        globals.timeRect.attr('y', newY)
-        globals.timeTop.attr('y1', newY).attr('y2', newY)
-        globals.timeBottom.attr('y1', newY + initHeight).attr('y2', newY + initHeight)
-        globals.minYear = globals.timeScale.invert(+globals.timeTop.attr('y1'))
-        globals.maxYear = globals.timeScale.invert(+globals.timeBottom.attr('y1'))
-        updateTime()
-      }
-      function onTopDrag(){
-        initY = +globals.timeTop.attr('y1')
-        initHeight = +globals.timeRect.attr('height')
-        dy = d3.event.dy
-        newTop = initY + dy
-        if (newTop < 0){
-          return
-        }
-        newHeight = initHeight - dy
-        if (newHeight < 10){
-          return
-        }
-        globals.timeRect.attr('height', newHeight).attr('y', newTop)
-        globals.timeTop.attr('y1', newTop).attr('y2', newTop)
-        globals.minYear = globals.timeScale.invert(+globals.timeTop.attr('y1'))
-        globals.maxYear = globals.timeScale.invert(+globals.timeBottom.attr('y1'))
-        updateTime()
-        //add a tooltip showing what year you're looking at
-        // Define the div for the tooltip
-        formatMinYear = Math.round(globals.minYear)
-
-      }
-      function onBottomDrag(){
-        initY = +globals.timeTop.attr('y1')
-        initBottom = +globals.timeBottom.attr('y1')
-        initHeight = +globals.timeRect.attr('height')
-        dy = -d3.event.dy
-        newHeight = initHeight - dy
-        if (newHeight < 10){
-          return
-        }
-        newBottom = initBottom - dy
-        if (newBottom > height){
-          return
-        }
-        globals.timeRect.attr('height', newHeight)
-        globals.timeBottom.attr('y1', newBottom).attr('y2', newBottom)
-        globals.minYear = globals.timeScale.invert(+globals.timeTop.attr('y1'))
-        globals.maxYear = globals.timeScale.invert(+globals.timeBottom.attr('y1'))
-        updateTime()
-      }
-
-
-      //enable drag on the timeline components
-      var dragRect = d3.behavior.drag()
-      	    .on("drag", onRectDrag)
-
-        var dragTopLine = d3.behavior.drag()
-        	    .on("drag", onTopDrag)
-
-        var dragBottomLine = d3.behavior.drag()
-            .on("drag", onBottomDrag)
-
-        globals.timeTop.call(dragTopLine);
-        globals.timeBottom.call(dragBottomLine);
-        globals.timeRect.call(dragRect)
-
-
-      // //enable tooltips
-      // globals.timeTop.on('mouseover', function(){
-      //     globals.timelineTip.show()
-      // })
-      // globals.timeTop.on('mouseout', function(){
-      //   globals.timelineTip.hide()
-      // })
-      // globals.timeBottom.on('mouseover', function(){
-      //   globals.timelineTip.show()
-      // })
-      // globals.timeBottom.on('mouseout', function(){
-      //   globals.timelineTip.hide()
-      // })
-      // globals.timeRect.on('mouseover', function(){
-      //   globals.timelineTip.show()
-      // })
-      // globals.timeRect.on('mouseout', function(){
-      //   globals.timelineTip.hide()
-      // })
-
-
-    //exact control of years
-    html = "<div id='timelineControl'>"
-    html += "<input id='minYearSelect' class='input-sm' type='number' value = '" + globals.minYear + "' max='22000' min='-75' data-toggle='tooltip' title='Set the minimum year (Years B.P.)'>"
-    html += "<br />"
-    html += "<input id='maxYearSelect' class='input-sm' type='number' value = '" + globals.maxYear + "' max='22000' min='-75' data-toggle='tooltip' title='Set the maximum year (Years B.P.)'>"
-
-    html += "</div>"
-    $("#timeline").append(html)
-    $("#timelineControl").css({
-      "position" : "absolute",
-      "top" : height + 50 + "px",
-      "left" : margins.left + "px"
-    })
-    //calculate width
-    //we could do this with a popover if this is too small
-    boxWidth = width - margins.right
-    $("#minYearSelect").css({'width': boxWidth + 'px', 'font-size' : '8px'})
-    $("#maxYearSelect").css({'width': boxWidth + 'px', 'font-size' :  '8px'})
-
-    //make the text boxes work
-    $("#minYearSelect").change(function(){
-        minYear = $(this).val()
-        setMinYear(minYear)
-    })
-    //make the text boxes work
-    $("#maxYearSelect").change(function(){
-      maxYear = $(this).val()
-      setMaxYear(maxYear)
-    })
-
-    //advance in increments using arrows
-    html = "<div id='timelineArrows' class='row'>"
-    html += "<span class='btn btn-lrg glyphicon glyphicon-chevron-left' id='advanceForward' data-toggle='tooltip' title='Advance interval forward'></span>"
-    html += "<span class='btn btn-lrg glyphicon glyphicon-chevron-right'  id='advanceBackwards' data-toggle='tooltip' title='Advance interval backwards'></span>"
-    html += "</div>"
-    $("#timeline").append(html)
-    $("#timelineArrows").css({
-      "position" : "absolute",
-      "top" : height + 100 + "px",
-      "left" : margins.left + "px",
-      'padding' : '5px',
-
-    })
-
-    //make the buttons work
-    $("#advanceForward").on('click', function(){
-      //figure out what new mins and maxes are
-      timeSpan = globals.maxYear - globals.minYear
-      newMin = globals.minYear - timeSpan
-      if (newMin < -75){
-        newMin = -75
-      }
-      newMax = newMin + timeSpan
-      setMinYear(newMin)
-      setMaxYear(newMax)
-    })
-
-    $("#advanceBackwards").on('click', function(){
-      //figure out what new mins and maxes are
-      timeSpan = +globals.maxYear - +globals.minYear
-      newMin = +globals.minYear + timeSpan
-      newMax = newMin + timeSpan
-      if (newMax > 22000){
-        newMax = 22000
-      }
-      newMin = +newMax - +timeSpan
-      setMaxYear(newMax)
-      setMinYear(newMin)
-    })
-
-
-  //end createTimeline function
-}
-
-function setMinYear(minYear){
-  //sets the global attribute and deals with moving the time rectangle and also the top and bottom drag lines
-  minYear = +minYear
-  if (minYear > 22000){
-    minYear = 22000
-  }
-  if (minYear < -75){
-    minYear = -75
-  }
-  yearSpan = globals.maxYear - minYear
-  if (yearSpan < 50){
-    console.log("Setting to min value")
-    yearSpan = 50
-    minYear = +globals.maxYear - 50
-    $("#minYearSelect").val(minYear)
-  }
-  globals.timeTop.attr('y1', globals.timeScale(minYear))
-  globals.timeTop.attr('y2', globals.timeScale(minYear))
-  globals.minYear = +minYear
-  heightSpan = globals.timeScale(yearSpan)
-  globals.timeRect.attr('y', globals.timeScale(globals.minYear)).attr('height', heightSpan)
-  //globals.maxYear = globals.timeScale.invert(+globals.timeRect.attr('height'))
-  globals.timeBottom.attr('y1', globals.timeScale(minYear) + heightSpan)
-  globals.timeBottom.attr('y2', globals.timeScale(minYear) + heightSpan)
-  updateTime()
-}
-function setMaxYear(maxYear){
-  ///sets top and bottom lines and rectangle position, then updates the time in the app
-  if (maxYear > 22000){
-    maxYear = 22000
-  }
-  if (maxYear < -75){
-    maxYear = -75
-  }
-  yearSpan = maxYear - globals.minYear
-  if (yearSpan < 50){
-    yearSpan = 50
-    maxYear = +globals.minYear + 50
-    //reset the text box so it knows we did this adjustment
-    $("#maxYearSelect").val(maxYear)
-  }
-  globals.timeBottom.attr('y1', globals.timeScale(maxYear))
-  globals.timeBottom.attr('y2', globals.timeScale(maxYear))
-  globals.maxYear = +maxYear
-  heightSpan = globals.timeScale(yearSpan)
-  globals.timeRect.attr('height', heightSpan)
-  updateTime()
-}
-
-function loadOccurrenceData(taxon){
-  //figure out what type the taxon is
-  //if it's pollen, hit the pollen endpoint
-  //otherwise, hit the SampleData endpoint
-  for (t in globals.allTaxa){
-    checkTaxon = globals.allTaxa[t]
-    if (checkTaxon.TaxonName == taxon){//check name match
-      if (t.TaxaGroupID == "VPL"){
-        globals.taxaClass = "VPL"
-        globals.occurrenceEndpoint = "pollen"
-      }else {
-        globals.taxaClass = t.TaxaGroupID
-        globals.occurrenceEndpoint = "SampleData"
       }
     }
   }
-
-  globals.taxon = taxon
-  $("#loading").show()
-  loc = "-167.276413,5.49955,-52.23304,83.162102"
-  if (globals.occurrenceEndpoint == "pollen"){
-      url = "http://apidev.neotomadb.org/v1/data/pollen?taxonname="
+  if (globals.data.occurrences.length != 0){
+      processNeotomaData()
   }else{
-      url = "http://api.neotomadb.org/v1/data/SampleData?taxonname="
-  }
-  url += encodeURIComponent(taxon)
-  if (globals.occurrenceEndpoint == "pollen"){
-      url += "&bbox=" + loc
-  }else if (globals.occurrenceEndpoint == "SampleData"){
-    url += "&loc=" + loc
-  }
-  if (globals.aggType == "base"){
-    console.log("Aggregating is in alpha development.")
-    url += "&nametype=base"
-  }
-  url += "&ageold=22000&ageyoung=-100"
-  $.ajax(url, {
-     beforeSend: function(jqXHR){
-       console.log(this.url)
-       $("#loading").slideDown()
-       // set request headers here rather than in the ajax 'headers' object
-      jqXHR.setRequestHeader('Accept-Encoding', 'gzip deflate');
-     },
-     error: function(xhr, status, error){
-       console.log(xhr)
-       console.log(status)
-       console.log(error)
-       $("#loading").text("Server error.")
-     },
-    cache: true,
-     dataType: "jsonp",
-     success: function(data){
-       if (data['success']){
-        globals.data = data['data']
-        //go to niche viewer data service
-        // getNicheData()
-        if (globals.occurrenceEndpoint != "pollen"){
-          processSampleData()
-        }
-
-        if (data['data'].length == 0){
-          alert("No results were returned.")
-          $("#loading").slideUp()
-          return
-        }
-        globals.taxonid = data['data'][0]['TaxonID']
-        $("#loading").slideUp()
-         //determine what to do with the data
-         //createHeatmapLayer();
-         if (globals.occurrenceEndpoint != "pollen"){
-           updateSites()
-           getTaxonomy()
-           setTimelinePoints(data['data'])
-        }else{
-          //this is pollen
-
-            globals.map.layerController.addOverlay(globals.heat, "Heatmap") //add layer to controller
-            updateHeatmap()
-         updateSites()
-         getTaxonomy()
-         setTimelinePoints(data['data'])
-         if (!globals.openSitePanel){
-           globals.sitePanel.close()
-         }
-         populateTotalFieldDialog()
-
-         try{
-           globals.map.map.removeLayer(globals.map.propSymbols)
-           globals.map.layerController.removeLayer(globals.map.propSymbols)
-         }catch(err){
-           //pass
-         }
-
-         try{
-           globals.map.map.removeLayer(globals.map.hexbins)
-           globals.map.layerController.removeLayer(globals.map.hexbins)
-         }catch(err){
-           //pass
-         }
-
-         globals.map.propSymbols = L.layerGroup()
-
-        //  globals.map.map.addLayer(globals.map.propSymbols)
-        globals.map.layerController.addOverlay(globals.map.propSymbols, "Proportional Symbols") //add layer to controller
-
-          updatePropSymbols()
-
-          // Create the hexbin layer and add it to the map
-          globals.map.hexbins = L.hexbinLayer(hexOptions)
-          globals.map.layerController.addOverlay(globals.map.hexbins, "Hexagonal Bins") //add layer to controller
-
-          updateHexbins()
-        }
-       }else{
-         console.log("Server error on Neotoma's end.")
-         $("#loading").text("Server error.")
-       }
-     }
-  })
-}
-
-
-counter = 0
-
-function createHeatmapLayer(){
-  //create a blank heatmap layer
-  //remove from layer control if its already defined
-  //create the heatmap layer
-  var heat = L.webGLHeatmap({size:75, units:'px',  opacity: 0.5, alphaRange:0.0001});
-  // heat.addTo(globals.map.map);
-  globals.map.map.addLayer(heat)
-  globals.map.layers['Heatmap'] = heat;
-  globals.heat = heat;
-}
-
-function updateHeatmap(){
-  //update the data array
-  newData = {}
-  for (var i=0; i< globals.data.length; i++){
-    d = globals.data[i]
-    if ((+d.Age == null) || (+d.Age == "")){
-      d.Age = (+d.AgeOlder + d.AgeYounger)/2
-    }
-    if (((+d.Age > globals.minYear) && (+d.Age <= globals.maxYear))){
-      add = true
-    }else{
-      add = false
-    }
-    siteID = d.SiteID
-    if (add){
-      if (newData[siteID] == undefined){
-        newData[siteID] = {
-          sum : 0,
-          data : d,
-          num: 0
-        }
-      }
-      newData[siteID].sum += (d['Value'] / d[globals.TotalField])
-      newData[siteID].num += 1
-    }
-  }
-  dataset = new Array()
-  for (i in newData){
-    d = newData[i]
-    pct = d.sum
-    lat = (d.data.LatitudeNorth + d.data.LatitudeSouth)/2
-    lng = (d.data.LongitudeWest + d.data.LongitudeEast) / 2
-    dataset.push([lat, lng, pct, d.num])
-  }
-  if (globals.heatmapSymbology == 'relative'){
-    // //linear transform the pct field so that 1 is the max
-    // pctMax = d3.max(dataset, function(d){return(d[2])})
-    // transformScale = d3.scale.linear()
-    //   .domain([0, pctMax])
-    //   .range([0, 1])
-    // for (var i=0; i<dataset.length; i++){
-    //   d = dataset[i][2]
-    //   x = transformScale(d)
-    //   dataset[i][2] = x
-    // }
-  }
-
-
-  globals.heatmapData = dataset;
-  globals.heat.setData(dataset);
-  updateControlID()
-
-}//end update heat function
-
-function updatePropSymbols(){
-  try{
-      globals.map.propSymbols.clearLayers()
-  }catch(err){
-    //pass
-  }
-
-  propSymbols = []
-  for (var i=0; i< globals.data.length; i++){
-    s = globals.data[i]
-    age = s.Age
-    if (age == null){
-      age = (s.AgeYounger + s.AgeOlder)/2
-    }
-    if ((age >= globals.minYear) && (age <= globals.maxYear)){
-      siteID = s.SiteID
-      name = s.SiteName
-      if (s[globals.TotalField] != null){
-        pct = s.Value / s[globals.TotalField] * 100
-      }else{
-        pct = 0
-      }
-      lat = (s.LatitudeSouth + s.LatitudeNorth) / 2
-      lng = (s.LongitudeEast + s.LongitudeWest) / 2
-      opts = psOptions
-      opts.radius = makeRadius(pct)
-      l = L.circleMarker([lat, lng, siteID], opts)
-        // .bindPopup("<h6>" + name + "</h6><p>Relative Abundance: " + Math.round(pct, 2) + "%</p><p>Age: " + age + " Years B.P.</p>")
-      propSymbols.push(l)
-      l.ps = true
-      globals.map.propSymbols.addLayer(l)
-    }
-  }
-
-
-}
-function updateSites(){
-  //add circleMarkers to the map where the sites are
-  console.log("Updating sites...")
-  removeSites()
-  siteIds = []
-  sites = []
-  globals.siteAges = {}
-  for(var i =0; i< globals.data.length; i++){
-    s = globals.data[i]
-    lat = (s.LatitudeSouth + s.LatitudeNorth) / 2
-    lng = (s.LongitudeEast + s.LongitudeWest) / 2
-    name = s.SiteName
-    id = s.SiteID
-    age = s.Age
-    if (age == null){
-      age = (s.AgeYounger + s.AgeOlder)/2
-    }
-    if ((age >= globals.minYear) && (age <= globals.maxYear)){
-      if (siteIds.indexOf(id) == -1){
-        sites.push({siteName: name, siteID: id, lat: lat, lng:lng})
-        siteIds.push(id)
-      }
-    }
-    if (globals.siteAges[id] == undefined){
-      globals.siteAges[id] = []
-    }
-    globals.siteAges[id].push(age)
-  } // end loop
-  siteLayer = []
-  for (var i=0; i< sites.length; i++){
-    l = L.circleMarker([sites[i].lat, sites[i].lng, sites[i].siteID], siteMarkerOptions)
-    .bindPopup("<h6>" + sites[i].siteName + "</h6>")
-    l.site = true;
-    l.siteID = sites[i].siteID
-    siteLayer.push(l)
-    l.on('click', function(){
-      var siteid = this._latlng.alt
-      getSiteDetails(siteid);
-      globals.map.map.setView(this._latlng)
-      movePanelToFront(globals.sitePanel._container)
-    })
-    globals.siteMarkers.push(l)
-  }
-  //see if visible
-  //hackiest thing ever
-    //but its fine
-  globals.sitesVisible = globals.showSites
-  globals.map.layerController.removeLayer(globals.siteLayer)
-  globals.siteLayer = L.layerGroup(siteLayer).addTo(globals.map.map)
-  if (!globals.sitesVisible){
-    globals.map.map.removeLayer(globals.siteLayer);
-  }
-  globals.map.layerController.addOverlay(globals.siteLayer, "Sites")
-  updateControlID()
-  if (!globals.showSites){
-    $("#Sites_control").trigger('click')
-  }
-  //bringMarkersToFront()
-} //end update sites function
-
-function removeSites(){
-  globals.map.map.eachLayer(function(layer){
-    if (layer.site){
-      globals.map.map.removeLayer(layer)
-    }
-  })
-}
-
-
-function removeHeatmap(){
-  //just sets the lat/lngs of the heatmap to empty so we don't need to recreate the base layer
-  globals.heat.setLatLngs([]);
-}
-
-function makeRadius(num){
-  return num
-  // return Math.sqrt(num)
-}
-
-function loadIceSheets(){
-  //get icesheet geojson
-  $.ajax("data/icesheets.json", {
-    dataType: "json",
-        cache: true,
-    error: function(xhr, status, error){
-      console.log(xhr)
-      console.log(status)
-      console.log(error)
-    },
-    success: function(response){
-      //load the icesheets
-      //first, get a list of the years that we have in the ice dataset
-      //use this in calculating which layer to show
-      globals.iceAges = new Array()
-      for (prop in response.features){
-        iceAge = response.features[prop].properties.Age
-        globals.iceAges.push(iceAge)
-      }
-      //now,display
-      displayIceSheets(response)
-    }
-  })
-}
-
-function bringMarkersToFront(){
-  for (var i=0; i< globals.siteMarkers.length; i++){
-    marker = globals.siteMarkers[i];
-    marker.bringToFront()
+      toastr.warning("No records were found. Please try another search.", "No Data!")
   }
 }
 
-function isVisible(layerName){
-  //hackiest thing ever
-  selectorDiv = $(".leaflet-control-layers-overlays")
-  labs = selectorDiv.find("span")
-  inputs = selectorDiv.find("input")
-  visible = true
-  for (var i =0; i< labs.length; i++){
-    lab = $(labs[i]).text()
-    if (lab == " " + layerName){
-      visible = $(inputs[i]).prop('checked')
-      break
-    }
-  }
-  return visible
-}
-
-function updateControlID(){
-  controls = $(".leaflet-control-layers-selector")
-  selectorDiv = $(".leaflet-control-layers-overlays")
-  labs = selectorDiv.find("span")
-  inputs = selectorDiv.find("input")
-  visible = true
-  for (var i =0; i< labs.length; i++){
-    lab = $(labs[i]).text().replace(" ", "")
-    $(inputs[i]).attr('id', lab + "_control")
-  }
-}
-
-function setVisibleBox(layerName){
-  //turn on checkbox in layer control
-  selectorDiv = $(".leaflet-control-layers-overlays")
-  labs = selectorDiv.find("span")
-  inputs = selectorDiv.find("input")
-  visible = true
-  for (var i =0; i< labs.length; i++){
-    lab = $(labs[i]).text()
-    if (lab == " " + layerName){
-      visible = $(inputs[i]).prop('checked', true)
-      break
-    }
-  }
-}
-
-function unsetVisibleBox(layerName){
-  //turn off checkbox in layer controls
-  selectorDiv = $(".leaflet-control-layers-overlays")
-  labs = selectorDiv.find("span")
-  inputs = selectorDiv.find("input")
-  visible = true
-  for (var i =0; i< labs.length; i++){
-    lab = $(labs[i]).text()
-    if (lab == " " + layerName){
-      visible = $(inputs[i]).prop('checked', false)
-      break
-    }
-  }
-}
-
-
-function displayIceSheets(data){
-    globals.iceSheets = L.geoJson(data, {
-      onEachFeature: function(feature, layer){
-        html = "<b>Estimated Ice Margin: </b>" + String(feature.properties.Age / 1000) + "kya"
-        layer.bindPopup(html)
-      }
-    }).addTo(globals.map.map)
-    globals.map.layerController.addOverlay(globals.iceSheets, "Icesheets")
-    updateControlID()
-    styleIceSheets()
-    if (!globals.showIce){
-      $("#Icesheets_control").trigger('click')
-    }
-}
-function closest (num, arr) {
-    var curr = arr[0];
-    var diff = Math.abs (num - curr);
-    for (var val = 0; val < arr.length; val++) {
-        var newdiff = Math.abs (num - arr[val]);
-        if (newdiff < diff) {
-            diff = newdiff;
-            curr = arr[val];
-        }
-    }
-    return curr;
-}
-
-function styleIceSheets(){
-  //get the closest ice layer
-  globals.closestIceAge = closest(globals.maxYear, globals.iceAges)
-    globals.iceSheets.eachLayer(function(layer){
-      if (globals.maxYear < 4000){
-        layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
-      }
-      else if (layer.feature.properties.Age == globals.closestIceAge){
-        layer.setStyle({stroke: false, fillColor: '#E0FFFF', fillOpacity: 0.75})
-      }else{
-        layer.setStyle({strokeColor: 'none', fillColor: "none", stroke: false})
-      }
-    })
-  try{
-      globals.iceSheets.bringToBack();
-  }catch(err){
-    //pass
-  }
-
-}
-
-function getTaxonomy(){
-  globals.taxonomyStoppingCriteria = ["Plantae"]
-  globals.taxonomy = []
-  getTaxonInfoFromNeotoma(globals.taxonid)
-}
-
-function getTaxonInfoFromNeotoma(taxonid){
-  endpoint = "http://api.neotomadb.org/v1/data/taxa?taxonid="
-  url = endpoint + taxonid
-  $.ajax(url, {
-    error: function(xhr, status, error){
-      console.log(xhr)
-      console.log(status)
-      console.log(error)
-    },
-    dataType:"jsonp",
-    success: function(response){
-      if (response['success']){
-        info = response['data'][0]
-        name = info['TaxonName']
-        if (globals.taxonomyStoppingCriteria.indexOf(name) > -1){
-          r = false
-        }else{
-          r = true
-        }
-        processTaxonInfo(info)
-        if (r){
-          higherID = info['HigherTaxonID']
-          getTaxonInfoFromNeotoma(higherID)
-        }else{
-          displayTaxonomy();
-        }
-      }
-
-    },
-    beforeSend: function(jqXHR){
-      jqXHR.setRequestHeader('Accept-Encoding', 'gzip deflate');
-    }
-  })
-}
-
-function processTaxonInfo(taxonResponse){
-  globals.taxonomy.push(taxonResponse);
-}
-
-function displayTaxonomy(){
-  globals.taxonomy = globals.taxonomy.reverse()
-  header = globals.taxon + " - taxonomy"
-  $("#taxonomy-panel-title").html(header)
-  html = ""
-  for (var i=0; i< globals.taxonomy.length; i++){
-    taxon = globals.taxonomy[i]
-    html += "<h5 class='strong'>" + taxon.TaxonName + "</h5><i class='small'>" + taxon.Author + "</i>"
-  } //end loop
-  globals.taxonomyPanel.setContent(html)
-  if (globals.openTaxPanel){
-    globals.taxonomyPanel.open()
-  }else{
-    globals.taxonomyPanel.close()
-  }
-  movePanelToFront(globals.taxonomyPanel._container)
-}
-
-// //navigation stuff
-// $(".nav-item").click(function(){
-//   $(".nav-item").removeClass('active')
-//   $(this).addClass('active')
-//   $(".panel").hide()
-//   isClicked = $(this).data('clicked')
-//   if (!isClicked){
-//     thePanel = $(this).data('panel')
-//     if (thePanel == 'taxonomy'){
-//       $("#taxonomy-panel").show()
-//     }
-//     else if (thePanel == 'site'){
-//       $("#site-panel").show()
-//     }
-//     //other panel opening goes here
-//
-//
-//     $(this).data('clicked', true)
-//   }else{
-//     $(this).data('clicked', false)
-//     $(this).removeClass('active')
-//   }
-// })
-
-function getSiteDetails(siteid){
-  //make sure the popup is open
-  globals.activeSiteID = siteid //so we can catch it later
-  var endpoint = "http://api.neotomadb.org/v1/data/datasets?siteid="
-  var url = endpoint + siteid
-  url += "&taxonname=" + globals.taxon
-  $.ajax(url, {
-    cache: true,
-    dataType: 'jsonp',
-    error: function(xhr, status, error){
-      console.log(xhr)
-      console.log(status)
-      console.log(error)
-    },
-    beforeSend: function(jqXHR){
-        jqXHR.setRequestHeader('Accept-Encoding', 'gzip deflate');
-    },
-    success: function(response){
-      displaySiteDetails(response['data'])
-    }
-  })
-}
-
-function displaySiteDetails(details){
-  //make sure the popup will open correctly
-  globals.openSitePanel = true
-  if (details.length == 0){
+function applySavedState(){
+  //for now, just load the taxa and proceed without having to manually load data
+  taxonid = +getParameterByName("taxonid")
+  //first check if taxonid is set
+  if ((taxonid != undefined ) & (taxonid > 0)){
+    globals.taxonid = taxonid
+    globals.state.searchSwitch = "browse"
+    loadNeotomaData();  //proceed with load
     return
   }
-  site = details[0]['Site']
-  siteLat = site['LatitudeNorth'] + site['LatitudeSouth'] / 2
-  siteLng = site['LongitudeWest'] + site['LongitudeEast'] / 2
-  siteName = site['SiteName']
-  siteDesc = site['SiteDescription']
-  siteAlt = site['Altitude']
-  siteNotes = site['SiteNotes']
-  siteID = site['SiteID']
-  PIs = []
-  ageOld = -Infinity
-  ageYoung = Infinity
-  subDates = []
-  ages = []
-  pcts = []
-  for (var i=0; i< details.length; i++){
-    //parse the datasets
-    thisDataset = details[i]
-    dates = thisDataset['SubDates']
-    for (var j = 0; j < dates.length; j++){
-      if (dates[j]['SubmissionDate'] != null){
-        subDates.push(dates[j]['SubmissionDate'])
-      }
-    }
-    thisPI = thisDataset['DatasetPIs']
-    for (var p =0; p<thisPI.length; p++){
-      if (thisPI[p].ContactName != null){
-        PIs.push(thisPI[p].ContactName)
-      }
-
-    }
+  taxonname = getParameterByName("taxonname")
+  if ((taxonname != undefined) && (taxonname != "")){
+    globals.taxonname = taxonname
+    globals.state.searchSwitch = "search"
+    loadNeotomaData();  //proceed with load
+    return
   }
-  //associate with the  map data
-  for (var i =0; i< globals.data.length; i++){
-    occ = globals.data[i]
-    if (occ.SiteID == siteID){//match to this site
-      thisAge = occ.Age
-      if ((thisAge == null) || (thisAge == undefined)){
-        thisAge = (occ.AgeOlder + occ.AgeYounger)/2
-      }
-      if (occ[globals.TotalField] != null){
-        pct = (occ.Value / occ[globals.TotalField]) * 100
-      }else{
-        pct = 0
-      }
-
-      obj = {age: thisAge, value: pct, id:occ.SampleID}
-      ages.push(obj)
-    }
-  }
-
-  ages = _.sortBy(ages, function(d){return d.age})
-  numDatasets = details.length
-  html = ""
-  html +=  "<h4>" + site['SiteName'] + "<span class='small text-muted'><" + siteID + "></span></h4>"
-  html += "<div>"
-  html += "<p>Latitude: <span class='text-muted'>" + round2(siteLat) + "</span></p>"
-  html += "<p>Longitude: <span class='text-muted'>" + round2(siteLng) + "</span></p>"
-  html += "<p>Altitude: <span class='text-muted'>" + siteAlt + "m</span></p>"
-  if (siteDesc != null){
-    html += "<p>Site Description: <i class='text-muted small'>" + siteDesc + "</i></p>"
-  }
-  if (siteNotes != null){
-    html += "<p>Site Notes: <i class='text-muted small'>" + siteNotes + "</i></p>"
-  }
-  html += "<hr />"
-  html += "Samples at this Site: "
-  html += "<table>"
-  html += "<th>Sample ID</th><th>Age</th><th>Value</th>"
-  for (var i =0; i< ages.length; i++){
-    html += "<tr><td>" + ages[i].id + "</td><td>"  + ages[i].age + " B.P.</td><td>" + round2(ages[i].value) + "%</td><tr>"
-  }
-  html += "</table>"
-  html += "<hr />"
-  html += "<p>Datasets with " + globals.taxon + ":<span class='text-muted'>" + numDatasets + "</span></p>"
-  html += "<h6>Investigators:</h6>"
-  for (var p =0; p< PIs.length; p++){
-    html += "<p><i class='text-muted small'>" + PIs[p] + "</i></p>"
-  }
-  html += "<h6>Neotoma Submission Dates:</h6>"
-  for (var p =0; p< subDates.length; p++){
-    html += "<p><i class='text-muted small'>" + subDates[p] + "</i></p>"
-  }
-  html += "</div>"
-  globals.sitePanel.setContent(html)
-  if (globals.openSitePanel){
-    globals.sitePanel.open()
-  }else{
-    globals.sitePanel.close()
-  }
-
-  $(".leaflet-control-dialog-contents").scrollTop(0)
-  movePanelToFront(globals.sitePanel._container)
-  //make sure the popup is open, in case it was called by url
-  for (var i=0; i< globals.siteMarkers.length; i++){
-    siteMarkerID = globals.siteMarkers[i].siteID
-    if (siteMarkerID == globals.activeSiteID){
-      try{
-              globals.siteMarkers[i].openPopup()
-      }catch(err){
-        //pass
-      }
-      break
-    }
-  }
+  //otherwise, don't do anything
 }
 
-function setTimelinePoints(data){
-  bins = []
-  for (i = -50; i<= 22000; i = i + globals.tlBinSize){
-    bins.push(i)
+//Events
+//on a change of the dropdown, filter the taxa and put them in the next dropdown
+$("#ecolGroupSelect").change(function(){
+  selectedGrp = $("#ecolGroupSelect :selected").val()
+  filterAndPopulateTaxaDropdown(selectedGrp)
+  globals.config.searchSwitch = "browse"
+})
+//toggle the search switch when the user searches with the search bar
+//or browses with the dropdowns
+$("#taxonSelect").change(function(){
+  globals.config.searchSwitch = "browse"
+  console.log($("#taxonSelect :selected").val())
+})
+$("#taxaAutocomplete").on("awesomplete-select", function(){
+  globals.config.searchSwitch = "search"
+})
+
+//search for Neotoma data when the search button is called
+$("#searchButton").click(function(){
+  //start search
+  globals.taxonname = $("#taxaAutocomplete").val()
+  globals.taxonid = $("#taxonSelect :selected").val()
+  loadNeotomaData();
+})
+
+function loadNeotomaData(){
+  //simultaneuous request, but wait for all ajax downloads to be done before trying to merge the data
+  globals.requestQ = queue();
+  globals.requestQ.defer(getDatasets)
+  globals.requestQ.defer(getOccurrenceData)
+  globals.requestQ.await(mergeMeta)
+
+  //do loading stuff
+  $(".cover").removeClass("cover-full").addClass("cover-half")
+  $(".cover").show()
+
+  //set the header bar
+  if (globals.state.searchSwitch == "search"){
+      $("#taxonid").text("Currently showing results for: " + globals.taxonname)
+  }else{
+      $("#taxonid").text("Currently showing results for: " + globals.taxonid)
   }
-  var bin = d3.layout.histogram()
-    .value(function(d) { return d.Age; })
-    .bins(bins);
-
-  var histData = bin(data)
-
-  densityExtent = [1, d3.max(histData, function(d){return d.length})]
-
-  var densityColor = d3.scale.linear()
-    .domain(densityExtent)
-    .range(["white", "steelblue"]);
-
-  globals.timelineTip = d3.tip()
-      .attr('class', 'd3-tip')
-      .direction('w')
-      .html(function(d){
-        return ("<b>" + d.length + "</b> Samples <br />"  + numberWithCommas(d.x) + " - " + numberWithCommas(d.x + d.dx) + " B.P.")
-      })
-  d3.selectAll(".timelineRect").remove()
-  d3.select("#timeline").select("svg").selectAll(".timelineRect")
-    .data(histData)
-    .enter()
-    .append('rect')
-      .attr('width', function(d){
-        return 10
-      })
-      .attr('x', function(d){
-        return 40
-      })
-      .attr('y', function(d){
-        //this actually is d.x because it's supposed to be on a horizontalscale
-        return globals.timeScale(d.x)
-      })
-      .attr('height', function(d){
-        return globals.timeScale(d.dx)
-      })
-      .attr('fill', function(d){
-          return densityColor(d.length)
-      })
-      .attr('stroke', 'none')
-      .attr('class', "timelineRect")
-      .attr('transform','translate(0, ' + globals.timelineOffset + ')' ) //this is fucked up, but it kind of works.
-      .call(globals.timelineTip)
-      .on('mouseover', function(d){
-        globals.timelineTip.show(d)
-        d3.select(this).style('stroke', 'black')
-      })
-      .on('mouseout', function(d){
-        globals.timelineTip.hide()
-        d3.select(this).style('stroke', 'none')
-      })
-
-
-
 
 }
 
-function movePanelToFront(panel){
-  openPanels = $(".leaflet-control-dialog")
-  zs = []
-  for (var i =0; i< openPanels.length; i++){
-    p = $(openPanels[i])
-    z = +p.css("z-index")
-    zs.push(z)
-  }
-  maxZ = Math.max(...zs)
-  newZ = maxZ + 1
-  $(panel).css("z-index", newZ)
-}
 
-function round2(num){
-  return Math.round(num * 100) / 100
-}
-
-function makeBaseNicheViewerPanel(){
-  html = "<div class='col-xs-12' id='nv-controls'>"
-  html += "<div class='col-xs-6' id='axis-1-controls'>"
-  html += "<label>Data Source</label><br /><select id='source-dropdown' class='source-dropdown'></select></br />"
-  html += "<label>Variable</label><br /><select id='variable-dropdown' class='variable-dropdown'></select><br />"
-  // html += "<label>Variable Modifier</label><select id='x-modifier-dropdown' class='modifier-dropdown'></select><br />"
-  html += "</div>"
-  html += "<div class='col-xs-6' id='axis-2-controls'>"
-  html += "</div>"
-  html += "<hr />"
-  html += "<div id='nv-chart'>"
-  html += "</div>"
-  globals.nvPanel.setContent(html)
-  if (globals.openNVPanel){
-    globals.nvPanel.open()
-  }else{
-    globals.nvPanel.close()
-  }
-  $(".leaflet-control-dialog-contents").scrollTop(0)
-  movePanelToFront(globals.nvPanel._container)
-}
-function onAllPanelResized(){
-  //check the niche viewer dimensions
-  newNVWidth = $(globals.nvPanel._container).width()
-  newNVHeight = $(globals.nvPanel._container).height()
-  if ((newNVHeight != globals.nvHeight) || (newNVWidth != globals.nvWidth)){
-    //makeNicheViewer()
-  }
-}
-
-function updateTime(){
-  updateHeatmap()
-  updatePropSymbols()
-  updateSites()
-  styleIceSheets()
-  updateHexbins()
-  //updateNicheViewer()
-  //make sure the text boxes get the most recent values of years
-  $("#maxYearSelect").val(Math.round(globals.maxYear))
-  $("#minYearSelect").val(Math.round(globals.minYear))
-}
-
-function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-function generateShareURI(){
-  //document all of the components of the current configuration so we can share it as a URI
-  oldURI = new URI()
-  protocol = oldURI.protocol()
-  hostname = oldURI.hostname()
-  port = oldURI.port()
-  path = oldURI.pathname()
-  uri = new URI({
-    protocol: protocol,
-    hostname: hostname,
-    port:port,
-    path: path
-  })
-  //get the name of what we're looking at
-  taxon = globals.taxon
-  if (taxon){
-    uri.addQuery('taxon', taxon)
-  }
-  uri.addQuery('taxon', taxon)
-  //get the map center and zoom
-  center = globals.map.map.getCenter()
-  lat = center['lat']
-  lng = center['lng']
-  zoom = globals.map.map.getZoom()
-  uri.addQuery('lat', lat)
-  uri.addQuery('lng', lng)
-  uri.addQuery('zoom', zoom)
-  //get time extent
-  minyear = Math.round(globals.minYear)
-  maxyear = Math.round(globals.maxYear)
-  uri.addQuery('minYear', minyear)
-  uri.addQuery('maxYear', maxyear)
-  //get UI open components
-  taxonomyIsOpen = globals.taxonomyPanel.isOpen
-  nvIsOpen = globals.nvPanel.isOpen
-  sitesIsOpen = globals.sitePanel.isOpen
-  uri.addQuery('sitePanel', sitesIsOpen)
-  uri.addQuery('nvPanel', nvIsOpen)
-  uri.addQuery('taxonomyPanel',taxonomyIsOpen)
-  //site panel only makes sense to be open if there are details about that site in it
-  if (sitesIsOpen){
-    activeSiteID = globals.activeSiteID
-    uri.addQuery('activeSiteID', activeSiteID)
-  }
-  //get layers on the map
-  siteLayerVisible = globals.showSites
-  iceLayerIsVisible = globals.showIce
-  heatmapIsVisible = globals.showHeat
-  uri.addQuery('showSites', siteLayerVisible)
-  uri.addQuery('showIce', iceLayerIsVisible)
-  uri.addQuery('showHeat', heatmapIsVisible)
-  //could generate a uniqueID here
-  // shareID = generateShareID()
-  // uri.addQuery('shareid',shareID)
-  uri.normalizeQuery()
-  return uri
-}
-
-function generateID() {
-  //not really necessary now, but we could have a db on the backend that uses this, so put it in now
-    return ("00000" + (Math.random()*Math.pow(36,5) << 0).toString(36)).slice(-5)
-}
-
-function processQueryString(){
-  //called on load to process any variables that have been passed in through the url
-  //set global variables, then call load()
-  globals.autoload = false //if this is true, we automatically do the search to neotoma
-  taxon = getURLParameterByName('taxon')
-  if (taxon){
-    globals.taxon = taxon
-    //set the name in the search box
-    $("#searchBar").val(taxon.toProperCase())
-    globals.autoload = true;
-  }
-  minyear = getURLParameterByName('minYear')
-  if (minyear){
-    if (!isNaN(+minyear)){
-          globals.minYear = +minyear
-    }else{
-      globals.minYear = -75
+function getParameterByName(name, url) {
+  //get the query parameter values from the URI
+    if (!url) {
+      url = window.location.href;
     }
-  }else{
-    globals.minYear = -75
-  }
-
-  maxyear = getURLParameterByName('maxYear')
-  if (maxyear){
-    if (!isNaN(+maxyear)){
-      globals.maxYear = +maxyear
-    }else{
-      globals.maxYear = 22000
-    }
-  }else{
-    globals.maxYear = 22000
-  }
-  //initialize some stuff.  This could go elsewhere, but other inits happen here, so we will leave it here
-  globals.map.layers = {}
-  globals.data = []
-  globals.siteLayer = L.layerGroup();
-  globals.iceSheets = L.layerGroup();
-  globals.siteMarkers = []
-
-  //default panel opening
-  //default is off
-  sitePanelOn = getURLParameterByName('sitePanel')
-  if(sitePanelOn == 'true'){
-    globals.openSitePanel = true
-    //if this is true, there should be an activeSiteID param too
-    activeSiteID = getURLParameterByName('activeSiteID')
-    if (activeSiteID){
-      if ((!isNaN(activeSiteID)) && (+activeSiteID > 0)){
-        globals.activeSiteID = activeSiteID
-        getSiteDetails(globals.activeSiteID)
-      }else{
-        globals.activeSiteID = null
-        globals.openSitePanel = false //don't allow auto open unless an id is set
-      }
-    }else{
-      globals.activeSiteID = null
-      globals.openSitePanel = false //don't allow auto open unless an id is set
-    }
-  }else{
-    globals.openSitePanel = false;
-  }
-
-  nvPanelOn = getURLParameterByName('nvPanel')
-  if(nvPanelOn == 'true'){
-    globals.openNVPanel = true
-  }else{
-    globals.openNVPanel = false;
-  }
-
-  taxonomyPanelOn = getURLParameterByName('taxonomyPanel')
-  if(taxonomyPanelOn == 'true'){
-    globals.openTaxPanel = true
-  }else{
-    globals.openTaxPanel = false
-  }
-
-  //get map view
-  centerLat = getURLParameterByName('lat')
-  if (centerLat){
-    if (!isNaN(+centerLat)){
-      globals.centerLat = centerLat
-    }else{
-        globals.centerLat = 39.828175
-    }
-  }else{
-    globals.centerLat = 39.828175
-  }
-  centerLng = getURLParameterByName('lng')
-  if (centerLng){
-    if (!isNaN(+centerLng)){
-      globals.centerLng = centerLng
-    }else{
-      globals.centerLng = -98.5795
-    }
-
-  }else{
-    globals.centerLng = -98.5795
-  }
-  zoom = getURLParameterByName('zoom')
-  if (zoom){
-    if (!isNaN(+zoom)){
-      globals.zoom = zoom
-    }else{
-      globals.zoom = 3
-    }
-  }else{
-    globals.zoom = 3
-  }
-
-  showIce = getURLParameterByName("showIce")
-  if (showIce == "false"){
-    globals.showIce = false
-  }else{
-    globals.showIce = true
-  }
-
-  showHeat = getURLParameterByName('showHeat')
-  if (showHeat == 'false'){
-    globals.showHeat = false
-  }else{
-    globals.showHeat = true
-  }
-  showSites = getURLParameterByName('showSites')
-  if (showSites == 'false'){
-    globals.showSites = false;
-  }else{
-    globals.showSites = true;
-  }
-
-  //advanced parameters.  There are no GUI elements to change these, yet, but it gives the option to change if desired
-  sumField = getURLParameterByName("sumField")
-  if (sumField){
-    sumField = sumField.toLowerCase()
-    if(sumField == "total"){
-      globals.TotalField = "Total"
-    }else if (sumField == 'uphe'){
-      globals.TotalField = "UPHE"
-    }else if (sumField == "unid"){
-      globals.TotalField = "UNID"
-    }else if (sumField == "upbr"){
-      globals.TotalField = "UPBR"
-    }else if (sumField == "fung"){
-      globals.TotalField = "FUNG"
-    }else if (sumField == "trsh"){
-      globals.TotalField = "TRSH"
-    }else if (sumField == "aqvp"){
-      globals.TotalField = "AQVP"
-    }else if (sumField == "aqbr"){
-      globals.TotalField = "AQBR"
-    }else if (sumField == "vacr"){
-      globals.TotalField = "VACR"
-    }else if (sumField == "anac"){
-      globals.TotalField = "ANAC"
-    }else if (sumField == "palm"){
-      globals.TotalField = "PALM"
-    }else if (sumField == "succ"){
-      globals.TotalField = "SUCC"
-    }else{
-      globals.TotalField = "Total"
-    }
-  }else{
-    globals.TotalField = "Total"
-  }
-
-  //single taxon or aggregate down?
-  aggType = getURLParameterByName("aggType")
-  if (aggType){
-    if (aggType == "single"){
-      globals.aggType = "single"
-    }else if ((aggType == "base") || (aggType == "multiple")){
-      globals.aggType = "base"
-    }else{
-      globals.aggType = "base"
-    }
-  }else{
-    globals.aggType = "single"
-  }
-  //heatmap options
-
-  heatMax = getURLParameterByName("heatMax")
-  if(heatMax){
-    if (!isNaN(parseFloat(heatMax))){
-      globals.heatMax = heatMax
-    }else{
-      globals.heatMax = 100
-    }
-  }else{
-    globals.heatMax = 100
-  }
-
-  globals.heatOptions['max'] = globals.heatMax
-
-  heatCellSize = getURLParameterByName("heatCellSize")
-  if(heatMax){
-    if (!isNaN(parseFloat(heatCellSize))){
-      globals.heatCellSize = heatCellSize
-    }else{
-      globals.heatCellSize = 100
-    }
-  }else{
-    globals.heatCellSize = 100
-  }
-  globals.heatOptions['cellSize'] = globals.heatCellSize
-
-
-
-  //go!
-  if (globals.autoload){
-    $("#searchButton").trigger('click'); //load the map components
-  }
-}
-
-function getURLParameterByName(name, url) {
-    if (!url) url = window.location.href;
     name = name.replace(/[\[\]]/g, "\\$&");
     var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
         results = regex.exec(url);
@@ -1788,234 +709,119 @@ function getURLParameterByName(name, url) {
     return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
-String.prototype.toProperCase = function () {
-    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
-};
+function drawNHTempCurve(){
+    //draws the greenland ice core temperature curve in the bottom panel
 
 
-
-
-function copyLinkToClipboard() {
-	  // create hidden text element, if it doesn't already exist
-   $("#share-link").focus()
-   var succeed;
-   try{
-     succeed = document.execCommand("copy")
-   }catch(e){
-     succeed = false
-   }
-   return succeed
-}
-
-//social media sharing of the share link
-$("#copyToClipboard").on('click', function(){
-  copyLinkToClipboard()
-})
-
-//enable extra bootstrap functionality
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip()
-})
-$(function () {
-  $('[data-toggle="popover"]').popover()
-})
-
-
-function generateTwitterLink(){
-  var twitterURL = new URI("http://twitter.com/share/")
-  twitterURL.addQuery("url", globals.shareURI)
-  twitterURL.addQuery("text", "Check out my Ice Age Map!")
-  twitterURL.addQuery("hashtags", "paleo")
-  twitterURL = twitterURL.toString()
-  $(".twitter-share-button").attr("href", twitterURL)
-}
-
-function generateEmailLink(){
-  link = "mailto:?to=&"
-  link += "subject=" + encodeURIComponent("Ice Age Mapper")
-  link += "&body=" + globals.shareURI
-  $("#emailLink").data('href', link)
-}
-
-function generateGPlusLink(){
-  $(".g-plus").data('href', globals.shareURI)
-}
-
-
-function changeHeatmapSymbology(type){
-  if (type == 'relative'){
-    globals.heatmapSymbology = 'relative'
-  }else if (type == 'absolute'){
-    globals.heatmapSymbology = 'absolute'
+  //set up the bottom panel
+  //create the SVG of the correct size
+  // build the axes for the charts
+  globals.southChart = d3.select("#tempContainer").append('svg') //canvas
+  globals.southMargins = {//margins for the bottom chart
+    top: 25,
+    right: 25,
+    bottom: 50,
+    left: 50
   }
-  updateHeatmap()
-  updatePropSymbols()
-}
-//change the heatmap maximum value
-$(".heatmapSymbologyInput").change(function(){
-  val = $(this).val()
-  changeHeatmapSymbology(val)
-})
+  //these are internal and don't need to be stored in application state
+  globals.southChartWidth = +$("#tempContainer").width() - globals.southMargins.left - globals.southMargins.right,
+  globals.southChartHeight = +$("#tempContainer").height()   - globals.southMargins.top - globals.southMargins.bottom,
+  globals.southChartContext = globals.southChart.append("g").attr("transform", "translate(" + globals.southMargins.left + "," + globals.southMargins.top + ")");
 
-function changeTotalField(totalField){
-  globals.TotalField = totalField
-  updateHeatmap()
-  getSiteDetails(globals.activeSiteID)
-  updatePropSymbols()
-}
+  //chart axes
+  globals.southX = d3.scale.linear()
+      .range([0, +$("#tempContainer").width() ]);
 
+  globals.southY = d3.scale.linear()
+      .range([0, +$("#tempContainer").height() ]);
 
-function populateTotalFieldDialog(){
-  workingItem = globals.data[0]
-  reservedFields = ['Value', "Age", "AgeOlder", "AgeYounger", "Altitude", "DatasetID", "LatitudeNorth", "LatitudeSouth",
-                  "LongitudeWest", "LongitudeEast", "SampleID", "SampleID1", "SiteID", "TaxonID", "VariableUnits", "Total", "TaxonName", "SiteName"]
-  for (key in workingItem){
-    if (reservedFields.indexOf(key) == -1){
-      $("#totalControl").append("<option value='" + key + "'>" + key + "</option>")
-    }
-  }
-  $("#totalControl").change(function(){
-    newField = $("#totalControl option:selected").val()
-    changeTotalField(newField)
-    console.log("New Field is " + newField)
-  })
-}
+  // //chart brusher
+  // globals.southBrush = d3.brushX()
+  //   .extent([[0, 0], [+$("#tempContainer").width(), +$("#tempContainer").height()]])
+  //   .on("brush end", brushed);
 
+  //draw the greenland temperature graph on the south panel chart
+  southLineFn = d3.svg.line()
+      .x(function(d) { return globals.southX(d.YearsBP); })
+      .y(function(d) { return globals.southY(d.TempC); });
 
-function getMacrostrat(){
-  var bounds = globals.map.map.getBounds()
-  var NE = bounds._northEast
-  var n = NE.lat
-  var e = NE.lng
-  var SW = bounds._southWest
-  var s = SW.lat
-  var w = SW.lng
-  var shape = "POLYGON((" + e + " " + n + "," + w + " " + n + "," + w + " " + s + "," + e + " " + s + "," + e + " " + n + "))"
-  var wkt = new Wkt.Wkt();
-  wkt.read(shape)
-  var wktString = wkt.write()
-  var url = "http://macrostrat.org/api/v2/carto/small?"
-  url += "shape=" + encodeURIComponent(wktString)
-  url += "&format=geojson"
-  $.ajax(url, {
-    success: function(data){
-      rockData = data['success']['data']
-      updateGeology(rockData)
-    },
-    beforeSend: function(){
-    },
-    error: function(xhr, status, error){
-      console.log("There was an error.")
-      console.log(xhr)
-      console.log(status)
-      console.log(error)
-    }
-  })
-}
+  //load the data
+  d3.csv("data/greenlandT.csv", function(d) {
+          //get data (ansyc)
+          //convert to numeric on each data point
+          d.TempC = +d.TempC;
+          d.YearsBP = +d.YearsBP;
+          return d;
+        },
+      function(error, data) {
+        //success function
+        if (error) throw error;
+
+        console.log(data)
+        //set axes domains
+        globals.southX.domain(d3.extent(data, function(d) { return d.YearsBP; }));
+        globals.southY.domain(d3.extent(data, function(d) { return d.TempC; }));
+
+        // Define the axes
+        var xAxis = d3.svg.axis().scale(globals.southX)
+            .orient("bottom").ticks(5);
+
+        var yAxis = d3.svg.axis().scale(globals.southY)
+            .orient("left").ticks(5);
 
 
-function addGeology(newGeoJsonData) {
-    globals.map.geology.addData(newGeoJsonData);
-    try{
-      globals.map.geology.bringToBack()
-    }catch(err){
-        //incase the geology layer doesn't currently exist
-    }
-}
+        //add x axis
+        globals.southChartContext.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0," + globals.southChartHeight + ")")
+            .call(xAxis);
 
-function updateGeology(updatedGeoJsonData) {
-    deleteGeology(); // Remove the previously created layer.
-    addGeology(updatedGeoJsonData); // Replace it by the new data.
-}
+        //add y axis with label
+        globals.southChartContext.append("g")
+            .attr("class", "axis axis--y")
+            .call(yAxis)
+          .append("text")
+            .attr("fill", "#000")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", "0.71em")
+            .style("text-anchor", "end")
+            .text("Temperature (C)");
 
-function deleteGeology() {
-    for (i in globals.geologyLayers){
-      layer = globals.geologyLayers[i]
-      globals.map.geology.removeLayer(layer)
-    }
+        //add the temperature curve
+        globals.southChartContext.append("path")
+            .datum(data)
+            .attr("class", "line")
+            .attr("d", globals.southLineFn)//interpolator function
+            .style('stroke', 'red')
+            .style('fill', 'none')
+            .style('stroke-weight', 1)
+        //
+        // //enable brushing
+        // var gBrush = globals.southChartContext.append("g")
+        //         .attr("class", "brush")
+        //         .call(globals.southBrush);
+
+      }); //end ajax
 }
 
-
-
-function updateHexbins(){
-  globals.map.hexbins.data(globals.heatmapData);
+function brushed(){
+  console.log("Brushed.")
 }
 
 
 
-function processSampleData(){
-  newArray = []
-  for (i in globals.data){
-    item = globals.data[i]
-    item['AgeOlder'] = item['SampleAgeOlder']
-    item['AgeYounger'] = item['SampleAgeYounger']
-    item['DatasetID'] = item['DatasetID']
-    item['SiteID'] = item['DatasetID']
-    item['SiteName'] = "API doesn't support site names."
-    item['LatitudeNorth'] = item['SiteLatitudeNorth']
-    item['LatitudeSouth'] = item['SiteLatitudeSouth']
-    item['LongitudeWest'] = item['SiteLongitudeWest']
-    item['LongitudeEast'] = item['SiteLongitudeEast']
-  }
-}
 
-function processNeotomaForNDS(variableID, sourceID){
-  sendData = []
-  for (item in globals.data){
-    site = globals.data[item]
-    lat = (site.LatitudeNorth + site.LatitudeSouth) / 2
-    lng = (site.LongitudeWest + site.LongitudeEast) / 2
-    age = site.Age
-    if (age === undefined){
-      age = (site.AgeOlder + site.AgeYounger) / 2
-    }
-    if (!age){
-      age = 0
-    }
-    pt = {
-      latitude: lat,
-      longitude: lng,
-      year: age
-    }
-    sendData.push(pt)
-  }
-  dat = {
-    variableID: variableID,
-    sourceID: sourceID,
-    points: sendData
-  }
-  return dat
-}
 
-function getNicheVariables(){
-  var host = "http://localhost:10010/variables"
-  $.ajax(host, {
-    success: function(data){
-      console.log(data)
-      $(".source-dropdown").empty()
-      $(".variable-dropdown").empty()
-      $(".source-dropdown").append("<option>CCSM3</option>")
-      for (var i=0; i < data.data.length; i++){
-        html = "<option data-varid=" + data.data[i].variableid + ">"
-        html += data.data[i].variabledescription
-        html += "</option>"
-        $("#variable-dropdown").append(html)
-      }
-      makeNicheViewer()
-      $("#variable-dropdown").change(function(){
-        theVar = $("#variable-dropdown option:selected").data('varid')
-        console.log(theVar)
-          makeNicheHistogram(theVar)
-      })
-      // makeNicheHistogram(12)
-    },
-    error: function(xhr, status, error){
-      console.log("THERE WAS AN ERROR")
-      console.log(xhr.responseText)
-    },
-    beforeSend: function(){
-      console.log(this.url)
-    },
-    contentType: "json"
-  })
+//hide loading screen when load is finished
+Pace.on("done", function(){
+    $(".cover").fadeOut(2500);
+});
+
+
+// setTimeout(function(){ globals.map.invalidateSize()}, 10);
+
+//is a layer in the map bounds?
+function isInMapBounds(marker){
+  return globals.map.getBounds().contains(marker.getLatLng());
 }

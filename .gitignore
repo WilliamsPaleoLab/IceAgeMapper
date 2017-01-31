@@ -2,3 +2,5 @@
 *.1
 .idea*
 .metadata*
+*.idea*
+.DS_Store
