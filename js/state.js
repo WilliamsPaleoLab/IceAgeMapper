@@ -11,6 +11,7 @@ globals.config = {
   map: {
     primaryTileURL: 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', //where to go to get tiles
     maxZoom: 8, //max zoom level of map
+    attribution: ""
   }, //end map
   dataSources: { //URIs of data used in AJAX calls
     taxa: "data/taxa.json", //customized file with names of taxa to improve performanc

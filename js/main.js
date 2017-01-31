@@ -819,7 +819,10 @@ Pace.on("done", function(){
 });
 
 
-// setTimeout(function(){ globals.map.invalidateSize()}, 10);
+if (globals.map != undefined){
+  setTimeout(function(){ globals.map.invalidateSize()}, 10);
+}
+
 
 //is a layer in the map bounds?
 function isInMapBounds(marker){
