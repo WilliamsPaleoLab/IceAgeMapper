@@ -135,6 +135,8 @@ function processNeotomaData(){
      internalID += 1
    }
 
+   globals.state.map.currentRMax = 100;
+
    crossFilterData() //prepare data for filtering and plotting with crossfilter library
 
    //callbacks to be completed once data has been processed
@@ -408,6 +410,8 @@ function putPointsOnMap(){
 
 function createMap(){
   //load a leaflet map into the map div
+
+  //create a fake dataset to put on the map before the user selects data from Neotoma
   globals.filters.empty = crossfilter()
   globals.filters.emptyDimension = globals.filters.empty.dimension(function(d){return d})
   globals.filters.emptyGroup = globals.filters.emptyDimension.group().reduceCount()
@@ -420,6 +424,7 @@ function createMap(){
     .center([30,-90])
     .zoom(3)
 
+  //render a blank map on initialization
   globals.elements.marker._doRender()
 }
 

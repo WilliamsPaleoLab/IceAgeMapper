@@ -19,7 +19,10 @@ globals.config = {
     //marker cluster controls
     doMarkerClustering: true,
     showCoverageOnHover: false,
-    zoomToBoundsOnClick: true
+    zoomToBoundsOnClick: true,
+    sizeRMin: 15,  //minimum radius of the proportional Symbols
+    sizeRMax: 100, // maximum radius of the proportional symbols
+    maxClusterRadius: 50//maximum size of the cluster in screen pixels (spans all zoom levels)
   }, //end map
   dataSources: { //URIs of data used in AJAX calls
     taxa: "data/taxa.json", //customized file with names of taxa to improve performanc
@@ -84,6 +87,8 @@ globals.state = {//this holds all relevant info to be shared and saved.
     center: [30, -90], //center of the map
     zoom: 3, //zoom level of map
     showIce: true, //show the ice sheets during browsing
+    currentRMin: 0,
+    currentRMax: 0
   },
   analytics: { //right hand panel with analytics charts
     open: false //is the panel open?,
