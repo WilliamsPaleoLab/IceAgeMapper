@@ -15,7 +15,11 @@ globals.config = {
     mapOptions: {
       zoomControl: false,
       maxZoom: 8
-    }
+    },
+    //marker cluster controls
+    doMarkerClustering: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true
   }, //end map
   dataSources: { //URIs of data used in AJAX calls
     taxa: "data/taxa.json", //customized file with names of taxa to improve performanc

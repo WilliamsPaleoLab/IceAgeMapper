@@ -138,9 +138,10 @@ function processNeotomaData(){
    crossFilterData() //prepare data for filtering and plotting with crossfilter library
 
    //callbacks to be completed once data has been processed
-   putPointsOnMap() //put circles on map
 
    datafyAnalyticsCharts() //update charts with data
+
+    putPointsOnMap() //put circles on map
 
   redrawAnalytics()
 
@@ -398,26 +399,28 @@ function datafyAnalyticsCharts(){
 }
 
 function putPointsOnMap(){
-  globals.elements.marker = dc_leaflet.markerChart("#map")
+  globals.elements.marker
     .dimension(globals.filters.occurrenceGeoDimension )
     .group(globals.filters.geoSummary)
-    .width($("#map").width())
-    .height($("#map").height())
     .center([30,-90])
     .zoom(3)
-    .cluster(true)
-    // .tiles(globals.config.map.primaryTileURL)
 }
 
 function createMap(){
   //load a leaflet map into the map div
-  //use the tileset described in the configuration object
-  // globals.map = L.map('map', {
-  //   zoomControl: false,
-  //   maxZoom: globals.config.map.maxZoom
-  // }).setView(globals.state.map.center, globals.state.map.zoom);
-  // L.tileLayer(globals.config.map.primaryTileURL).addTo(globals.map);
-  // globals.map.ptsLayer = L.layerGroup()
+  globals.filters.empty = crossfilter()
+  globals.filters.emptyDimension = globals.filters.empty.dimension(function(d){return d})
+  globals.filters.emptyGroup = globals.filters.emptyDimension.group().reduceCount()
+
+  globals.elements.marker = dc_leaflet.markerChart("#map")
+    .width($("#map").width())
+    .height($("#map").height())
+    .dimension(globals.filters.emptyDimension)
+    .group(globals.filters.emptyGroup)
+    .center([30,-90])
+    .zoom(3)
+
+  globals.elements.marker._doRender()
 }
 
 
