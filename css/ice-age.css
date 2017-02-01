@@ -142,10 +142,6 @@ path {
     stroke-width: 1;
     shape-rendering: crispEdges;
 }
-.dashboard-row{
-  /*margin-top: 10%;*/
-  margin-bottom: 10%;
-}
 h5{
   margin-top: 1%;
 }
@@ -161,4 +157,23 @@ h5{
   stroke-opacity: 0.5;
   fill: none;
   radius: 1
+}
+
+
+
+/*.analytics-chart{
+  padding-bottom: 10%;
+}
+
+#alt-lat-Chart{
+  margin-bottom: 5%!important;
+}*/
+
+
+.dashboard-row{
+  padding: 0px;
+}
+
+#ageChart{
+  padding-left: 10px;
 }

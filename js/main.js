@@ -78,9 +78,15 @@ function initialize(){
   applySavedState() //get the state settings from URL query
 }
 
+function checkSizes(){
+  console.log("Map is" + $("#map").width())
+    console.log("Analytics is" + $(".ui-layout-east").width())
+}
+
 $(document).ready(function(){
   //called on page load
   initialize()
+  checkSizes()
 })
 
 
@@ -132,6 +138,7 @@ function processNeotomaData(){
        globals.data.occurrences[i]['age'] = (globals.data.occurrences[i]['SampleAgeYounger'] + globals.data.occurrences[i]['SampleAgeOlder'])/2
      }
      globals.data.occurrences[i]._id = internalID
+     globals.data.occurrences[i].siteid = globals.data.occurrences[i].DatasetMeta.Site.SiteID
      internalID += 1
    }
 
@@ -201,7 +208,7 @@ function crossFilterData(){
         .occurrences
         .dimension(
           function(d){
-            return d.age
+            return d.age / 1000
           })
 
   //bin by latitude
@@ -235,7 +242,7 @@ function crossFilterData(){
    globals.filters.occurrenceGeoDimension = globals.filters
        .occurrences
        .dimension(function(d){
-         return L.latLng(d.latitude, d.longitude)
+         return L.latLng(d.latitude, d.longitude, d.DatasetMeta.Site.SiteID)
         })
 
   //bin by abundance
@@ -278,7 +285,9 @@ function crossFilterData(){
   globals.filters.occurrenceRecordTypeSummary = globals.filters.occurrenceRecordTypeDimension.group().reduceCount()
 
   //create a custom dimension to make the bubble chart work
-  globals.filters.idDimension = globals.filters.occurrences.dimension(function(d){return d._id})
+  globals.filters.idDimension = globals.filters.occurrences.dimension(function(d){
+    return d._id
+  })
 
   //customize the reduce function to reduce multiple values
   //for the bubble chart, returns
@@ -295,8 +304,8 @@ function crossFilterData(){
       p.altitude_average = p.altitude_sum / p.count;
       p.latitude_sum += v.latitude;
       p.latitude_average = p.latitude_sum / p.count;
-      p.age_sum += v.age
-      p.age_average = p.age_sum / p.count;
+      // p.age_sum += v.age
+      // p.age_average = p.age_sum / p.count;
       p.value_sum += v.Value;
       p.value_average = p.value_sum / p.count;
       return p;
@@ -308,8 +317,8 @@ function crossFilterData(){
       p.altitude_average = p.altitude_sum / p.count;
       p.latitude_sum -= v.latitude;
       p.latitude_average = p.latitude_sum / p.count;
-      p.age_sum -= v.age
-      p.age_average = p.age_sum / p.count;
+      // p.age_sum -= v.age
+      // p.age_average = p.age_sum / p.count;
       p.value_sum -= v.Value;
       p.value_average = p.value_sum / p.count;
       return p;
@@ -321,8 +330,8 @@ function crossFilterData(){
         altitude_average:0,
         latitude_sum: 0,
         latitude_average: 0,
-        age_sum: 0,
-        age_average: 0,
+        // age_sum: 0,
+        // age_average: 0,
         value_sum: 0,
         value_average: 0}
     }
@@ -374,7 +383,7 @@ function datafyAnalyticsCharts(){
   globals.elements.ageChart
     .dimension(globals.filters.occurrenceAgeDimension)
     .group(globals.filters.occurrenceAgeSummary)
-    .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.age})))
+    .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.age / 1000})))
     .xUnits(function(start, end, xDomain) { return (end - start) / globals.config.analytics.timeBinSize; })
 
   globals.elements.abundanceChart
@@ -388,13 +397,13 @@ function datafyAnalyticsCharts(){
     .group(globals.filters.occurrencePISummary)
 
   globals.elements.recordTypeChart
-    .dimension(globals.filters.occurrenceRecordTypeSummary)
+    .dimension(globals.filters.occurrenceRecordTypeDimension)
     .group(globals.filters.occurrenceRecordTypeSummary)
 
   globals.elements.bubbleChart
   .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.latitude})))
   .y(d3.scale.linear().domain([0, d3.max(globals.data.occurrences, function(d){return d.altitude}) + 100]))
-  .r(d3.scale.linear().domain(d3.extent([0, 100])))
+  // .r(d3.scale.linear().domain([0, 100]).range([0, 50]))
   .dimension(globals.filters.idDimension)
   .group(globals.filters.multiDimension)
 
@@ -437,22 +446,38 @@ function createLayout(){
         size: globals.config.layout.southPanelSize,
         resizable: globals.config.layout.southPanelResizable,
         initClosed: !globals.state.layout.southPanelIsOpen,
-        closable: globals.config.layout.southPanelClosable
+        closable: globals.config.layout.southPanelClosable,
+        on_resize: function(){
+          updateMapSize()
+        }
       },
       west: {
         size: globals.config.layout.westPanelSize,
         resizable: globals.config.layout.westPanelResizable,
         initClosed: !globals.state.layout.westPanelIsOpen,
-        closable: globals.config.layout.westPanelClosable
+        closable: globals.config.layout.westPanelClosable,
+        onresize: function(){
+          updateMapSize()
+        }
       },
       east: {
         size: globals.config.layout.eastPanelSize,
         resizable: globals.config.layout.eastPanelResizable,
         initClosed: !globals.state.layout.eastPanelIsOpen,
-        closable: globals.config.layout.eastPanelClosable
+        closable: globals.config.layout.eastPanelClosable,
+        onresize: function(){
+          updateMapSize()
+        }
       }
     });
 }
+
+function updateMapSize(){
+  if (globals.map != undefined){
+    setTimeout(function(){ globals.map.invalidateSize()}, 10);
+  }
+}
+
 
 function createAnalyticsCharts(){
   //reset the config
@@ -472,30 +497,33 @@ function createAnalyticsCharts(){
   globals.elements.latitudeChart = dc.barChart("#latitudeChart")
     .width($("#latitudeChart").width())
     .height($("#latitudeChart").height())
+    .margins({bottom: 30, top: 10, left: 30, right: 35})
     // .brushOn(false)
     .elasticY(true)
     .xAxisLabel("Latitude")
     .yAxisLabel("Frequency")
     .on('filtered', filterMap)
+
   globals.elements.ageChart = dc.barChart("#ageChart")
       .width($("#ageChart").width())
       .height($("#ageChart").height())
-      .margins({bottom: 50, top: 10, left: 40, right: 50})
+      .margins({bottom: 30, top: 10, left: 30, right: 30})
       // .brushOn(false)
       .elasticY(true)
-      .on('renderlet', function (chart) {
-                    chart.selectAll("g.x text")
-                      .attr('dx', '-30')
-                      .attr('transform', "rotate(-45)")
-                      .attr('text-anchor','end')
-                })
-      .xAxisLabel("Age (years BP)")
+      // .on('renderlet', function (chart) {
+      //               chart.selectAll("g.x text")
+      //                 .attr('dx', '-30')
+      //                 .attr('transform', "rotate(-45)")
+      //                 .attr('text-anchor','end')
+      //           })
+      .xAxisLabel("kya")
       .yAxisLabel("Frequency")
       .on('filtered', filterMap)
 
   globals.elements.abundanceChart = dc.barChart("#abundanceChart")
       .width($("#abundanceChart").width())
       .height($("#abundanceChart").height())
+      .margins({bottom: 30, top: 10, left: 30, right: 10})
       // .brushOn(true)
       .elasticY(true)
       .xAxisLabel("Relative Abundance")
@@ -511,25 +539,29 @@ function createAnalyticsCharts(){
 
 
   globals.elements.recordTypeChart = dc.pieChart("#recordTypeChart")
-      .width($("#PIChart").width())
-      .height($("#PIChart").height())
+      .width($("#recordTypeChart").width())
+      .height($("#recordTypeChart").height())
       .innerRadius(25)
       .slicesCap(17)
       .renderTitle(true)
       .renderLabel(false);
 
 
-  //color scale for bubble chart ages
-  var colorScale = d3.scale.linear()
-  .domain([0, globals.config.analytics.timeDomainMax])
-  .range([globals.config.analytics.colorYoung,globals.config.analytics.colorOld ])
+  // //color scale for bubble chart ages
+  // var colorScale = d3.scale.linear()
+  // .domain([0, globals.config.analytics.timeDomainMax])
+  // .range([globals.config.analytics.colorYoung,globals.config.analytics.colorOld ])
+
+  rScale = d3.scale.linear()
+    .domain([0, 150])
+    .range([0, 25])
 
 
   globals.elements.bubbleChart = dc.bubbleChart("#alt-lat-Chart")
     .width($("#alt-lat-Chart").width())
     .height($("#alt-lat-Chart").height())
-    .margins({top: 25, right: 50, bottom: 30, left: 40})
-    .colors(colorScale)
+    .margins({top: 25, right: 10, bottom: 30, left: 40})
+    .colors('rgba(167, 167, 167, 0.25)')
     // .brushOn(true)
     .keyAccessor(function (p) {
         return p.value.latitude_average;
@@ -538,18 +570,18 @@ function createAnalyticsCharts(){
         return p.value.altitude_average;
     })
     .radiusValueAccessor(function (p) {
-        return p.value.count;
+      v = rScale(p.value.value_average)
+        return v;
     })
-    .colorAccessor(function (p) {
-        return p.value.age_average;
-    })
-    // .elasticY(true)
+    // .colorAccessor(function (p) {
+    //     return p.value.age_average;
+    // })
+    .elasticY(true)
     .yAxisPadding(10)
     .xAxisPadding(10)
     .label(function (p) {
         return p.key;
         })
-
     .renderTitle(true)
     .renderLabel(false)
     .xAxisLabel("Latitude")
@@ -827,10 +859,24 @@ Pace.on("done", function(){
 });
 
 
-if (globals.map != undefined){
-  setTimeout(function(){ globals.map.invalidateSize()}, 10);
+function lookupSite(siteID){
+  //pick out the site meta from occurrences with a certain siteID
+  site = _.where(globals.data.occurrences, {siteid : siteID})
+  return site[0].DatasetMeta.Site
 }
 
+
+function openSiteDetails(siteID){
+  //open details about the clicked site
+  //called from the map popups
+
+  //here's the site
+  globals.activeSite = lookupSite(siteID)
+
+  //fitst, set map center on this, so it doesn't go out of bounds
+  globals.map.setView(L.latLng((globals.activeSite.LatitudeNorth + globals.activeSite.LatitudeSouth) / 2, (globals.activeSite.LongitudeWest + globals.activeSite.LongitudeEast)/2))
+
+}
 
 //is a layer in the map bounds?
 function isInMapBounds(marker){

@@ -24,7 +24,8 @@ globals.config = {
     sizeRMax: 100, // maximum radius of the proportional symbols
     maxClusterRadius: 50,//maximum size of the cluster in screen pixels (spans all zoom levels),
     clusterFill: 'steelblue',
-    markerFill: 'steelblue'
+    markerFill: 'steelblue',
+    markerRadius: 6
   }, //end map
   dataSources: { //URIs of data used in AJAX calls
     taxa: "data/taxa.json", //customized file with names of taxa to improve performanc
@@ -60,7 +61,7 @@ globals.config = {
     timeDomainMax: 22000, //max of time bar chart axis
     colorYoung: "blue", //color to represent earliest dates on bubble chart
     colorOld:'red', //color to represent oldest dates on bubble chart
-    timeBinSize: 500, //how big are the time bins in the analytics charts? --> years
+    timeBinSize: 1, //how big are the time bins in the analytics charts? --> years
     latitudeBinSize: 0.5, //how big are the latitude bins in the analytics charts? --> degrees
     abundanceBinSize: 1,//how big are the abundance bins in the analytics charts? --> TODO: this gets weird with mammal/pollen percent.
     altitudeBinSize: 500 //altitude bins --> meters
