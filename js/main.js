@@ -72,10 +72,10 @@ function initialize(){
   createLayout()//load the page layout
   loadTaxa(populateTaxaAutocomplete) //load the taxa file
   loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
-  drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
   createMap() //create the map in the center div
   createAnalyticsCharts() //setup visual analytics charts on the righthand panel
   applySavedState() //get the state settings from URL query
+  drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
 }
 
 function checkSizes(){
@@ -112,6 +112,7 @@ function getOccurrenceData(callback){
   //limit to ages set in configuration object
   endpoint += "&ageold=" + globals.config.searchAgeBounds[1]
   endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
+  Pace.restart()
   $.getJSON(endpoint, function(data){
     //on success of Neotoma query
     //check to make sure Neotoma returned okay, often it doesn't
@@ -187,9 +188,9 @@ function getMarkersInBounds(){
 function crossFilterData(){
   //establish dimensions and groupings of neotoma data for putting into the analytics charts
   //prepare data to be crossfiltered.
-  globals.filters.occurrences = crossfilter(globals.data.occurrences)
 
   //dimensions to be filtered
+  globals.filters.occurrences = crossfilter(globals.data.occurrences)
 
   //bin by the record type
   //so we can make a pie chart of the different record types
@@ -278,6 +279,7 @@ function crossFilterData(){
   globals.filters.occurrenceAgeSummary = globals.filters.occurrenceAgeDimension.group(function(d){
     return Math.round(d/globals.config.analytics.timeBinSize)*globals.config.analytics.timeBinSize
   }).reduceCount()
+
 
   //group PIs
   globals.filters.occurrencePISummary = globals.filters.occurrencePIDimension.group().reduceCount()
@@ -407,6 +409,12 @@ function datafyAnalyticsCharts(){
   .dimension(globals.filters.idDimension)
   .group(globals.filters.multiDimension)
 
+  globals.elements.tChart
+    .dimension(globals.filters.occurrenceAgeDimension)
+    .group(globals.filters.occurrenceAgeSummary)
+    // .colors(globals.config.colors.tempAgeHist)
+    .brushOn(true)
+
 }
 
 function putPointsOnMap(){
@@ -433,6 +441,7 @@ function createMap(){
     .center([30,-90])
     .zoom(3)
 
+
   //render a blank map on initialization
   globals.elements.marker._doRender()
 }
@@ -442,14 +451,22 @@ function createMap(){
 //use the parameters in the configuration object
 function createLayout(){
 		globals.layout = $('body').layout({
+
       south: {
         size: globals.config.layout.southPanelSize,
         resizable: globals.config.layout.southPanelResizable,
         initClosed: !globals.state.layout.southPanelIsOpen,
         closable: globals.config.layout.southPanelClosable,
-        on_resize: function(){
+        onresize: function(){
           updateMapSize()
-        }
+        },
+        onclose: function(){
+          updateMapSize()
+        },
+        togglerLength_open:    50,
+        togglerLength_closed:  50,
+        togglerContent_open:   'Close Panel',
+        togglerContent_closed: 'Timeline'
       },
       west: {
         size: globals.config.layout.westPanelSize,
@@ -458,7 +475,14 @@ function createLayout(){
         closable: globals.config.layout.westPanelClosable,
         onresize: function(){
           updateMapSize()
-        }
+        },
+        onclose: function(){
+          updateMapSize()
+        },
+        togglerLength_open:    50,
+        togglerLength_closed:  50,
+        togglerContent_open:   'Close Panel',
+        togglerContent_closed: 'Site Details'
       },
       east: {
         size: globals.config.layout.eastPanelSize,
@@ -467,7 +491,14 @@ function createLayout(){
         closable: globals.config.layout.eastPanelClosable,
         onresize: function(){
           updateMapSize()
-        }
+        },
+        onclose: function(){
+          updateMapSize()
+        },
+        togglerLength_open:    50,
+        togglerLength_closed:  50,
+        togglerContent_open:   'Close Panel',
+        togglerContent_closed: 'Analytics'
       }
     });
 }
@@ -477,6 +508,8 @@ function updateMapSize(){
     setTimeout(function(){ globals.map.invalidateSize()}, 10);
   }
 }
+
+$(window).on('resize', updateMapSize)
 
 
 function createAnalyticsCharts(){
@@ -497,7 +530,7 @@ function createAnalyticsCharts(){
   globals.elements.latitudeChart = dc.barChart("#latitudeChart")
     .width($("#latitudeChart").width())
     .height($("#latitudeChart").height())
-    .margins({bottom: 30, top: 10, left: 30, right: 35})
+    .margins({bottom: 30, top: 10, left: 30, right: 25})
     // .brushOn(false)
     .elasticY(true)
     .xAxisLabel("Latitude")
@@ -507,7 +540,7 @@ function createAnalyticsCharts(){
   globals.elements.ageChart = dc.barChart("#ageChart")
       .width($("#ageChart").width())
       .height($("#ageChart").height())
-      .margins({bottom: 30, top: 10, left: 30, right: 30})
+      .margins({bottom: 30, top: 10, left: 30, right: 25})
       // .brushOn(false)
       .elasticY(true)
       // .on('renderlet', function (chart) {
@@ -560,7 +593,7 @@ function createAnalyticsCharts(){
   globals.elements.bubbleChart = dc.bubbleChart("#alt-lat-Chart")
     .width($("#alt-lat-Chart").width())
     .height($("#alt-lat-Chart").height())
-    .margins({top: 25, right: 10, bottom: 30, left: 40})
+    .margins({top: 0, right: 10, bottom: 30, left: 40})
     .colors('rgba(167, 167, 167, 0.25)')
     // .brushOn(true)
     .keyAccessor(function (p) {
@@ -753,100 +786,65 @@ function drawNHTempCurve(){
     //draws the greenland ice core temperature curve in the bottom panel
 
 
-  //set up the bottom panel
-  //create the SVG of the correct size
-  // build the axes for the charts
-  globals.southChart = d3.select("#tempContainer").append('svg') //canvas
-  globals.southMargins = {//margins for the bottom chart
-    top: 25,
-    right: 25,
-    bottom: 50,
-    left: 50
-  }
-  //these are internal and don't need to be stored in application state
-  globals.southChartWidth = +$("#tempContainer").width() - globals.southMargins.left - globals.southMargins.right,
-  globals.southChartHeight = +$("#tempContainer").height()   - globals.southMargins.top - globals.southMargins.bottom,
-  globals.southChartContext = globals.southChart.append("g").attr("transform", "translate(" + globals.southMargins.left + "," + globals.southMargins.top + ")");
+    d3.csv("data/greenlandT.csv", function(data){
+      globals.data.tempDat = data
+      globals.elements.tChart = dc.barChart("#tempContainer")
+        .width($("#tempContainer").width())
+        .height($("#tempContainer").height())
+        .x(d3.scale.linear().domain([0,22]))
+        .margins({bottom:30,left:50,right:10,top:10})
+        .y(d3.scale.linear().domain(d3.extent(data, function(d){return +d.TempC})))
+        .brushOn(false)
+        .yAxisLabel("Mean Temperature", 25)
+        .xAxisLabel("Thousands of Years Ago")
+        .dimension(globals.filters.emptyDimension)
+        .group(globals.filters.emptyGroup)
+        .on('renderlet', function(chart) {
+              globals.tempLineFn = d3.svg.line()
+                  .x(function(d) { return chart.x()(+d.Age); })
+                  .y(function(d) { return chart.y()(+d.TempC); })
+                  //get drawing context
+                  var chartBody = chart.select('g.chart-body');
+                  var path = chartBody.selectAll('path').data([data]);
+                  path.enter()
+                    .append('path')
+                    .attr('d', globals.tempLineFn )
+                    .style('fill', 'none')
+                    .style('stroke',globals.config.colors.tempCurve)
+        // add annotations
+        if (globals.config.doAnnotations){
+          chartBody.selectAll("text").remove()
+          chartBody.append('text')
+            .attr('x', chart.x()(18))
+            .attr('y', chart.y()(-40))
+            .attr('text-anchor', 'middle')
+            .text("Deglaciation")
+            .style('fill', globals.config.colors.annotations)
 
-  //chart axes
-  globals.southX = d3.scale.linear()
-      .range([0, +$("#tempContainer").width() ]);
+            chartBody.append('text')
+              .attr('x', chart.x()(14.7))
+              .attr('y', chart.y()(-31.7))
+              .attr('text-anchor', 'middle')
+              .text("Bolling Allerod")
+              .style('fill', globals.config.colors.annotations)
 
-  globals.southY = d3.scale.linear()
-      .range([0, +$("#tempContainer").height() ]);
+              chartBody.append('text')
+                .attr('x', chart.x()(8))
+                .attr('y', chart.y()(-40))
+                .attr('text-anchor', 'end')
+                .text("The Holocene")
+                .style('fill', globals.config.colors.annotations)
 
-  // //chart brusher
-  // globals.southBrush = d3.brushX()
-  //   .extent([[0, 0], [+$("#tempContainer").width(), +$("#tempContainer").height()]])
-  //   .on("brush end", brushed);
+            chartBody.append('text')
+              .attr('x', chart.x()(0))
+              .attr('y', chart.y()(-34))
+              .attr('text-anchor', 'begin')
+              .text("Today")
+              .style('fill', globals.config.colors.annotations)
+        }
 
-  //draw the greenland temperature graph on the south panel chart
-  southLineFn = d3.svg.line()
-      .x(function(d) { return globals.southX(d.YearsBP); })
-      .y(function(d) { return globals.southY(d.TempC); });
-
-  //load the data
-  d3.csv("data/greenlandT.csv", function(d) {
-          //get data (ansyc)
-          //convert to numeric on each data point
-          d.TempC = +d.TempC;
-          d.YearsBP = +d.YearsBP;
-          return d;
-        },
-      function(error, data) {
-        //success function
-        if (error) throw error;
-
-        console.log(data)
-        //set axes domains
-        globals.southX.domain(d3.extent(data, function(d) { return d.YearsBP; }));
-        globals.southY.domain(d3.extent(data, function(d) { return d.TempC; }));
-
-        // Define the axes
-        var xAxis = d3.svg.axis().scale(globals.southX)
-            .orient("bottom").ticks(5);
-
-        var yAxis = d3.svg.axis().scale(globals.southY)
-            .orient("left").ticks(5);
-
-
-        //add x axis
-        globals.southChartContext.append("g")
-            .attr("class", "axis axis--x")
-            .attr("transform", "translate(0," + globals.southChartHeight + ")")
-            .call(xAxis);
-
-        //add y axis with label
-        globals.southChartContext.append("g")
-            .attr("class", "axis axis--y")
-            .call(yAxis)
-          .append("text")
-            .attr("fill", "#000")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", "0.71em")
-            .style("text-anchor", "end")
-            .text("Temperature (C)");
-
-        //add the temperature curve
-        globals.southChartContext.append("path")
-            .datum(data)
-            .attr("class", "line")
-            .attr("d", globals.southLineFn)//interpolator function
-            .style('stroke', 'red')
-            .style('fill', 'none')
-            .style('stroke-weight', 1)
-        //
-        // //enable brushing
-        // var gBrush = globals.southChartContext.append("g")
-        //         .attr("class", "brush")
-        //         .call(globals.southBrush);
-
-      }); //end ajax
-}
-
-function brushed(){
-  console.log("Brushed.")
+      }); //end renderlet function
+    })
 }
 
 
@@ -873,8 +871,18 @@ function openSiteDetails(siteID){
   //here's the site
   globals.activeSite = lookupSite(siteID)
 
-  //fitst, set map center on this, so it doesn't go out of bounds
-  globals.map.setView(L.latLng((globals.activeSite.LatitudeNorth + globals.activeSite.LatitudeSouth) / 2, (globals.activeSite.LongitudeWest + globals.activeSite.LongitudeEast)/2))
+    globals.layout.open("west") //open the panel
+
+  // //fitst, set map center on this, so it doesn't go out of bounds
+  // globals.map.setView(L.latLng((globals.activeSite.LatitudeNorth + globals.activeSite.LatitudeSouth) / 2, (globals.activeSite.LongitudeWest + globals.activeSite.LongitudeEast)/2))
+
+  $("#siteName").text(globals.activeSite.SiteName)
+
+  $("#siteAltitude").text(globals.activeSite.Altitude + "m")
+
+  $("#siteDescription").text(globals.activeSite.SiteDescription)
+
+  $("#siteNotes").text(globals.activeSite.SiteNotes)
 
 }
 

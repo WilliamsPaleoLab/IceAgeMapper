@@ -41,10 +41,10 @@ globals.config = {
     southPanelSize: '25%', //percent of page width for bottom panel
     eastPanelSize: '50%', //percent of page width for analytics panel
     westPanelSize: '25%', //percent of page width for left (site details) panel
-    southPanelResizable: false, //can you resize the bottom panel?
+    southPanelResizable: true, //can you resize the bottom panel?
     eastPanelResizable: true, //can you resize the right hand panel?
     westPanelResizable: true, //can you resize the left hand panel?
-    southPanelClosable: false, //can you close the bottom panel?
+    southPanelClosable: true, //can you close the bottom panel?
     eastPanelClosable: true, //can you close the right hand panel?
     westPanelClosable: true //can you close the left hand panel?
   },
@@ -65,7 +65,13 @@ globals.config = {
     latitudeBinSize: 0.5, //how big are the latitude bins in the analytics charts? --> degrees
     abundanceBinSize: 1,//how big are the abundance bins in the analytics charts? --> TODO: this gets weird with mammal/pollen percent.
     altitudeBinSize: 500 //altitude bins --> meters
-  }
+  },
+  colors: {
+    tempCurve: 'red',
+    tempAgeHist: 'none',
+    annotations: '#9A9C9E'
+  },
+  doAnnotations: true
 }//end config
 
 
@@ -87,7 +93,7 @@ globals.state = {//this holds all relevant info to be shared and saved.
     interval: Infinity //the interval in years between min and max years, so the user can set only one of the above
   },
   map : { //main map panel configuration
-    center: [30, -90], //center of the map
+    center: [45, -90], //center of the map
     zoom: 3, //zoom level of map
     showIce: true, //show the ice sheets during browsing
     currentRMin: 0,
@@ -98,7 +104,7 @@ globals.state = {//this holds all relevant info to be shared and saved.
   },
   layout: {
     eastPanelIsOpen: true,
-    southPanelIsOpen: false,
+    southPanelIsOpen: true,
     westPanelIsOpen: false
   }
 }

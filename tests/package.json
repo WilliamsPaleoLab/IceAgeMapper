@@ -1,0 +1,19 @@
+{
+  "name": "iamtests",
+  "version": "1.0.0",
+  "description": "Ice Age Mapper Test Cases",
+  "main": "test.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "webdriverio": "latest",
+    "jasmine" : "latest"
+  },
+  "author": "Scott Sherwin Farley",
+  "license": "MIT",
+  "devDependencies": {
+    "wdio-dot-reporter": "0.0.7",
+    "wdio-jasmine-framework": "^0.2.19"
+  }
+}

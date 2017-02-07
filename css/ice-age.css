@@ -177,3 +177,60 @@ h5{
 #ageChart{
   padding-left: 10px;
 }
+
+#tempContainer{
+  height: 100%;
+  width: 100%;
+}
+
+.ui-layout-south{
+    max-height: 100%;
+}
+
+.anatyics-header{
+  margin-top: 0px;
+}
+.analytics-chart{
+  min-height: 200px;
+}
+
+.alt-lat-Chart{
+  min-height: 300px;
+}
+
+.summary-header{
+  margin-bottom: 5px;
+}
+
+.ui-layout-resizer-east {
+    overflow: visible !important;
+}
+.ui-layout-toggler-east {
+    backgound-color: none;
+    color: white;
+    font-size: 16px !important;
+    font-weight: bold;
+    transform: rotate(-90deg);
+    overflow: visible !important;
+    display: block;
+}
+
+.ui-layout-resizer-south {
+    overflow: visible !important;
+}
+.ui-layout-toggler-south {
+    backgound-color: none;
+    color: white;
+    font-size: 16px !important;
+    font-weight: bold;
+    overflow: visible !important;
+    display: block;
+}
+
+
+span.content.content-closed{
+  color: #b34700;
+  font-size: 20px !important;
+  margin-top: 0px!important;
+  margin-left: 0px;
+}
