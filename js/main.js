@@ -816,37 +816,37 @@ function drawNHTempCurve(){
                     .attr('d', globals.tempLineFn )
                     .style('fill', 'none')
                     .style('stroke',globals.config.colors.tempCurve)
-                // add annotations
-                if (globals.config.doAnnotations){
-                  chartBody.selectAll("text").remove()
-                  chartBody.append('text')
-                    .attr('x', chart.x()(18))
-                    .attr('y', chart.y()(-40))
-                    .attr('text-anchor', 'middle')
-                    .text("Deglaciation")
-                    .style('fill', globals.config.colors.annotations)
+        // add annotations
+        if (globals.config.doAnnotations){
+          chartBody.selectAll("text").remove()
+          chartBody.append('text')
+            .attr('x', chart.x()(18))
+            .attr('y', chart.y()(-40))
+            .attr('text-anchor', 'middle')
+            .text("Deglaciation")
+            .style('fill', globals.config.colors.annotations)
 
-                    chartBody.append('text')
-                      .attr('x', chart.x()(14.7))
-                      .attr('y', chart.y()(-31.7))
-                      .attr('text-anchor', 'middle')
-                      .text("Bolling Allerod")
-                      .style('fill', globals.config.colors.annotations)
+            chartBody.append('text')
+              .attr('x', chart.x()(14.7))
+              .attr('y', chart.y()(-31.7))
+              .attr('text-anchor', 'middle')
+              .text("Bolling Allerod")
+              .style('fill', globals.config.colors.annotations)
 
-                      chartBody.append('text')
-                        .attr('x', chart.x()(8))
-                        .attr('y', chart.y()(-40))
-                        .attr('text-anchor', 'end')
-                        .text("The Holocene")
-                        .style('fill', globals.config.colors.annotations)
+              chartBody.append('text')
+                .attr('x', chart.x()(8))
+                .attr('y', chart.y()(-40))
+                .attr('text-anchor', 'end')
+                .text("The Holocene")
+                .style('fill', globals.config.colors.annotations)
 
-                    chartBody.append('text')
-                      .attr('x', chart.x()(0))
-                      .attr('y', chart.y()(-34))
-                      .attr('text-anchor', 'begin')
-                      .text("Today")
-                      .style('fill', globals.config.colors.annotations)
-                }
+            chartBody.append('text')
+              .attr('x', chart.x()(0))
+              .attr('y', chart.y()(-34))
+              .attr('text-anchor', 'begin')
+              .text("Today")
+              .style('fill', globals.config.colors.annotations)
+        }
 
       }); //end renderlet function
     })
@@ -890,6 +890,47 @@ function openSiteDetails(siteID){
   $("#siteNotes").text(globals.activeSite.SiteNotes)
 
 }
+
+function sendShareRequest(){
+  //post the share request to the server
+  //return the shareid
+  dat = {
+    configuration : globals.config,
+    state: globals.state
+  }
+  datString = JSON.stringify(dat)
+
+
+  //send the request
+  $.ajax(globals.config.dataSources.configStore, {
+    beforeSend: function(){
+      console.log("Sharing your map.")
+    },
+    type: "POST",
+    data: datString,
+    dataType: "json",
+    contentType: "application/json",
+    success: function(data){
+      console.log("Success!")
+      if (data.success){
+        toastr.success("Configuration Storage Complete!")
+        hash = data['configHash']
+        urlString = globals.config.baseURL +"?configToken="+ hash
+        globals.state.shareURL = hash
+        $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
+      }else{
+        toastr.error("Failed to share map.")
+      }
+    },
+    error: function(xhr, status,err){
+      console.log(xhr)
+      console.log(status)
+      console.log(err)
+    }
+  })
+}
+
+$("#sendShareRequest").click(sendShareRequest)
 
 //is a layer in the map bounds?
 function isInMapBounds(marker){
