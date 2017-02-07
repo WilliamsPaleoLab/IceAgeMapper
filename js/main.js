@@ -4,6 +4,10 @@
 //Author: Scott Farley
 //University of Wisconsin, Madison
 
+//TODO: Navigation on panels
+//TODO: Taxonomy linking
+//TODO: Table of samples
+
 console.log("Welcome to Ice Age Mapper.\n\tRunning script version 2.1.\n\tLead Author: Scott Farley\n\tUniversity of Wisconsin, Madison")
 
 function loadTaxa(callback){
@@ -450,6 +454,7 @@ function createMap(){
 //set up the layout
 //use the parameters in the configuration object
 function createLayout(){
+
 		globals.layout = $('body').layout({
 
       south: {
@@ -465,8 +470,8 @@ function createLayout(){
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,
-        togglerContent_open:   'Close Panel',
-        togglerContent_closed: 'Timeline'
+        togglerContent_open:  "<button class='toggleButton'>Close</button>",
+        togglerContent_closed: "Timeline"
       },
       west: {
         size: globals.config.layout.westPanelSize,
@@ -811,37 +816,37 @@ function drawNHTempCurve(){
                     .attr('d', globals.tempLineFn )
                     .style('fill', 'none')
                     .style('stroke',globals.config.colors.tempCurve)
-        // add annotations
-        if (globals.config.doAnnotations){
-          chartBody.selectAll("text").remove()
-          chartBody.append('text')
-            .attr('x', chart.x()(18))
-            .attr('y', chart.y()(-40))
-            .attr('text-anchor', 'middle')
-            .text("Deglaciation")
-            .style('fill', globals.config.colors.annotations)
+                // add annotations
+                if (globals.config.doAnnotations){
+                  chartBody.selectAll("text").remove()
+                  chartBody.append('text')
+                    .attr('x', chart.x()(18))
+                    .attr('y', chart.y()(-40))
+                    .attr('text-anchor', 'middle')
+                    .text("Deglaciation")
+                    .style('fill', globals.config.colors.annotations)
 
-            chartBody.append('text')
-              .attr('x', chart.x()(14.7))
-              .attr('y', chart.y()(-31.7))
-              .attr('text-anchor', 'middle')
-              .text("Bolling Allerod")
-              .style('fill', globals.config.colors.annotations)
+                    chartBody.append('text')
+                      .attr('x', chart.x()(14.7))
+                      .attr('y', chart.y()(-31.7))
+                      .attr('text-anchor', 'middle')
+                      .text("Bolling Allerod")
+                      .style('fill', globals.config.colors.annotations)
 
-              chartBody.append('text')
-                .attr('x', chart.x()(8))
-                .attr('y', chart.y()(-40))
-                .attr('text-anchor', 'end')
-                .text("The Holocene")
-                .style('fill', globals.config.colors.annotations)
+                      chartBody.append('text')
+                        .attr('x', chart.x()(8))
+                        .attr('y', chart.y()(-40))
+                        .attr('text-anchor', 'end')
+                        .text("The Holocene")
+                        .style('fill', globals.config.colors.annotations)
 
-            chartBody.append('text')
-              .attr('x', chart.x()(0))
-              .attr('y', chart.y()(-34))
-              .attr('text-anchor', 'begin')
-              .text("Today")
-              .style('fill', globals.config.colors.annotations)
-        }
+                    chartBody.append('text')
+                      .attr('x', chart.x()(0))
+                      .attr('y', chart.y()(-34))
+                      .attr('text-anchor', 'begin')
+                      .text("Today")
+                      .style('fill', globals.config.colors.annotations)
+                }
 
       }); //end renderlet function
     })
