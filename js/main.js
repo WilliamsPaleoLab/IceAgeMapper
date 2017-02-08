@@ -783,8 +783,13 @@ function drawNHTempCurve(){
 
 function lookupSite(siteID){
   //pick out the site meta from occurrences with a certain siteID
-  site = _.where(globals.data.occurrences, {siteid : siteID})
-  return site[0].DatasetMeta.Site
+  site = _.find(globals.data.occurrences, function(d){return d.siteid == siteID})
+  return site.DatasetMeta.Site
+}
+
+function lookupSamples(siteID){
+  samples =_.filter(globals.data.occurrences, {siteid : siteID})
+  return samples
 }
 
 
@@ -796,6 +801,8 @@ function openSiteDetails(siteID){
   globals.state.activeSite = lookupSite(siteID)
   globals.state.activeSiteID = siteID
   globals.state.openSite = true;
+
+  $("#taxonName").text(globals.taxonname)
 
     globals.layout.open("west") //open the panel
 
@@ -809,6 +816,32 @@ function openSiteDetails(siteID){
   $("#siteDescription").text(globals.state.activeSite.SiteDescription)
 
   $("#siteNotes").text(globals.state.activeSite.SiteNotes)
+
+  theseSamples = lookupSamples(siteID)
+
+  $("#sampleTable").empty();
+
+  table = "<thead><th>Age</th><th>Value</th><th>Units</th></thead>"
+
+  for (var i=0; i < theseSamples.length; i++){
+    thisSample = theseSamples[i]
+    table +=  "<tr><td>" + thisSample.age + "</td><td>" + thisSample.Value + "</td><td>" + thisSample.VariableUnits + "</td></tr>"
+    console.log(thisSample.DatasetID)
+  }
+    $("#sampleTable").html(table)
+
+
+    //all sites only have one dataset (in this model)
+    //but some datasets have multiple listed PIs (some have none)
+    piTable = ""
+    for (var i = 0; i < theseSamples[0].DatasetMeta.DatasetPIs.length; i++){
+        thisSitePI = theseSamples[0].DatasetMeta.DatasetPIs[i]
+        piTable += "<tr><td>Dataset Investigator: </td><td>" + thisSitePI.ContactName + "</td><tr>"
+    }
+    if (piTable == ""){
+      piTable = "<i>No Investigators Listed</i>"
+    }
+    $("#pi-table").html(piTable)
 
 }
 
