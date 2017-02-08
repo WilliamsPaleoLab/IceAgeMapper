@@ -177,6 +177,9 @@ function processNeotomaData(){
   didRedraw = applyFilters()
 
   globals.state.doSearch = true
+
+  //open the site panel if required by config
+  doOpenSitePanel()
 }
 
 function crossFilterData(){
@@ -473,6 +476,7 @@ function createLayout(){
         onclose: function(){
           updateMapSize()
           globals.state.layout.westPanelIsOpen = false
+          globals.state.openSite = false;
         },
         onopen: function(){
           globals.state.layout.westPanelIsOpen = true
@@ -724,6 +728,9 @@ function drawNHTempCurve(){
         .xAxisLabel("Thousands of Years Ago")
         .dimension(globals.filters.emptyDimension)
         .group(globals.filters.emptyGroup)
+        .on('filtered', function(chart, filter){
+          globals.state.filters.age = filter
+        })
         .on('renderlet', function(chart) {
               globals.tempLineFn = d3.svg.line()
                   .x(function(d) { return chart.x()(+d.Age); })
@@ -785,21 +792,23 @@ function openSiteDetails(siteID){
   //open details about the clicked site
   //called from the map popups
 
-  //here's the site
-  globals.activeSite = lookupSite(siteID)
+    //here's the site
+  globals.state.activeSite = lookupSite(siteID)
+  globals.state.activeSiteID = siteID
+  globals.state.openSite = true;
 
     globals.layout.open("west") //open the panel
 
   // //fitst, set map center on this, so it doesn't go out of bounds
-  // globals.map.setView(L.latLng((globals.activeSite.LatitudeNorth + globals.activeSite.LatitudeSouth) / 2, (globals.activeSite.LongitudeWest + globals.activeSite.LongitudeEast)/2))
+  // globals.map.setView(L.latLng((globals.state.activeSite.LatitudeNorth + globals.state.activeSite.LatitudeSouth) / 2, (globals.state.activeSite.LongitudeWest + globals.state.activeSite.LongitudeEast)/2))
 
-  $("#siteName").text(globals.activeSite.SiteName)
+  $("#siteName").text(globals.state.activeSite.SiteName)
 
-  $("#siteAltitude").text(globals.activeSite.Altitude + "m")
+  $("#siteAltitude").text(globals.state.activeSite.Altitude + "m")
 
-  $("#siteDescription").text(globals.activeSite.SiteDescription)
+  $("#siteDescription").text(globals.state.activeSite.SiteDescription)
 
-  $("#siteNotes").text(globals.activeSite.SiteNotes)
+  $("#siteNotes").text(globals.state.activeSite.SiteNotes)
 
 }
 
@@ -929,4 +938,21 @@ function applyFilters(){
   }
 
   return _needsUpdate
+}
+
+
+function doOpenSitePanel(){
+  if ((globals.state.openSite) && (+globals.state.activeSiteID > 0)){
+    //populate the site panel details
+    openSiteDetails(globals.state.activeSiteID)
+
+    //open the correct popup
+    globals.map.eachLayer(function(d){
+      if (d.key != undefined){
+        if (d.key.alt == globals.state.activeSiteID){
+          d.openPopup()
+        }
+      }
+    })
+  }
 }

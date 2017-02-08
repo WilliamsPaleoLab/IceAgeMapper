@@ -105,6 +105,8 @@ defaultConfiguration = {
     taxonid: 0,
     taxonname: "",
     doSearch: false,
+    openSite: false,
+    activeSiteID: null,
     filters: {
       age: null,
       latitude: null,
