@@ -7,6 +7,7 @@
 //TODO: Navigation on panels
 //TODO: Taxonomy linking
 //TODO: Table of samples
+//TODO: Share state
 
 console.log("Welcome to Ice Age Mapper.\n\tRunning script version 2.1.\n\tLead Author: Scott Farley\n\tUniversity of Wisconsin, Madison")
 
@@ -77,21 +78,28 @@ function initialize(){
   loadTaxa(populateTaxaAutocomplete) //load the taxa file
   loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
   createMap() //create the map in the center div
+  enableMapViewLogging() //put an event listener on the map view
+  setMapView() //set the view to whatever is in the state configuration
   createAnalyticsCharts() //setup visual analytics charts on the righthand panel
   applySavedState() //get the state settings from URL query
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
 }
 
-function checkSizes(){
-  console.log("Map is" + $("#map").width())
-    console.log("Analytics is" + $(".ui-layout-east").width())
+function setMapView(){
+  globals.map.setView(globals.state.map.center, globals.state.map.zoom)
 }
 
-$(document).ready(function(){
-  //called on page load
-  initialize()
-  checkSizes()
-})
+function enableMapViewLogging(){
+  globals.map.on('moveend', function(){
+    ///update map component of state
+    var center = globals.map.getCenter()
+    var zoom = globals.map.getZoom()
+    globals.state.map.center = center
+    globals.state.map.zoom = zoom
+  })
+}
+
+
 
 
 function getOccurrenceData(callback){
@@ -104,11 +112,13 @@ function getOccurrenceData(callback){
     //this is browse mode
     //the user was using the browse dropdowns
     query = "?taxonids=" + globals.taxonid
+    globals.state.taxonsearch = globals.taxonid
   }else if(globals.config.searchSwitch == "search"){
     //this is search mode
     //the user was using the search text entry
     //use the text instead of the id to support wildcard characters
     query = "?taxonname=" + globals.taxonname
+    globals.state.taxonsearch = globals.taxonname
   }
   endpoint += query
   //limit to bounding box set in configuration object
@@ -155,38 +165,9 @@ function processNeotomaData(){
 
    datafyAnalyticsCharts() //update charts with data
 
-    putPointsOnMap() //put circles on map
+  putPointsOnMap() //put circles on map
 
   redrawAnalytics()
-
-  // globals.map.on('moveend', function(){
-  //   //filter the bubble chart (id dimension)
-  //   //on visible map bounds
-  //
-  //   inBounds = getMarkersInBounds()
-  //   globals.elements.bubbleChart.filterAll()
-  //   globals.elements.bubbleChart.filter([inBounds])
-  //   dc.redrawAll()
-  // })
-}
-
-function getMarkersInBounds(){
-  //returns a list of the internal ids of the markers in the current map view
-  bounds = globals.map.getBounds();
-  N = bounds._northEast['lat']
-  E = bounds._northEast['lng']
-  S = bounds._southWest['lat']
-  W = bounds._southWest['lng']
-
-  ids = []
-  layerList = globals.map.ptsLayer._layers
-  for ( i in layerList){
-    thisLayer = layerList[i]
-    if (isInMapBounds(thisLayer)){
-      ids.push(thisLayer._id)
-    }
-  }
-  return ids
 }
 
 function crossFilterData(){
@@ -371,15 +352,9 @@ function redrawAnalytics(){
 }
 
 
+
 function datafyAnalyticsCharts(){
   //put new data into the analytics charts
-  //  //update chart data
-  //  globals.elements.altitudeChart
-  //     .dimension(globals.filters.occurrenceAltitudeDimension)
-  //     .group(globals.filters.occurrenceAltitudeSummary)
-  //      .x(d3.scale.linear().domain(d3.extent(globals.data.occurrences, function(d){return d.DatasetMeta.Site.Altitude})))
-   //
-
    globals.elements.latitudeChart
     .dimension(globals.filters.occurrenceLatitudeDimension)
     .group(globals.filters.occurrenceLatitudeSummary)
@@ -422,6 +397,7 @@ function datafyAnalyticsCharts(){
 }
 
 function putPointsOnMap(){
+  //put symbols on the map
   globals.elements.marker
     .dimension(globals.filters.occurrenceGeoDimension )
     .group(globals.filters.geoSummary)
@@ -451,10 +427,10 @@ function createMap(){
 }
 
 
-//set up the layout
-//use the parameters in the configuration object
-function createLayout(){
 
+function createLayout(){
+  //set up the layout
+  //use the parameters in the configuration object
 		globals.layout = $('body').layout({
 
       south: {
@@ -467,6 +443,10 @@ function createLayout(){
         },
         onclose: function(){
           updateMapSize()
+          globals.state.layout.southPanelIsOpen = false
+        },
+        onopen: function(){
+          globals.state.layout.southPanelIsOpen = true
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,
@@ -483,6 +463,10 @@ function createLayout(){
         },
         onclose: function(){
           updateMapSize()
+          globals.state.layout.westPanelIsOpen = false
+        },
+        onopen: function(){
+          globals.state.layout.westPanelIsOpen = true
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,
@@ -499,6 +483,10 @@ function createLayout(){
         },
         onclose: function(){
           updateMapSize()
+          globals.state.layout.eastPanelIsOpen = false
+        },
+        onopen: function(){
+          globals.state.layout.eastPanelIsOpen = true
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,
@@ -509,6 +497,7 @@ function createLayout(){
 }
 
 function updateMapSize(){
+  //re-render the map when panel size changes
   if (globals.map != undefined){
     setTimeout(function(){ globals.map.invalidateSize()}, 10);
   }
@@ -518,19 +507,8 @@ $(window).on('resize', updateMapSize)
 
 
 function createAnalyticsCharts(){
-  //reset the config
+  //build the axes for the dashboard, without the data -- for now
   //TODO: decide if global config or extent is better for x axes
-
-
-  // //initialize DOM elements for analytics charts on the right panel
-  // globals.elements.3Chart = dc.barChart("#altitudeChart")
-  //   .width($("#analyticsContainer").width())
-  //   .height($("#altitudeChart").height())
-  //   // .brushOn(false)
-  //   .elasticY(true)
-  //   .xAxisLabel("Altitude (meters)")
-  //   .yAxisLabel("Frequency")
-
 
   globals.elements.latitudeChart = dc.barChart("#latitudeChart")
     .width($("#latitudeChart").width())
@@ -540,7 +518,6 @@ function createAnalyticsCharts(){
     .elasticY(true)
     .xAxisLabel("Latitude")
     .yAxisLabel("Frequency")
-    .on('filtered', filterMap)
 
   globals.elements.ageChart = dc.barChart("#ageChart")
       .width($("#ageChart").width())
@@ -556,7 +533,6 @@ function createAnalyticsCharts(){
       //           })
       .xAxisLabel("kya")
       .yAxisLabel("Frequency")
-      .on('filtered', filterMap)
 
   globals.elements.abundanceChart = dc.barChart("#abundanceChart")
       .width($("#abundanceChart").width())
@@ -566,14 +542,12 @@ function createAnalyticsCharts(){
       .elasticY(true)
       .xAxisLabel("Relative Abundance")
       .yAxisLabel("Frequency")
-      .on('filtered', filterMap)
 
   globals.elements.PIChart = dc.pieChart("#PIChart")
       .width($("#PIChart").width())
       .height($("#PIChart").height())
       .innerRadius(25)
       .renderLabel(false)
-      .on('filtered', filterMap)
 
 
   globals.elements.recordTypeChart = dc.pieChart("#recordTypeChart")
@@ -584,12 +558,7 @@ function createAnalyticsCharts(){
       .renderTitle(true)
       .renderLabel(false);
 
-
-  // //color scale for bubble chart ages
-  // var colorScale = d3.scale.linear()
-  // .domain([0, globals.config.analytics.timeDomainMax])
-  // .range([globals.config.analytics.colorYoung,globals.config.analytics.colorOld ])
-
+  //radius scale for bubble chart
   rScale = d3.scale.linear()
     .domain([0, 150])
     .range([0, 25])
@@ -624,30 +593,10 @@ function createAnalyticsCharts(){
     .renderLabel(false)
     .xAxisLabel("Latitude")
     .yAxisLabel("Altitude")
-    .on('filtered', filterMap)
 }
 
 
 function filterMap(){
-  //get the filter values
-  // bubbleFilter = [globals.elements.bubbleChart.filter()];
-  //
-  // if (bubbleFilter[0] == null){
-  //   console.log("hellow")
-  //   newLayers = globals.map.allPoints
-  // }else{
-  //   layerList = globals.map.ptsLayer._layers
-  //   newLayers = []
-  //   for ( i in layerList){
-  //     thisLayer = layerList[i]
-  //     thisID = thisLayer._id
-  //     if (bubbleFilter.indexOf(thisID) > -1){
-  //       newLayers.push(thisLayer)
-  //     }
-  //   }
-  // }//end else
-  // globals.map.removeLayer(globals.map.ptsLayer)
-  // globals.map.ptsLayer = L.layerGroup(newLayers).addTo(globals.map)
   console.log("Passing function.")
 }
 
@@ -708,50 +657,9 @@ function mergeMeta(){
   }
 }
 
-function applySavedState(){
-  //for now, just load the taxa and proceed without having to manually load data
-  taxonid = +getParameterByName("taxonid")
-  //first check if taxonid is set
-  if ((taxonid != undefined ) & (taxonid > 0)){
-    globals.taxonid = taxonid
-    globals.state.searchSwitch = "browse"
-    loadNeotomaData();  //proceed with load
-    return
-  }
-  taxonname = getParameterByName("taxonname")
-  if ((taxonname != undefined) && (taxonname != "")){
-    globals.taxonname = taxonname
-    globals.state.searchSwitch = "search"
-    loadNeotomaData();  //proceed with load
-    return
-  }
-  //otherwise, don't do anything
-}
 
-//Events
-//on a change of the dropdown, filter the taxa and put them in the next dropdown
-$("#ecolGroupSelect").change(function(){
-  selectedGrp = $("#ecolGroupSelect :selected").val()
-  filterAndPopulateTaxaDropdown(selectedGrp)
-  globals.config.searchSwitch = "browse"
-})
-//toggle the search switch when the user searches with the search bar
-//or browses with the dropdowns
-$("#taxonSelect").change(function(){
-  globals.config.searchSwitch = "browse"
-  console.log($("#taxonSelect :selected").val())
-})
-$("#taxaAutocomplete").on("awesomplete-select", function(){
-  globals.config.searchSwitch = "search"
-})
 
-//search for Neotoma data when the search button is called
-$("#searchButton").click(function(){
-  //start search
-  globals.taxonname = $("#taxaAutocomplete").val()
-  globals.taxonid = $("#taxonSelect :selected").val()
-  loadNeotomaData();
-})
+
 
 function loadNeotomaData(){
   //simultaneuous request, but wait for all ajax downloads to be done before trying to merge the data
@@ -774,23 +682,8 @@ function loadNeotomaData(){
 }
 
 
-function getParameterByName(name, url) {
-  //get the query parameter values from the URI
-    if (!url) {
-      url = window.location.href;
-    }
-    name = name.replace(/[\[\]]/g, "\\$&");
-    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, " "));
-}
-
 function drawNHTempCurve(){
     //draws the greenland ice core temperature curve in the bottom panel
-
-
     d3.csv("data/greenlandT.csv", function(data){
       globals.data.tempDat = data
       globals.elements.tChart = dc.barChart("#tempContainer")
@@ -852,16 +745,6 @@ function drawNHTempCurve(){
     })
 }
 
-
-
-
-
-//hide loading screen when load is finished
-Pace.on("done", function(){
-    $(".cover").fadeOut(2500);
-});
-
-
 function lookupSite(siteID){
   //pick out the site meta from occurrences with a certain siteID
   site = _.where(globals.data.occurrences, {siteid : siteID})
@@ -895,7 +778,7 @@ function sendShareRequest(){
   //post the share request to the server
   //return the shareid
   dat = {
-    configuration : globals.config,
+    config: globals.config,
     state: globals.state
   }
   datString = JSON.stringify(dat)
@@ -915,7 +798,7 @@ function sendShareRequest(){
       if (data.success){
         toastr.success("Configuration Storage Complete!")
         hash = data['configHash']
-        urlString = globals.config.baseURL +"?configToken="+ hash
+        urlString = globals.config.baseURL +"?shareToken="+ hash
         globals.state.shareURL = hash
         $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
       }else{
@@ -928,11 +811,4 @@ function sendShareRequest(){
       console.log(err)
     }
   })
-}
-
-$("#sendShareRequest").click(sendShareRequest)
-
-//is a layer in the map bounds?
-function isInMapBounds(marker){
-  return globals.map.getBounds().contains(marker.getLatLng());
 }
