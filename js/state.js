@@ -52,14 +52,8 @@ globals.state = {
   }
 }
 
-
-
-
-
-
-
 function getConfiguration(configID, callback){
-  $.ajax("http://localhost:8080/mapConfigs?configID=" + configID, {
+  $.ajax("http://grad.geography.wisc.edu:8080/mapConfigs?configID=" + configID, {
       type:"GET",
       success: function(data){
         console.log(data)

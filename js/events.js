@@ -29,5 +29,3 @@ $("#searchButton").click(function(){
 Pace.on("done", function(){
     $(".cover").fadeOut(2500);
 });
-
-$("#sendShareRequest").click(sendShareRequest)
