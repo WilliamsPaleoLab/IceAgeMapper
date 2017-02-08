@@ -769,6 +769,8 @@ function drawNHTempCurve(){
         }
 
       }); //end renderlet function
+
+      globals.elements.tChart.render()
     })
 }
 

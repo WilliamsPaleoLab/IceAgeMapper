@@ -25,6 +25,7 @@ html, body{
 }
 .ui-layout-south		{
   border-top-width:		1px;
+  overflow: hidden;
 }
 
 .ui-layout-toggler-south {
