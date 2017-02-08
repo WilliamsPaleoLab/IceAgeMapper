@@ -29,7 +29,7 @@ defaultConfiguration = {
       sites: "http://api.neotomadb.org/v1/data/sites",//endpoint for site-level meta
       configStore: "http://grad.geography.wisc.edu:8080/mapConfigs"
     },
-    searchSwitch: "search",
+    searchSwitch: "browse",
     searchGeoBounds: [-167, 5, -50, 90], //corresponds to the `loc` parameter in the Neotoma API
     searchAgeBounds: [-250, 22000], //corresponds to the ageYoung and ageOld parameters in the Neotoma API
     layout: {
@@ -100,7 +100,20 @@ defaultConfiguration = {
       eastPanelIsOpen: true,
       southPanelIsOpen: true,
       westPanelIsOpen: false
-    }
-  },
-  taxonsearch: null
-}
+    },
+    taxonsearch: null,
+    taxonid: 0,
+    taxonname: "",
+    doSearch: false,
+    filters: {
+      age: null,
+      latitude: null,
+      altitude: null,
+      investigator: null,
+      recordType: null,
+      singleSite: null,
+      abundance: null
+    },
+    myVariable: "SCOTT IS AWESOME!"
+  }//end state
+} //end default configuration

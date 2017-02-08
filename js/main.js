@@ -81,7 +81,7 @@ function initialize(){
   enableMapViewLogging() //put an event listener on the map view
   setMapView() //set the view to whatever is in the state configuration
   createAnalyticsCharts() //setup visual analytics charts on the righthand panel
-  applySavedState() //get the state settings from URL query
+  // autoLoadOccs() //get the state settings from URL query
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
 }
 
@@ -111,14 +111,14 @@ function getOccurrenceData(callback){
   if (globals.config.searchSwitch == "browse"){
     //this is browse mode
     //the user was using the browse dropdowns
-    query = "?taxonids=" + globals.taxonid
-    globals.state.taxonsearch = globals.taxonid
+    query = "?taxonids=" + globals.state.taxonid
+    globals.state.taxonsearch = globals.state.taxonid
   }else if(globals.config.searchSwitch == "search"){
     //this is search mode
     //the user was using the search text entry
     //use the text instead of the id to support wildcard characters
-    query = "?taxonname=" + globals.taxonname
-    globals.state.taxonsearch = globals.taxonname
+    query = "?taxonname=" + globals.state.taxonname
+    globals.state.taxonsearch = globals.state.taxonname
   }
   endpoint += query
   //limit to bounding box set in configuration object
@@ -126,6 +126,7 @@ function getOccurrenceData(callback){
   //limit to ages set in configuration object
   endpoint += "&ageold=" + globals.config.searchAgeBounds[1]
   endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
+  console.log(endpoint)
   Pace.restart()
   $.getJSON(endpoint, function(data){
     //on success of Neotoma query
@@ -136,7 +137,8 @@ function getOccurrenceData(callback){
       callback(null)
     }else{
         toastr.error("Unexpected Neotoma Server Error. It's their fault. Please come back later.", "Server Error")
-        callback(error)
+        console.log(data)
+        callback(null)
     }
   })
 }
@@ -167,7 +169,14 @@ function processNeotomaData(){
 
   putPointsOnMap() //put circles on map
 
+
+
   redrawAnalytics()
+
+  //apply filters, if they're in the configuration object
+  didRedraw = applyFilters()
+
+  globals.state.doSearch = true
 }
 
 function crossFilterData(){
@@ -518,6 +527,9 @@ function createAnalyticsCharts(){
     .elasticY(true)
     .xAxisLabel("Latitude")
     .yAxisLabel("Frequency")
+    .on('filtered', function(chart, filter){
+        globals.state.filters.latitude = filter
+    })
 
   globals.elements.ageChart = dc.barChart("#ageChart")
       .width($("#ageChart").width())
@@ -533,6 +545,9 @@ function createAnalyticsCharts(){
       //           })
       .xAxisLabel("kya")
       .yAxisLabel("Frequency")
+      .on('filtered', function(chart, filter){
+          globals.state.filters.age = filter
+      })
 
   globals.elements.abundanceChart = dc.barChart("#abundanceChart")
       .width($("#abundanceChart").width())
@@ -542,12 +557,18 @@ function createAnalyticsCharts(){
       .elasticY(true)
       .xAxisLabel("Relative Abundance")
       .yAxisLabel("Frequency")
+      .on('filtered', function(chart, filter){
+          globals.state.filters.abundance = filter
+      })
 
   globals.elements.PIChart = dc.pieChart("#PIChart")
       .width($("#PIChart").width())
       .height($("#PIChart").height())
       .innerRadius(25)
       .renderLabel(false)
+      .on('filtered', function(chart, filter){
+          globals.state.filters.PI = filter
+      })
 
 
   globals.elements.recordTypeChart = dc.pieChart("#recordTypeChart")
@@ -556,7 +577,10 @@ function createAnalyticsCharts(){
       .innerRadius(25)
       .slicesCap(17)
       .renderTitle(true)
-      .renderLabel(false);
+      .renderLabel(false)
+      .on('filtered', function(chart, filter){
+          globals.state.filters.recordType = filter
+      })
 
   //radius scale for bubble chart
   rScale = d3.scale.linear()
@@ -593,6 +617,9 @@ function createAnalyticsCharts(){
     .renderLabel(false)
     .xAxisLabel("Latitude")
     .yAxisLabel("Altitude")
+    .on('filtered', function(chart, filter){
+        globals.state.filters.singleSite = filter
+    })
 }
 
 
@@ -607,12 +634,12 @@ function getDatasets(callback){
   if (globals.config.searchSwitch == "browse"){
     //this is browse mode
     //the user was using the browse dropdowns
-    query = "?taxonids=" + globals.taxonid
+    query = "?taxonids=" + globals.state.taxonid
   }else if(globals.config.searchSwitch == "search"){
     //this is search mode
     //the user was using the search text entry
     //use the text instead of the id to support wildcard characters
-    query = "?taxonname=" + globals.taxonname
+    query = "?taxonname=" + globals.state.taxonname
   }
   //geoBounds
   endpoint += query + "&loc="+ globals.config.searchGeoBounds[0] + "," + globals.config.searchGeoBounds[1] + "," + globals.config.searchGeoBounds[2] + "," + globals.config.searchGeoBounds[3]
@@ -674,9 +701,9 @@ function loadNeotomaData(){
 
   //set the header bar
   if (globals.state.searchSwitch == "search"){
-      $("#taxonid").text("Currently showing results for: " + globals.taxonname)
+      $("#taxonid").text("Currently showing results for: " + globals.state.taxonname)
   }else{
-      $("#taxonid").text("Currently showing results for: " + globals.taxonid)
+      $("#taxonid").text("Currently showing results for: " + globals.state.taxonid)
   }
 
 }
@@ -835,8 +862,8 @@ $("#taxaAutocomplete").on("awesomplete-select", function(){
 //search for Neotoma data when the search button is called
 $("#searchButton").click(function(){
   //start search
-  globals.taxonname = $("#taxaAutocomplete").val()
-  globals.taxonid = $("#taxonSelect :selected").val()
+  globals.state.taxonname = $("#taxaAutocomplete").val()
+  globals.state.taxonid = $("#taxonSelect :selected").val()
   loadNeotomaData();
 })
 
@@ -846,3 +873,58 @@ $("#searchButton").click(function(){
 Pace.on("done", function(){
     $(".cover").fadeOut(2500);
 });
+
+
+function applyFilters(){
+  //returns whether or not we redraw all the charts
+  //true -- did the redraw
+  //false -- didn't do the redraw
+
+  //only trigger redraw if we need it
+  var _needsUpdate = false
+
+  //filter the age charts -- timeline and analytics
+  if ((globals.state.filters.age != null) && (globals.state.filters.age != undefined)){
+    globals.elements.tChart.filter(globals.state.filters.age);
+    globals.elements.ageChart.filter(globals.state.filters.age);
+    _needsUpdate = true;
+  }
+
+  //latitude chart
+  if ((globals.state.filters.latitude != null) && (globals.state.filters.latitude != undefined)){
+    globals.elements.latitudeChart.filter(globals.state.filters.latitude);
+    _needsUpdate = true;
+  }
+
+  //abundanceChart
+  if ((globals.state.filters.abundance != null) && (globals.state.filters.abundance != undefined)){
+    globals.elements.abundanceChart.filter(globals.state.filters.abundance);
+    _needsUpdate = true;
+  }
+
+
+  //bubbleChart
+  if ((globals.state.filters.singleSite != null) && (globals.state.filters.singleSite != undefined)){
+    globals.elements.bubbleChart.filter(globals.state.filters.singleSite);
+    _needsUpdate = true;
+  }
+
+  //bubbleChart
+  if ((globals.state.filters.investigator != null) && (globals.state.filters.investigator != undefined)){
+    globals.elements.PIChart.filter(globals.state.filters.investigator);
+    _needsUpdate = true;
+  }
+
+  //bubbleChart
+  if ((globals.state.filters.recordType != null) && (globals.state.filters.recordType != undefined)){
+    globals.elements.recordTypeChart.filter(globals.state.filters.recordType);
+    _needsUpdate = true;
+  }
+
+  if(_needsUpdate){
+    console.log("Rendering with one or more active filters")
+      dc.renderAll();
+  }
+
+  return _needsUpdate
+}
