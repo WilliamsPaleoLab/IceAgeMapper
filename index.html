@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" />
   <link rel='stylesheet' href="css/jquery-ui.min.css" />
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/dc/1.7.5/dc.css"/>
+  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.css' rel='stylesheet' />
   <link rel='stylesheet' href="css/markerCluster.css" />
   <link rel='stylesheet' href="css/markerCluster.default.css" />
   <link rel='stylesheet' href="css/ice-age.css" />
@@ -267,7 +268,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
   <script src="lib/jquery-ui.min.js"></script>
   <script src="lib/jquery.layout_and_plugins.js"></script>
-  <script src="https://cdn.rawgit.com/crossfilter/reductio/master/reductio.min.js"></script>
   <script src= "//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
   <script src="http://d3js.org/queue.v1.min.js"></script>
   <script src="lib/crossfilter.min.js"></script>
@@ -275,11 +275,15 @@
   <script src="lib/pace.js"></script>
   <script src="lib/dc.js"></script>
 
+  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.js'></script>
+
+
   <!-- modified libraries and application files -->
   <script src="js/default.configuration.js"></script>
   <script src="js/state.js"></script>
-  <script src="lib/dc.leaflet_mod.js"></script>
-  <script src="lib/markerCluster_mod.js"></script>
+  <!-- <script src="lib/mapbox_dc_events.js"></script>
+  <script src="lib/markerCluster_mod.js"></script> -->
+  <script src="https://rawgit.com/scottsfarley93/dc-mapbox/master/mapbox_dc.js"></script>
   <script src="js/events.js"></script>
   <script src="js/main.js"></script>
 

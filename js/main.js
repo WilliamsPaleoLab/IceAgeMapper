@@ -79,15 +79,12 @@ function initialize(){
   loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
   createMap() //create the map in the center div
   enableMapViewLogging() //put an event listener on the map view
-  setMapView() //set the view to whatever is in the state configuration
   createAnalyticsCharts() //setup visual analytics charts on the righthand panel
   // autoLoadOccs() //get the state settings from URL query
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
 }
 
-function setMapView(){
-  globals.map.setView(globals.state.map.center, globals.state.map.zoom)
-}
+
 
 function enableMapViewLogging(){
   globals.map.on('moveend', function(){
@@ -240,7 +237,8 @@ function crossFilterData(){
    globals.filters.occurrenceGeoDimension = globals.filters
        .occurrences
        .dimension(function(d){
-         return L.latLng(d.latitude, d.longitude, d.DatasetMeta.Site.SiteID)
+         g = new mapboxgl.LngLat(d.longitude, d.latitude)
+         return g
         })
 
   //bin by abundance
@@ -413,7 +411,7 @@ function putPointsOnMap(){
   globals.elements.marker
     .dimension(globals.filters.occurrenceGeoDimension )
     .group(globals.filters.geoSummary)
-    .center([30,-90])
+    .center([-90,30])
     .zoom(3)
 }
 
@@ -425,17 +423,24 @@ function createMap(){
   globals.filters.emptyDimension = globals.filters.empty.dimension(function(d){return d})
   globals.filters.emptyGroup = globals.filters.emptyDimension.group().reduceCount()
 
-  globals.elements.marker = dc_leaflet.markerChart("#map")
-    .width($("#map").width())
-    .height($("#map").height())
+  mapOptions = {
+    center: globals.state.map.center,
+    zoom: globals.state.map.zoom
+  }
+
+  globals.elements.marker = dc_mapbox.pointSymbolMap("#map", "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ4anhrMSJ9.jRJCOGU1AOHfNXHH7cwU7Q", mapOptions)
+    // .width($("#map").width())
+    // .height($("#map").height())
     .dimension(globals.filters.emptyDimension)
     .group(globals.filters.emptyGroup)
-    .center([30,-90])
-    .zoom(3)
+    // .center([30,-90])
+    // .zoom(3)
 
 
   //render a blank map on initialization
   globals.elements.marker._doRender()
+
+  globals.map = globals.elements.marker.map()
 }
 
 

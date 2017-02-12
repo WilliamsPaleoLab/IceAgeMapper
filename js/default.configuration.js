@@ -87,7 +87,7 @@ defaultConfiguration = {
       interval: Infinity //the interval in years between min and max years, so the user can set only one of the above
     },
     map : { //main map panel configuration
-      center: [45, -90], //center of the map
+      center: [-90, 45], //center of the map
       zoom: 3, //zoom level of map
       showIce: true, //show the ice sheets during browsing
       currentRMin: 0,
