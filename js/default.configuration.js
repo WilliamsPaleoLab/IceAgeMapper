@@ -23,10 +23,23 @@ defaultConfiguration = {
       clusterFill: 'steelblue',
       markerFill: 'steelblue',
       markerRadius: 6,
-      symbolColor: 'steelblue',
+      bearing: 0,
+      pitch: 0,
+      symbolColor: {
+        "property": "VariableUnits",
+        "type": "categorical",
+        "stops": [
+            ["present/absent", "#fbb03b"],
+            ["NISP", "steelblue"],
+            ["MNI", "#e55e5e"]
+        ]
+    },
       symbolRadius: 5,
       popupTextFunction: function(d){
-        return d.properties.DatasetID
+        dsMeta = JSON.parse(d.properties.DatasetMeta)
+        html = "<h6>" + dsMeta.Site.SiteName + "</h6>"
+        html += "<a onclick='openSiteDetails(" + dsMeta.Site.SiteID + ")'>Details</a>"
+        return html
       }
     }, //end map
     dataSources: { //URIs of data used in AJAX calls

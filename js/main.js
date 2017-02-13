@@ -78,22 +78,25 @@ function initialize(){
   loadTaxa(populateTaxaAutocomplete) //load the taxa file
   loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
   createMap() //create the map in the center div
-  // enableMapViewLogging() //put an event listener on the map view
+  enableMapViewLogging() //put an event listener on the map view
   console.log("Created map....")
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
 }
 
 
-//
-// function enableMapViewLogging(){
-//   globals.map.on('moveend', function(){
-//     ///update map component of state
-//     var center = globals.map.getCenter()
-//     var zoom = globals.map.getZoom()
-//     globals.state.map.center = center
-//     globals.state.map.zoom = zoom
-//   })
-// }
+
+function enableMapViewLogging(){
+  globals.map.on('moveend', function(){
+    ///update map component of state
+    var center = globals.map.getCenter()
+    var zoom = globals.map.getZoom()
+    var bearing = globals.map.getBearing();
+    var pitch = globals.map.getPitch();
+    globals.state.map.center = center
+    globals.state.map.zoom = zoom
+    globals.state.map.bearing = bearing;
+  })
+}
 
 
 
@@ -454,6 +457,8 @@ function createMap(){
     container: "map",
     center: globals.state.map.center,
     zoom: globals.state.map.zoom,
+    // bearing: globals.state.map.bearing,
+    // pitch: globals.state.map.pitch,
     style:globals.config.map.style,
     pointType: "circle",
     pointRadius: globals.config.map.symbolRadius,
@@ -466,9 +471,12 @@ function createMap(){
   globals.elements.mapChart = dc_mapbox.pointSymbolMap("#map", globals.config.map.mapboxToken, mapOptions)
     .dimension(globals.filters.emptyDimension)
     .group(globals.filters.emptyGroup)
-    
 
   dc.renderAll();
+
+    globals.map = globals.elements.mapChart.map()
+
+console.log(globals.map)
 
 }
 
@@ -1013,13 +1021,14 @@ function doOpenSitePanel(){
     //populate the site panel details
     openSiteDetails(globals.state.activeSiteID)
 
+    //TODO: this is different with mapbox
     //open the correct popup
-    globals.map.eachLayer(function(d){
-      if (d.key != undefined){
-        if (d.key.alt == globals.state.activeSiteID){
-          d.openPopup()
-        }
-      }
-    })
+    // globals.map.eachLayer(function(d){
+    //   if (d.key != undefined){
+    //     if (d.key.alt == globals.state.activeSiteID){
+    //       d.openPopup()
+    //     }
+    //   }
+    // })
   }
 }
