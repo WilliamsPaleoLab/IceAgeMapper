@@ -79,6 +79,7 @@ function initialize(){
   loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
   createMap() //create the map in the center div
   // enableMapViewLogging() //put an event listener on the map view
+  console.log("Created map....")
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
 }
 
@@ -421,24 +422,12 @@ function datafyAnalyticsCharts(){
     .dimension(globals.filters.occurrenceGeoDimension)
     .group(globals.filters.occurrenceGeoGroup)
 
-  console.log("Post map chart creation.")
+  globals.elements.tChart
+    .dimension(globals.filters.occurrenceAgeDimension)
+    .group(globals.filters.occurrenceAgeSummary)
+    // .colors(globals.config.colors.tempAgeHist)
+    .brushOn(true)
 
-  globals.map = globals.elements.mapChart.map();
-
-  console.log(globals.map)
-  console.log("Set globals.map")
-
-  // enableMapViewLogging()
-
-  console.log("Set map view logging")
-
-  // globals.elements.tChart
-  //   .dimension(globals.filters.occurrenceAgeDimension)
-  //   .group(globals.filters.occurrenceAgeSummary)
-  //   // .colors(globals.config.colors.tempAgeHist)
-  //   .brushOn(true)
-
-  console.log("Set t chart properties")
 
 }
 
@@ -455,7 +444,7 @@ function putPointsOnMap(){
 function createMap(){
   //load a leaflet map into the map div
 
-  //create a fake dataset to put on the map before the user selects data from Neotoma
+  // //create a fake dataset to put on the map before the user selects data from Neotoma
   globals.filters.empty = crossfilter()
   globals.filters.emptyDimension = globals.filters.empty.dimension(function(d){return d})
   globals.filters.emptyGroup = globals.filters.emptyDimension.group().reduceCount()
@@ -471,9 +460,8 @@ function createMap(){
 
   globals.elements.mapChart = dc_mapbox.mapboxBase(globals.config.map.mapboxToken, preInitMapOptions)
 
-  globals.elements.mapChart.createMap()
+  globals.elements.mapChart._doRender()
 
-  globals.map = globals.elements.mapChart.map()
 }
 
 
@@ -752,71 +740,71 @@ function loadNeotomaData(){
 
 
 function drawNHTempCurve(){
-    // //draws the greenland ice core temperature curve in the bottom panel
-    // d3.csv("data/greenlandT.csv", function(data){
-    //   globals.data.tempDat = data
-    //   globals.elements.tChart = dc.barChart("#tempContainer")
-    //     .width($("#tempContainer").width())
-    //     .height($("#tempContainer").height())
-    //     .x(d3.scale.linear().domain([0,22]))
-    //     .margins({bottom:30,left:50,right:10,top:10})
-    //     .y(d3.scale.linear().domain(d3.extent(data, function(d){return +d.TempC})))
-    //     .brushOn(false)
-    //     .yAxisLabel("Mean Temperature", 25)
-    //     .xAxisLabel("Thousands of Years Ago")
-    //     .dimension(globals.filters.emptyDimension)
-    //     .group(globals.filters.emptyGroup)
-    //     .on('filtered', function(chart, filter){
-    //       globals.state.filters.age = filter
-    //     })
-    //     .on('renderlet', function(chart) {
-    //           globals.tempLineFn = d3.svg.line()
-    //               .x(function(d) { return chart.x()(+d.Age); })
-    //               .y(function(d) { return chart.y()(+d.TempC); })
-    //               //get drawing context
-    //               var chartBody = chart.select('g.chart-body');
-    //               var path = chartBody.selectAll('path').data([data]);
-    //               path.enter()
-    //                 .append('path')
-    //                 .attr('d', globals.tempLineFn )
-    //                 .style('fill', 'none')
-    //                 .style('stroke',globals.config.colors.tempCurve)
-    //     // add annotations
-    //     if (globals.config.doAnnotations){
-    //       chartBody.selectAll("text").remove()
-    //       chartBody.append('text')
-    //         .attr('x', chart.x()(18))
-    //         .attr('y', chart.y()(-40))
-    //         .attr('text-anchor', 'middle')
-    //         .text("Deglaciation")
-    //         .style('fill', globals.config.colors.annotations)
-    //
-    //         chartBody.append('text')
-    //           .attr('x', chart.x()(14.7))
-    //           .attr('y', chart.y()(-31.7))
-    //           .attr('text-anchor', 'middle')
-    //           .text("Bolling Allerod")
-    //           .style('fill', globals.config.colors.annotations)
-    //
-    //           chartBody.append('text')
-    //             .attr('x', chart.x()(8))
-    //             .attr('y', chart.y()(-40))
-    //             .attr('text-anchor', 'end')
-    //             .text("The Holocene")
-    //             .style('fill', globals.config.colors.annotations)
-    //
-    //         chartBody.append('text')
-    //           .attr('x', chart.x()(0))
-    //           .attr('y', chart.y()(-34))
-    //           .attr('text-anchor', 'begin')
-    //           .text("Today")
-    //           .style('fill', globals.config.colors.annotations)
-    //     }
-    //
-    //   }); //end renderlet function
-    //
-    //   globals.elements.tChart.render()
-    // })
+    //draws the greenland ice core temperature curve in the bottom panel
+    d3.csv("data/greenlandT.csv", function(data){
+      globals.data.tempDat = data
+      globals.elements.tChart = dc.barChart("#tempContainer")
+        .width($("#tempContainer").width())
+        .height($("#tempContainer").height())
+        .x(d3.scale.linear().domain([0,22]))
+        .margins({bottom:30,left:50,right:10,top:10})
+        .y(d3.scale.linear().domain(d3.extent(data, function(d){return +d.TempC})))
+        .brushOn(false)
+        .yAxisLabel("Mean Temperature", 25)
+        .xAxisLabel("Thousands of Years Ago")
+        .dimension(globals.filters.emptyDimension)
+        .group(globals.filters.emptyGroup)
+        .on('filtered', function(chart, filter){
+          globals.state.filters.age = filter
+        })
+        .on('renderlet', function(chart) {
+              globals.tempLineFn = d3.svg.line()
+                  .x(function(d) { return chart.x()(+d.Age); })
+                  .y(function(d) { return chart.y()(+d.TempC); })
+                  //get drawing context
+                  var chartBody = chart.select('g.chart-body');
+                  var path = chartBody.selectAll('path').data([data]);
+                  path.enter()
+                    .append('path')
+                    .attr('d', globals.tempLineFn )
+                    .style('fill', 'none')
+                    .style('stroke',globals.config.colors.tempCurve)
+        // add annotations
+        if (globals.config.doAnnotations){
+          chartBody.selectAll("text").remove()
+          chartBody.append('text')
+            .attr('x', chart.x()(18))
+            .attr('y', chart.y()(-40))
+            .attr('text-anchor', 'middle')
+            .text("Deglaciation")
+            .style('fill', globals.config.colors.annotations)
+
+            chartBody.append('text')
+              .attr('x', chart.x()(14.7))
+              .attr('y', chart.y()(-31.7))
+              .attr('text-anchor', 'middle')
+              .text("Bolling Allerod")
+              .style('fill', globals.config.colors.annotations)
+
+              chartBody.append('text')
+                .attr('x', chart.x()(8))
+                .attr('y', chart.y()(-40))
+                .attr('text-anchor', 'end')
+                .text("The Holocene")
+                .style('fill', globals.config.colors.annotations)
+
+            chartBody.append('text')
+              .attr('x', chart.x()(0))
+              .attr('y', chart.y()(-34))
+              .attr('text-anchor', 'begin')
+              .text("Today")
+              .style('fill', globals.config.colors.annotations)
+        }
+
+      }); //end renderlet function
+
+      globals.elements.tChart.render()
+    })
 }
 
 function lookupSite(siteID){
