@@ -78,23 +78,21 @@ function initialize(){
   loadTaxa(populateTaxaAutocomplete) //load the taxa file
   loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
   createMap() //create the map in the center div
-  enableMapViewLogging() //put an event listener on the map view
-  createAnalyticsCharts() //setup visual analytics charts on the righthand panel
-  // autoLoadOccs() //get the state settings from URL query
+  // enableMapViewLogging() //put an event listener on the map view
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
 }
 
 
-
-function enableMapViewLogging(){
-  globals.map.on('moveend', function(){
-    ///update map component of state
-    var center = globals.map.getCenter()
-    var zoom = globals.map.getZoom()
-    globals.state.map.center = center
-    globals.state.map.zoom = zoom
-  })
-}
+//
+// function enableMapViewLogging(){
+//   globals.map.on('moveend', function(){
+//     ///update map component of state
+//     var center = globals.map.getCenter()
+//     var zoom = globals.map.getZoom()
+//     globals.state.map.center = center
+//     globals.state.map.zoom = zoom
+//   })
+// }
 
 
 
@@ -161,10 +159,12 @@ function processNeotomaData(){
    crossFilterData() //prepare data for filtering and plotting with crossfilter library
 
    //callbacks to be completed once data has been processed
+  createAnalyticsCharts() //setup visual analytics charts on the righthand panel
 
    datafyAnalyticsCharts() //update charts with data
 
-  putPointsOnMap() //put circles on map
+   console.log('Done datafying...')
+  // putPointsOnMap() //put circles on map
 
 
 
@@ -335,7 +335,7 @@ function crossFilterData(){
   )
 
   //group by geo
-  globals.filters.geoSummary = globals.filters.occurrenceGeoDimension.group().reduceCount();
+  globals.filters.occurrenceGeoGroup = globals.filters.occurrenceGeoDimension.group().reduceCount();
 }
 
 genericAverageReduce = {
@@ -359,11 +359,13 @@ function redrawAnalytics(){
   //wrapper function to update charts with new data
   dc.renderAll();
   dc.redrawAll();
+  console.log("Rendered.")
 }
 
 
 
 function datafyAnalyticsCharts(){
+  console.log("Datafying...")
   //put new data into the analytics charts
    globals.elements.latitudeChart
     .dimension(globals.filters.occurrenceLatitudeDimension)
@@ -398,21 +400,56 @@ function datafyAnalyticsCharts(){
   .dimension(globals.filters.idDimension)
   .group(globals.filters.multiDimension)
 
-  globals.elements.tChart
-    .dimension(globals.filters.occurrenceAgeDimension)
-    .group(globals.filters.occurrenceAgeSummary)
-    // .colors(globals.config.colors.tempAgeHist)
-    .brushOn(true)
+  onDataMapOptions = {
+    center: globals.state.map.center,
+    zoom: globals.state.map.zoom,
+    style: globals.config.map.style,
+    pointColor: globals.config.map.symbolColor,
+    pointRadius: globals.config.map.symbolRadius,
+    latitudeField: "latitude",
+    longitudeField: "longitude",
+    popupTextFunction: function(d){
+      dsMeta = JSON.parse(d.properties.dsMeta)
+      console.log(dsMeta)
+      return "<h4>" + dsMeta.Site.SiteName + "</h4>"
+    }
+  }
+
+  console.log("Pre mapChart creation...")
+
+  globals.elements.mapChart = dc_mapbox.pointSymbolMap("#map", globals.config.map.mapboxToken, onDataMapOptions)
+    .dimension(globals.filters.occurrenceGeoDimension)
+    .group(globals.filters.occurrenceGeoGroup)
+
+  console.log("Post map chart creation.")
+
+  globals.map = globals.elements.mapChart.map();
+
+  console.log(globals.map)
+  console.log("Set globals.map")
+
+  // enableMapViewLogging()
+
+  console.log("Set map view logging")
+
+  // globals.elements.tChart
+  //   .dimension(globals.filters.occurrenceAgeDimension)
+  //   .group(globals.filters.occurrenceAgeSummary)
+  //   // .colors(globals.config.colors.tempAgeHist)
+  //   .brushOn(true)
+
+  console.log("Set t chart properties")
 
 }
 
 function putPointsOnMap(){
   //put symbols on the map
-  globals.elements.marker
-    .dimension(globals.filters.occurrenceGeoDimension )
-    .group(globals.filters.geoSummary)
-    .center([-90,30])
-    .zoom(3)
+  // globals.elements.mapChart
+  //   .dimension(globals.filters.occurrenceGeoDimension )
+  //   .group(globals.filters.geoSummary)
+  //   .center([-90,30])
+  //   .zoom(3)
+
 }
 
 function createMap(){
@@ -423,24 +460,20 @@ function createMap(){
   globals.filters.emptyDimension = globals.filters.empty.dimension(function(d){return d})
   globals.filters.emptyGroup = globals.filters.emptyDimension.group().reduceCount()
 
-  mapOptions = {
+  preInitMapOptions = {
+    container: "map",
     center: globals.state.map.center,
-    zoom: globals.state.map.zoom
+    zoom: globals.state.map.zoom,
+    style:globals.config.map.style
   }
 
-  globals.elements.marker = dc_mapbox.pointSymbolMap("#map", "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ4anhrMSJ9.jRJCOGU1AOHfNXHH7cwU7Q", mapOptions)
-    // .width($("#map").width())
-    // .height($("#map").height())
-    .dimension(globals.filters.emptyDimension)
-    .group(globals.filters.emptyGroup)
-    // .center([30,-90])
-    // .zoom(3)
+  console.log(preInitMapOptions.style)
 
+  globals.elements.mapChart = dc_mapbox.mapboxBase(globals.config.map.mapboxToken, preInitMapOptions)
 
-  //render a blank map on initialization
-  globals.elements.marker._doRender()
+  globals.elements.mapChart.createMap()
 
-  globals.map = globals.elements.marker.map()
+  globals.map = globals.elements.mapChart.map()
 }
 
 
@@ -516,9 +549,9 @@ function createLayout(){
 
 function updateMapSize(){
   //re-render the map when panel size changes
-  if (globals.map != undefined){
-    setTimeout(function(){ globals.map.invalidateSize()}, 10);
-  }
+  // if (globals.map != undefined){
+  //   setTimeout(function(){ globals.map.invalidateSize()}, 10);
+  // }
 }
 
 $(window).on('resize', updateMapSize)
@@ -719,71 +752,71 @@ function loadNeotomaData(){
 
 
 function drawNHTempCurve(){
-    //draws the greenland ice core temperature curve in the bottom panel
-    d3.csv("data/greenlandT.csv", function(data){
-      globals.data.tempDat = data
-      globals.elements.tChart = dc.barChart("#tempContainer")
-        .width($("#tempContainer").width())
-        .height($("#tempContainer").height())
-        .x(d3.scale.linear().domain([0,22]))
-        .margins({bottom:30,left:50,right:10,top:10})
-        .y(d3.scale.linear().domain(d3.extent(data, function(d){return +d.TempC})))
-        .brushOn(false)
-        .yAxisLabel("Mean Temperature", 25)
-        .xAxisLabel("Thousands of Years Ago")
-        .dimension(globals.filters.emptyDimension)
-        .group(globals.filters.emptyGroup)
-        .on('filtered', function(chart, filter){
-          globals.state.filters.age = filter
-        })
-        .on('renderlet', function(chart) {
-              globals.tempLineFn = d3.svg.line()
-                  .x(function(d) { return chart.x()(+d.Age); })
-                  .y(function(d) { return chart.y()(+d.TempC); })
-                  //get drawing context
-                  var chartBody = chart.select('g.chart-body');
-                  var path = chartBody.selectAll('path').data([data]);
-                  path.enter()
-                    .append('path')
-                    .attr('d', globals.tempLineFn )
-                    .style('fill', 'none')
-                    .style('stroke',globals.config.colors.tempCurve)
-        // add annotations
-        if (globals.config.doAnnotations){
-          chartBody.selectAll("text").remove()
-          chartBody.append('text')
-            .attr('x', chart.x()(18))
-            .attr('y', chart.y()(-40))
-            .attr('text-anchor', 'middle')
-            .text("Deglaciation")
-            .style('fill', globals.config.colors.annotations)
-
-            chartBody.append('text')
-              .attr('x', chart.x()(14.7))
-              .attr('y', chart.y()(-31.7))
-              .attr('text-anchor', 'middle')
-              .text("Bolling Allerod")
-              .style('fill', globals.config.colors.annotations)
-
-              chartBody.append('text')
-                .attr('x', chart.x()(8))
-                .attr('y', chart.y()(-40))
-                .attr('text-anchor', 'end')
-                .text("The Holocene")
-                .style('fill', globals.config.colors.annotations)
-
-            chartBody.append('text')
-              .attr('x', chart.x()(0))
-              .attr('y', chart.y()(-34))
-              .attr('text-anchor', 'begin')
-              .text("Today")
-              .style('fill', globals.config.colors.annotations)
-        }
-
-      }); //end renderlet function
-
-      globals.elements.tChart.render()
-    })
+    // //draws the greenland ice core temperature curve in the bottom panel
+    // d3.csv("data/greenlandT.csv", function(data){
+    //   globals.data.tempDat = data
+    //   globals.elements.tChart = dc.barChart("#tempContainer")
+    //     .width($("#tempContainer").width())
+    //     .height($("#tempContainer").height())
+    //     .x(d3.scale.linear().domain([0,22]))
+    //     .margins({bottom:30,left:50,right:10,top:10})
+    //     .y(d3.scale.linear().domain(d3.extent(data, function(d){return +d.TempC})))
+    //     .brushOn(false)
+    //     .yAxisLabel("Mean Temperature", 25)
+    //     .xAxisLabel("Thousands of Years Ago")
+    //     .dimension(globals.filters.emptyDimension)
+    //     .group(globals.filters.emptyGroup)
+    //     .on('filtered', function(chart, filter){
+    //       globals.state.filters.age = filter
+    //     })
+    //     .on('renderlet', function(chart) {
+    //           globals.tempLineFn = d3.svg.line()
+    //               .x(function(d) { return chart.x()(+d.Age); })
+    //               .y(function(d) { return chart.y()(+d.TempC); })
+    //               //get drawing context
+    //               var chartBody = chart.select('g.chart-body');
+    //               var path = chartBody.selectAll('path').data([data]);
+    //               path.enter()
+    //                 .append('path')
+    //                 .attr('d', globals.tempLineFn )
+    //                 .style('fill', 'none')
+    //                 .style('stroke',globals.config.colors.tempCurve)
+    //     // add annotations
+    //     if (globals.config.doAnnotations){
+    //       chartBody.selectAll("text").remove()
+    //       chartBody.append('text')
+    //         .attr('x', chart.x()(18))
+    //         .attr('y', chart.y()(-40))
+    //         .attr('text-anchor', 'middle')
+    //         .text("Deglaciation")
+    //         .style('fill', globals.config.colors.annotations)
+    //
+    //         chartBody.append('text')
+    //           .attr('x', chart.x()(14.7))
+    //           .attr('y', chart.y()(-31.7))
+    //           .attr('text-anchor', 'middle')
+    //           .text("Bolling Allerod")
+    //           .style('fill', globals.config.colors.annotations)
+    //
+    //           chartBody.append('text')
+    //             .attr('x', chart.x()(8))
+    //             .attr('y', chart.y()(-40))
+    //             .attr('text-anchor', 'end')
+    //             .text("The Holocene")
+    //             .style('fill', globals.config.colors.annotations)
+    //
+    //         chartBody.append('text')
+    //           .attr('x', chart.x()(0))
+    //           .attr('y', chart.y()(-34))
+    //           .attr('text-anchor', 'begin')
+    //           .text("Today")
+    //           .style('fill', globals.config.colors.annotations)
+    //     }
+    //
+    //   }); //end renderlet function
+    //
+    //   globals.elements.tChart.render()
+    // })
 }
 
 function lookupSite(siteID){
@@ -933,11 +966,11 @@ function applyFilters(){
   var _needsUpdate = false
 
   //filter the age charts -- timeline and analytics
-  if ((globals.state.filters.age != null) && (globals.state.filters.age != undefined)){
-    globals.elements.tChart.filter(globals.state.filters.age);
-    globals.elements.ageChart.filter(globals.state.filters.age);
-    _needsUpdate = true;
-  }
+  // if ((globals.state.filters.age != null) && (globals.state.filters.age != undefined)){
+  //   globals.elements.tChart.filter(globals.state.filters.age);
+  //   globals.elements.ageChart.filter(globals.state.filters.age);
+  //   _needsUpdate = true;
+  // }
 
   //latitude chart
   if ((globals.state.filters.latitude != null) && (globals.state.filters.latitude != undefined)){

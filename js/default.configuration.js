@@ -4,6 +4,9 @@ defaultConfiguration = {
     //variables go in here if they will be consistent from session to session and user to user
     map: {
       primaryTileURL: 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', //where to go to get tiles
+      style: "mapbox://styles/sfarley2/ciz3ab6a2003d2spd7nqf02ax",
+      defaultContainerName: "map",
+      mapboxToken: "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ4anhrMSJ9.jRJCOGU1AOHfNXHH7cwU7Q",
       maxZoom: 8, //max zoom level of map
       attribution: "",
       mapOptions: {
@@ -19,7 +22,9 @@ defaultConfiguration = {
       maxClusterRadius: 50,//maximum size of the cluster in screen pixels (spans all zoom levels),
       clusterFill: 'steelblue',
       markerFill: 'steelblue',
-      markerRadius: 6
+      markerRadius: 6,
+      symbolColor: 'steelblue',
+      symbolRadius: 5
     }, //end map
     dataSources: { //URIs of data used in AJAX calls
       taxa: "data/taxa.json", //customized file with names of taxa to improve performanc
