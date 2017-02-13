@@ -24,7 +24,10 @@ defaultConfiguration = {
       markerFill: 'steelblue',
       markerRadius: 6,
       symbolColor: 'steelblue',
-      symbolRadius: 5
+      symbolRadius: 5,
+      popupTextFunction: function(d){
+        return d.properties.DatasetID
+      }
     }, //end map
     dataSources: { //URIs of data used in AJAX calls
       taxa: "data/taxa.json", //customized file with names of taxa to improve performanc

@@ -401,24 +401,25 @@ function datafyAnalyticsCharts(){
   .dimension(globals.filters.idDimension)
   .group(globals.filters.multiDimension)
 
-  onDataMapOptions = {
-    center: globals.state.map.center,
-    zoom: globals.state.map.zoom,
-    style: globals.config.map.style,
-    pointColor: globals.config.map.symbolColor,
-    pointRadius: globals.config.map.symbolRadius,
-    latitudeField: "latitude",
-    longitudeField: "longitude",
-    popupTextFunction: function(d){
-      dsMeta = JSON.parse(d.properties.dsMeta)
-      console.log(dsMeta)
-      return "<h4>" + dsMeta.Site.SiteName + "</h4>"
-    }
-  }
-
-  console.log("Pre mapChart creation...")
-
-  globals.elements.mapChart = dc_mapbox.pointSymbolMap("#map", globals.config.map.mapboxToken, onDataMapOptions)
+  // onDataMapOptions = {
+  //   center: globals.state.map.center,
+  //   zoom: globals.state.map.zoom,
+  //   style: globals.config.map.style,
+  //   pointColor: globals.config.map.symbolColor,
+  //   pointRadius: globals.config.map.symbolRadius,
+  //   pointType: "circle",
+  //   latitudeField: "latitude",
+  //   longitudeField: "longitude",
+  //   popupTextFunction: function(d){
+  //     dsMeta = JSON.parse(d.properties.dsMeta)
+  //     console.log(dsMeta)
+  //     return "<h4>" + dsMeta.Site.SiteName + "</h4>"
+  //   }
+  // }
+  //
+  // console.log("Pre mapChart creation...")
+  //
+  globals.elements.mapChart
     .dimension(globals.filters.occurrenceGeoDimension)
     .group(globals.filters.occurrenceGeoGroup)
 
@@ -449,18 +450,25 @@ function createMap(){
   globals.filters.emptyDimension = globals.filters.empty.dimension(function(d){return d})
   globals.filters.emptyGroup = globals.filters.emptyDimension.group().reduceCount()
 
-  preInitMapOptions = {
+  mapOptions = {
     container: "map",
     center: globals.state.map.center,
     zoom: globals.state.map.zoom,
-    style:globals.config.map.style
+    style:globals.config.map.style,
+    pointType: "circle",
+    pointRadius: globals.config.map.symbolRadius,
+    pointColor: globals.config.map.symbolColor,
+    latitudeField: "latitude",
+    longitudeField: "longitude",
+    popupTextFunction: globals.config.map.popupTextFunction
   }
 
-  console.log(preInitMapOptions.style)
+  globals.elements.mapChart = dc_mapbox.pointSymbolMap("#map", globals.config.map.mapboxToken, mapOptions)
+    .dimension(globals.filters.emptyDimension)
+    .group(globals.filters.emptyGroup)
+    
 
-  globals.elements.mapChart = dc_mapbox.mapboxBase(globals.config.map.mapboxToken, preInitMapOptions)
-
-  globals.elements.mapChart._doRender()
+  dc.renderAll();
 
 }
 
