@@ -181,6 +181,16 @@ function processNeotomaData(){
 
   //open the site panel if required by config
   doOpenSitePanel()
+
+  //populate info on banner about search
+  //set the header bar
+  console.log(globals.state.taxonsearch)
+  if (globals.config.searchSwitch == "search"){
+
+      $("#taxonid").text("Currently showing results for: " + globals.state.taxonsearch)
+  }else{
+      $("#taxonid").text("Currently showing results for: " + globals.state.taxonid)
+  }
 }
 
 function crossFilterData(){
@@ -745,13 +755,6 @@ function loadNeotomaData(){
   $(".cover").removeClass("cover-full").addClass("cover-half")
   $(".cover").show()
 
-  //set the header bar
-  if (globals.state.searchSwitch == "search"){
-      $("#taxonid").text("Currently showing results for: " + globals.state.taxonname)
-  }else{
-      $("#taxonid").text("Currently showing results for: " + globals.state.taxonid)
-  }
-
 }
 
 
@@ -1022,13 +1025,6 @@ function doOpenSitePanel(){
     openSiteDetails(globals.state.activeSiteID)
 
     //TODO: this is different with mapbox
-    //open the correct popup
-    // globals.map.eachLayer(function(d){
-    //   if (d.key != undefined){
-    //     if (d.key.alt == globals.state.activeSiteID){
-    //       d.openPopup()
-    //     }
-    //   }
-    // })
+    //open popup here
   }
 }
