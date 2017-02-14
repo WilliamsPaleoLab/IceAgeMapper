@@ -50,7 +50,7 @@ defaultConfiguration = {
       sites: "http://api.neotomadb.org/v1/data/sites",//endpoint for site-level meta
       configStore: "http://grad.geography.wisc.edu:8080/mapConfigs"
     },
-    searchSwitch: "browse",
+    searchSwitch: "search",
     searchGeoBounds: [-167, 5, -50, 90], //corresponds to the `loc` parameter in the Neotoma API
     searchAgeBounds: [-250, 22000], //corresponds to the ageYoung and ageOld parameters in the Neotoma API
     layout: {
