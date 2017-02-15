@@ -46,7 +46,7 @@
         <button type="button" class="btn btn-warning" id='shareMapButton' data-toggle="modal" data-target="#shareModal">
         <span class='glyphicon glyphicon-envelope'></span>Share Map
       </button>
-        <label class='text-muted' id='taxonid'></label>
+        <!-- <label class='text-muted' id='taxonid'></label> -->
         </div>
       </div>
       <ul class="nav navbar-nav navbar-right">
@@ -148,8 +148,15 @@
   </div>
 	<div class="ui-layout-center">
     <div class="wrapper">
+      <div class='container col-xs-4' id='data-table-holder'>
+        <div class='row'>
+            <table class='table table-hover' id='data-table'>
+            </table>
+        </div>
+      </div>
       <!--here goes the map -->
       <div id='map'>
+
 
       </div>
     </div>

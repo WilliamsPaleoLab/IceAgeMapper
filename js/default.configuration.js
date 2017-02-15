@@ -136,7 +136,6 @@ defaultConfiguration = {
       recordType: null,
       singleSite: null,
       abundance: null
-    },
-    myVariable: "SCOTT IS AWESOME!"
+    }
   }//end state
 } //end default configuration

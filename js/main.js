@@ -186,12 +186,12 @@ function processNeotomaData(){
   //set the header bar
   console.log(globals.state.taxonsearch)
   if (globals.config.searchSwitch == "search"){
-
       $("#taxonid").text("Currently showing results for: " + globals.state.taxonsearch)
   }else{
       $("#taxonid").text("Currently showing results for: " + globals.state.taxonid)
   }
 }
+
 
 function crossFilterData(){
   //establish dimensions and groupings of neotoma data for putting into the analytics charts
@@ -226,12 +226,12 @@ function crossFilterData(){
         .dimension(function(d){
           return d.latitude
         })
-  //bin by altitude
-  globals.filters.occurrenceAltitudeDimension = globals.filters
-        .occurrences
-        .dimension(function(d){
-          return d.altitude
-        })
+  // //bin by altitude
+  // globals.filters.occurrenceAltitudeDimension = globals.filters
+  //       .occurrences
+  //       .dimension(function(d){
+  //         return d.altitude
+  //       })
 
   //bin the investigators together
   //filitates sorting by datasetPI
@@ -274,10 +274,10 @@ function crossFilterData(){
     }
   ).reduceCount()
 
-  // group altitude bins
-  globals.filters.occurrenceAltitudeSummary = globals.filters.occurrenceAltitudeDimension.group(function(d){
-    return Math.round(d / globals.config.analytics.altitudeBinSize) * globals.config.analytics.altitudeBinSize
-  }).reduceCount()
+  // // group altitude bins
+  // globals.filters.occurrenceAltitudeSummary = globals.filters.occurrenceAltitudeDimension.group(function(d){
+  //   return Math.round(d / globals.config.analytics.altitudeBinSize) * globals.config.analytics.altitudeBinSize
+  // }).reduceCount()
 
   //group abundance bins
   globals.filters.occurrenceValueSummary = globals.filters.occurrenceValueDimension.group(function(d){
@@ -288,6 +288,22 @@ function crossFilterData(){
   globals.filters.occurrenceAgeSummary = globals.filters.occurrenceAgeDimension.group(function(d){
     return Math.round(d/globals.config.analytics.timeBinSize)*globals.config.analytics.timeBinSize
   }).reduceCount()
+
+
+  //group by taxa
+  globals.filters.occurrenceTaxaDimension = globals.filters.occurrences.dimension(function(d){return d.TaxonName})
+  globals.filters.occurrenceTaxaGroup = globals.filters.occurrenceTaxaDimension.group().reduceCount()
+
+  globals.filters.TaxaTableDimension = {
+      top: function (x) {
+        return globals.filters.occurrenceTaxaGroup.all(x)
+                .map(function (grp) { return {"Taxon":grp.key, "Count":grp.value}; });
+        },
+        bottom: function (x) {
+          return globals.filters.occurrenceTaxaGroup.all()
+                  .map(function (grp) { return {"Taxon":grp.key, "Count":grp.value}; });
+          }
+    };
 
 
   //group PIs
@@ -350,24 +366,7 @@ function crossFilterData(){
 
   //group by geo
   globals.filters.occurrenceGeoGroup = globals.filters.occurrenceGeoDimension.group().reduceCount();
-}
-
-genericAverageReduce = {
-  add: function(p, v){ //add record
-    ++p.count
-    p.latitude_sum += v.latitude
-    p.latitude = p.latitude / p.count
-  },
-  remove: function(p, v){//remove record
-    --p.count
-    p.latitude_sum -= v.latitude
-    p.latitude = p.latitude / p.count
-  },
-  init: function(p, v){
-    //initialize group
-    return({count: 0, latitude_sum: 0, latitude: 0})
-  }
-}
+} // end dimension/grouping function
 
 function redrawAnalytics(){
   //wrapper function to update charts with new data
@@ -414,24 +413,6 @@ function datafyAnalyticsCharts(){
   .dimension(globals.filters.idDimension)
   .group(globals.filters.multiDimension)
 
-  // onDataMapOptions = {
-  //   center: globals.state.map.center,
-  //   zoom: globals.state.map.zoom,
-  //   style: globals.config.map.style,
-  //   pointColor: globals.config.map.symbolColor,
-  //   pointRadius: globals.config.map.symbolRadius,
-  //   pointType: "circle",
-  //   latitudeField: "latitude",
-  //   longitudeField: "longitude",
-  //   popupTextFunction: function(d){
-  //     dsMeta = JSON.parse(d.properties.dsMeta)
-  //     console.log(dsMeta)
-  //     return "<h4>" + dsMeta.Site.SiteName + "</h4>"
-  //   }
-  // }
-  //
-  // console.log("Pre mapChart creation...")
-  //
   globals.elements.mapChart
     .dimension(globals.filters.occurrenceGeoDimension)
     .group(globals.filters.occurrenceGeoGroup)
@@ -443,15 +424,19 @@ function datafyAnalyticsCharts(){
     .brushOn(true)
 
 
+globals.elements.taxaTable
+.dimension(globals.filters.TaxaTableDimension)
+.group(function(d){return ""})
+.size(2)
+.columns([function (d) {
+  return d.Taxon }, function (d) { return d.Count}])
+
+
 }
 
 function putPointsOnMap(){
-  //put symbols on the map
-  // globals.elements.mapChart
-  //   .dimension(globals.filters.occurrenceGeoDimension )
-  //   .group(globals.filters.geoSummary)
-  //   .center([-90,30])
-  //   .zoom(3)
+  //this is already done in the dc-mapbox routine
+  //TODO: cleanup
 
 }
 
@@ -563,9 +548,9 @@ function createLayout(){
 
 function updateMapSize(){
   //re-render the map when panel size changes
-  // if (globals.map != undefined){
-  //   setTimeout(function(){ globals.map.invalidateSize()}, 10);
-  // }
+  if (globals.map != undefined){
+    globals.map.resize();
+  }
 }
 
 $(window).on('resize', updateMapSize)
@@ -676,6 +661,11 @@ function createAnalyticsCharts(){
     .on('filtered', function(chart, filter){
         globals.state.filters.singleSite = filter
     })
+
+    globals.elements.taxaTable = dc.dataTable("#data-table")
+    .height(100)
+    .width(200)
+
 }
 
 
