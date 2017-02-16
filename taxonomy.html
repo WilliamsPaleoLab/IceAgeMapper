@@ -92,12 +92,13 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-success" id='openMap'>Show on Map</button>
+        <button type="button" class="btn btn-success"><a id='openMap'>Show on Map</a></button>
       </div>
     </div>
   </div>
 </div>
 
+  <script src="lib/pace.js"></script>
     <script   src="https://code.jquery.com/jquery-3.1.0.min.js"   integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="   crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   <script src="https://d3js.org/d3.v3.min.js"></script>
@@ -375,6 +376,8 @@ function dblclick(d){
         $("#taxonIDModal").text(data['data'][0]['TaxonID'])
         $("#exinctModal").text(data['data'][0]['Extinct'])
         $("#authorModal").text(data['data'][0]['Author'])
+        uri = "iam.html?taxonid=" + data['data'][0]['TaxonID']
+        $("#openMap").attr('href', uri)
       }catch(err){
         console.log(err)
       }
@@ -405,6 +408,8 @@ $("#in-neotoma").change(function(){
 
   window.location.href = newURL
 })
+
+
 
 
 
