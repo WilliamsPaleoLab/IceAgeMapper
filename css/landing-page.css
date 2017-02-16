@@ -55,9 +55,9 @@ h6 {
 
 .intro-message > h1 {
     margin: 0;
-    /*text-shadow: 2px 2px 3px rgba(0,0,0,0.6);*/
+    text-shadow: 2px 2px 3px rgba(0,0,0,0.6);
     font-size: 5em;
-    color:black;
+    color:#ffc100;
 }
 
 .intro-divider {
@@ -67,9 +67,9 @@ h6 {
 }
 
 .intro-message > h3 {
-    text-shadow: 2px 2px 3px rgba(255,255,255,0.6);
+    text-shadow: 2px 2px 3px rgba(0,0,0,0.6);
     /*color: #ffa700;*/
-    color:black;
+    color:#ffc100;
 }
 
 
@@ -192,4 +192,29 @@ p.copyright {
 
 #bottom-contact{
   text-align: center;
+}
+
+li{
+  font-weight: 400;
+}
+
+.strong{
+  font-weight: 700;
+}
+
+.shadow {
+  -webkit-filter: drop-shadow(5px 5px 5px #222);
+  filter: drop-shadow(5px 5px 5px #222);
+}
+#getting-started{
+  text-align: center;
+}
+
+
+#about > h1{
+  text-align: center;
+}
+
+#footer-banner{
+  color: #c5050c;
 }

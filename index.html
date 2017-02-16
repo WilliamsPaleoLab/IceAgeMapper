@@ -34,7 +34,7 @@
                 <div class="col-lg-12">
                     <div class="intro-message">
                         <h1>Ice Age Mapper</h1>
-                        <h3>A tool for mutlidimensional exploration of paleoecological change since the Last Glacial Maximum</h3>
+                        <h3>Exploring ecological change since Last Glacial Maximum</h3>
                         <hr class="intro-divider">
                         <ul class="list-inline intro-social-buttons">
                             <li>
@@ -50,8 +50,8 @@
         <!-- <a href="#services" id='linkToGallery' class='link'>Gallery</a> -->
     </div>
     <!-- /.intro-header -->
-
-<h1 class='page-header'>How to Use Ice Age Mapper</h1>
+<div id='getting-started'>
+<h1 class='page-header'>How to Get Started</h1>
     <a  name="services"></a>
         <div class="content-section-a">
 
@@ -62,9 +62,10 @@
                         <div class="clearfix"></div>
                         <h2 class="section-heading">Search</h2>
                         <p class="lead">Search by taxon name.</p>
+                        <input class='form-control' placeholder="Search now"/>
                     </div>
                     <div class="col-lg-5 col-lg-offset-2 col-sm-6">
-                        <img class="img-responsive" src="images/IAM_LOGO-BLACK.png" alt="">
+                        <img class="img-responsive" src="images/search.png" alt="">
                     </div>
                 </div>
 
@@ -84,9 +85,12 @@
                         <div class="clearfix"></div>
                         <h2 class="section-heading">Select</h2>
                         <p class="lead">Select a taxon from its ecological grouping.</p>
+                      <label>Ecological Group: </label>  <select class='form-control'></select><br />
+                      <label>Ecological Group: </label>  <select class='form-control'></select>
+                      <button class='btn btn-primary btn-lg'>Select</button>
                     </div>
                     <div class="col-lg-5 col-sm-pull-6  col-sm-6">
-                        <img class="img-responsive" src="img/dog.png" alt="">
+                        <img class="img-responsive" src="images/browse.png" alt="">
                     </div>
                 </div>
 
@@ -107,7 +111,7 @@
                    <p class="lead">Navigate through our <a href="taxonomy.html">Interactive Taxonomy</a> to pick out the what you're interested in from the tree of life.</p>
                </div>
                <div class="col-lg-5 col-lg-offset-2 col-sm-6">
-                   <img class="img-responsive" src="img/phones.png" alt="">
+                   <img class="img-responsive" src="images/interact.png" alt="">
                </div>
            </div>
 
@@ -129,7 +133,7 @@
                    <p class="lead">Browse existing Ice Age Maps in our <a href='gallery.html'>Gallery</a>.</p>
                </div>
                <div class="col-lg-5 col-sm-pull-6  col-sm-6">
-                   <img class="img-responsive" src="img/dog.png" alt="">
+                   <img class="img-responsive" src="images/gallery.png" alt="">
                </div>
            </div>
 
@@ -138,37 +142,138 @@
 
    </div> <!-- end container b-->
 
+ </div> <!-- end getting started  -->
 
-   <div class="">
+
+   <div class="" id='about'>
+     <h1 class='page-header about-header'>About Ice Age Mapper</h1>
 
        <div class="container">
 
            <div class="row">
-               <div class="col-lg-5 col-lg-offset-1 col-sm-push-4  col-sm-8">
+               <div class="col-lg-8 col-xs-8">
                    <hr class="section-heading-spacer">
                    <div class="clearfix"></div>
-                   <h2 class="section-heading">About Ice Age Mapper</h2>
+                   <h2 class="section-heading">What is it?</h2>
                    <p class="lead">Ice Age Mapper is a visualization tool developed at UW Madison to promote understanding of past ecological change by students and paleoecologists alike.
-                   IAM is live linked to <a href="http://neotomadb.org">the Neotoma Paleoecological Database</a> and allows users to
+                   IAM is live-linked to <a href="http://neotomadb.org">the Neotoma Paleoecological Database</a> and allows users to
                  browse Neotoma's holdings in a way that incorporates contextual information while supporting multiple drill-down filters into the raw data.
                  In the past, spatiotemporality, uncertainty, and multidimensionality of paleoecological datasets have made it difficult to visualize it.
                  Ice Age Mapper leverages recent advances in interactive mapping and data visualization to effectively
                   communicate ecological trends through space and time. By promoting map sharing via permanent unique URLs Ice Age Mapper is designed for both research and teaching use.
                  </p>
 
-                 <p>
-                   IAM is built on a modern Open Web technology stack of free and open source tools, which promotes community involvement and development.
-                 </p>
                </div>
-               <div class="col-lg-5 col-sm-pull-6  col-sm-6">
-                   <img class="img-responsive" src="img/dog.png" alt="">
+               <div class="col-lg-4 col-xs-4">
+                   <img class="img-responsive shadow" src="images/IAM_LOGO-BLACK.png" alt="">
                </div>
            </div>
 
        </div>
-       <!-- /.container -->
 
-   </div> <!-- end container b-->
+       <div class="container">
+
+           <div class="row">
+               <div class="col-lg-12 col-xs-12">
+                   <hr class="section-heading-spacer">
+                   <div class="clearfix"></div>
+                   <h2 class="section-heading">Features</h2>
+
+                   <ul>
+                     <li>
+                         <span class='strong'>Seamless Connection to the Neotoma Paleoecological Database:</span> Using Neotoma’s public Application Programming Interface (API), IAM supports live searching and browsing of the Neotoma Database’s collection.
+                       </li>
+
+                       <li>
+                         <span class='strong'>Multidimensional Dashboard: </span> More than seven filters are available, so you can uncover hidden patterns in the data.
+                       </li>
+
+                       <li>
+                         <span class='strong'>Contextual Layers: </span> Northern Hemisphere mean temperature (GISP2 Greenland Ice Record), Ice Sheets, and site descriptions and metadata accompany the raw data so it is put in the proper context.
+                       </li>
+
+
+                       <li>
+                           <span class='strong'>Taxonomy Browser: </span> Wondering where your favorite ecological proxy fits with other life forms? Wonder no more, with our interactive taxonomic hierarchy, specifically built for Neotoma's data.
+                        </li>
+                        <li>
+                          <span class='strong'>Persistent State: </span> Like the way you've configured your map? Save it and share it with your friends and colleagues by generating a unique URL for it.
+                        </li>
+                   </ul>
+
+               </div>
+           </div>
+
+          </div>
+
+
+   <div class="container">
+
+       <div class="row">
+           <div class="col-lg-12 col-xs-12">
+               <hr class="section-heading-spacer">
+               <div class="clearfix"></div>
+               <h2 class="section-heading">How it's built</h2>
+               <p class='lead'>
+                 Ice Age Mapper is built with a modern Open Web technology stack of free and
+                 open-source tools, which promotes community involvement and development. The applications makes heavy use of
+                 front-end libraries, including <a href="https://github.com/mapbox/mapbox-gl-js">Mapbox-GL</a>, <a href="https://github.com/d3/d3">D3.js</a>,
+                 and <a href="https://github.com/crossfilter/crossfilter">Crossfilter</a> -- all strongly supported by the developer community and can be modified to fit our needs.
+                 Ice Age Mapper's codebase is on GitHub and we welcome anyone to make contributions to the project. <a href="https://github.com/scottsfarley93/IceAgeMapper">Click here to contribute.</a>
+               </p>
+
+           </div>
+       </div>
+
+   </div>
+
+   </div> <!-- end about-->
+   <div class="" id='about'>
+     <h1 class='page-header'>The Team</h1>
+
+           <div class="content-section-a">
+
+          <div class="container">
+
+              <div class="row">
+                  <div class="col-lg-5 col-sm-6">
+                      <hr class="section-heading-spacer">
+                      <div class="clearfix"></div>
+                      <h2 class="section-heading"><a href="">Scott Farley</a></h2>
+                      <p class="lead">Graduate Student and Lead Developer</p>
+                  </div>
+                  <div class="col-lg-5 col-lg-offset-2 col-sm-6">
+                      <img class="img-responsive shadow" src="https://williamspaleolab.github.io/img/bio_img/farley.jpg" alt="">
+                  </div>
+              </div>
+
+          </div>
+          <!-- /.container -->
+
+      </div>
+      <!-- /.content-section-a -->
+
+      <div class="content-section-b">
+
+          <div class="container">
+
+              <div class="row">
+                  <div class="col-lg-5 col-lg-offset-1 col-sm-push-6  col-sm-6">
+                      <hr class="section-heading-spacer">
+                      <div class="clearfix"></div>
+                      <h2 class="section-heading"><a href="http://williamsPaleoLab.github.io">Jack Williams</a></h2>
+                      <p class="lead">Principle Investigator</p>
+                  </div>
+                  <div class="col-lg-5 col-sm-pull-6  col-sm-6">
+                      <img class="img-responsive shadow" src="https://williamspaleolab.github.io/img/bio_img/JackWilliams_LS_Feature_645x430_201609_cropmed.jpg" alt="">
+                  </div>
+              </div>
+
+          </div>
+          <!-- /.container -->
+
+      </div> <!-- end container b-->
+    </div>
 
 
 	<a  name="contact"></a>
@@ -178,8 +283,8 @@
 
             <div class="row">
                 <div class="col-lg-8">
-                    <h2>University of Wisconsin - Madison</h2>
-                    <h2>Paleovegetation Laboratory</h2>
+                    <h2 id='footer-banner'>University of Wisconsin - Madison</h2>
+                    <h2 id='footer-banner-sub'>Paleovegetation Laboratory</h2>
                     <br />
                 </div>
                 <div class="col-lg-6">
