@@ -1,29 +1,409 @@
-<html>
+<!DOCTYPE html>
+<meta charset="utf-8">
 <head>
-  <title>Ice Age Mapper</title>
+  <title>Neotoma Taxonomy</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
-  <link rel='stylesheet' href="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.1/dc.css" />
-  <style>
-  iframe{
-    height: 100%;
-    width: 100%;
-    padding: 0px;
-    margin: 0px;
-  }
-  html, body{
-    height: 100%;
-    width: 100%;
-    padding:0px;
-    margin: 0px;
-    overflow: hidden;
-  }
-  </style>
+
 </head>
+<style>
 
+.node {
+  cursor: pointer;
+}
 
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+.tooltip {
+    position: absolute;
+    padding: 2px;
+    font: 12px sans-serif;
+    min-width: 150px;
+    background: lightsteelblue !important;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 99999999;
+}
+
+</style>
 <body>
-<iframe src="http://scottsfarley.com/taxonomy/?init=true"></iframe>
-</body>
-</html>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">Ice Age Mapper</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <div class="checkbox navbar-btn">
+              <label class="navbar-link" for="filterUnfulfilled">
+                  <input type="checkbox" class="autosubmit" id="in-neotoma" value="true">
+                  With Sites in NeotomaDB
+              </label>
+          </div>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+    <div class='container' id='main'>
+
+    </div>
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+      </div>
+      <div class="modal-body">
+        <strong>Taxon ID: </strong><span class='text-muted' id='taxonIDModal'></span><br />
+        <strong>Exinct: </strong><span class='text-muted' id='exinctModal'></span><br />
+        <strong>Author: </strong><span class='text-muted' id='authorModal'></span><br />
+        <hr />
+        <!-- <strong>Occurrences in Neotoma: </strong><span class='text-muted' id='numOccurrencesModal'></span><br />
+        <strong>Youngest Age: </strong><span class='text-muted' id='ageYoungModal'></span><br />
+        <strong>Oldest Age: </strong><span class='text-muted' id='ageOldModal'></span><br /> -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-success" id='openMap'>Show on Map</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <script   src="https://code.jquery.com/jquery-3.1.0.min.js"   integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="   crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <script src="https://d3js.org/d3.v3.min.js"></script>
+  <script src="lib/burrow.js"></script>
+  <script src="https://d3js.org/d3-hierarchy.v1.min.js"></script>
+  <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+  <script>
+globals = {}
+var margin = {top: 100, right: 120, bottom: 20, left: 120},
+    width = 2500 - margin.right - margin.left,
+    height = 1500 - margin.top - margin.bottom;
+
+var i = 0,
+    duration = 750,
+    root;
+
+var tree = d3.layout.tree()
+    .size([height, width]);
+
+var diagonal = d3.svg.diagonal()
+    .projection(function(d) { return [d.y, d.x]; });
+
+
+// Define the div for the tooltip
+var div = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+var svg = d3.select("#main").append("svg")
+    .attr("width", width + margin.right + margin.left)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+function loadAndDraw(){
+  d3.select("svg").empty()
+  onlyInNeotoma = getParameterByName("inNeotoma");
+  if (onlyInNeotoma == 'true'){
+    $("#in-neotoma").prop('checked', true)
+  }else{
+    $("#in-neotoma").prop('checked', false)
+  }
+  nonExtinctOnly = false;
+
+  d3.text("data/expanded_with_num_sites.csv", function(error, dump) {
+    //filter the data
+    if (error) throw error;
+    rows = d3.csv.parseRows(dump)
+    globals.rows = rows;
+    //decide how to filter
+    data = new Array()
+    rows.forEach(function(row) {
+      //construct a new row with a taxonomy property
+      newRow = {}
+      taxonomy = row.slice(4, row.length) // skips the extra info
+      taxonomy = taxonomy.clean("") // get rid of empty strings;
+      newRow.taxonomy = new Array()
+      //strip whitespace out of the taxonomy entries
+      for (var i=0; i< taxonomy.length; i++){
+        newRow.taxonomy[i] = taxonomy[i].replace(/\s+$/, '');
+      }
+      newRow.author = row[2]
+      newRow.extinct = row[1]
+      newRow.id = row[0]
+      newRow.numSites = parseInt(row[3])
+      newRow.nodeName = newRow.taxonomy[newRow.taxonomy.length - 1]
+      if ((onlyInNeotoma) && (nonExtinctOnly)){
+        if ((newRow.extinct == 'FALSE') && (newRow.numSites > 0)){
+          data.push(newRow)
+        }
+      }
+      else if (onlyInNeotoma){
+        if (newRow.numSites > 0){
+          data.push(newRow)
+        }else{
+        }
+      }else if (nonExtinctOnly){
+        if (newRow.extinct == 'FALSE'){
+          data.push(newRow)
+        }
+      }else{
+        data.push(newRow)
+      }
+    }); //end foreach
+    globals.dataset = data
+    drawTree(data);
+  });
+}
+
+
+function drawTree(data){
+  //takes in an array of rows
+  hierarchy = burrow(data)
+  root = d3.hierarchy(hierarchy);
+  root.x0 = height / 2;
+  root.y0 = 0;
+
+  function collapse(d) {
+    if (d.children) {
+      d._children = d.children;
+      d._children.forEach(collapse);
+      d.children = null;
+    }
+  }
+
+  root.children.forEach(collapse);
+  update(root);
+}
+
+
+function update(source) {
+
+  // Compute the new tree layout.
+  var nodes = tree.nodes(root).reverse(),
+      links = tree.links(nodes);
+
+  // Normalize for fixed-depth.
+  nodes.forEach(function(d) { d.y = d.depth * 180; });
+
+  // Update the nodes…
+  var node = svg.selectAll("g.node")
+      .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+  // Enter any new nodes at the parent's previous position.
+  var nodeEnter = node.enter().append("g")
+      .attr("class", "node")
+      .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+      .on("click", click)
+      .on('dblclick', dblclick)
+
+  nodeEnter.append("circle")
+      .attr("r", 2)
+      .style('fill', function(d){
+        if ((d._children !== null) && (d._children != undefined)){
+          if(d._children.length == 0){
+            return 'lightsteelblue'
+          }else{
+            return 'steelblue'
+          }
+        }else{
+          return 'lightsteelblue'
+        }
+      })
+
+  nodeEnter.append("text")
+      .attr("x", function(d) { return d.children || d._children ? -10 : 10; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+      .text(function(d) { return d.data.name; })
+      .style("fill-opacity", 1e-6)
+      .style('font-size', 12)
+      .on('mouseover', divShow)
+      .on('mouseout', divHide)
+
+  // Transition nodes to their new position.
+  var nodeUpdate = node.transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+
+
+  nodeUpdate.select("circle")
+      .attr("r", 4.5)
+      //.style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+      .style('fill', function(d){
+        if ((d._children !== null) && (d._children != undefined)){
+          if(d._children.length == 0){
+            return 'lightsteelblue'
+          }else{
+            return 'steelblue'
+          }
+        }else{
+          return 'lightsteelblue'
+        }
+      })
+      // .on('mouseover', divShow)
+      // .on('mouseout', divHide)
+
+  nodeUpdate.select("text")
+      .style("fill-opacity", 1)
+      .style('font-size', 12)
+      // .on('mouseover', divShow)
+      // .on('mouseout', divHide)
+
+  // Transition exiting nodes to the parent's new position.
+  var nodeExit = node.exit().transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+      .remove();
+
+  nodeExit.select("circle")
+      .attr("r", 1e-6);
+
+  nodeExit.select("text")
+      .style("fill-opacity", 1e-6);
+
+  // Update the links…
+  var link = svg.selectAll("path.link")
+      .data(links, function(d) { return d.target.id; });
+
+  // Enter any new links at the parent's previous position.
+  link.enter().insert("path", "g")
+      .attr("class", "link")
+      .attr("d", function(d) {
+        var o = {x: source.x0, y: source.y0};
+        return diagonal({source: o, target: o});
+      });
+
+  // Transition links to their new position.
+  link.transition()
+      .duration(duration)
+      .attr("d", diagonal);
+
+  // Transition exiting nodes to the parent's new position.
+  link.exit().transition()
+      .duration(duration)
+      .attr("d", function(d) {
+        var o = {x: source.x, y: source.y};
+        return diagonal({source: o, target: o});
+      })
+      .remove();
+
+  // Stash the old positions for transition.
+  nodes.forEach(function(d) {
+    d.x0 = d.x;
+    d.y0 = d.y;
+  });
+}
+
+// Toggle children on click.
+function click(d) {
+  if (d.children) {
+    d._children = d.children;
+    d.children = null;
+  } else {
+    d.children = d._children;
+    d._children = null;
+  }
+  update(d);
+}
+
+function divShow(d){
+        div.transition()
+            .duration(200)
+            .style("opacity", .9)
+            .style('background-color', 'lightsteelblue')
+        div.html("Loading...")
+            .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY + 15) + "px");
+      $.getJSON("http://api.neotomadb.org/v1/data/taxa?taxonname=" + d.data.name, function(data){
+        if (data['success']){
+          try{
+            html = "<h5 class='page-header'>" + data['data'][0]['TaxonName'] + "</h4>"
+            html += "<strong>Taxon ID: </strong>" + "<span class='text-muted'>" + data['data'][0]['TaxonID'] + "</span><br / />"
+            html += "<strong>Extinct: </strong>" + "<span class='text-muted'>" + data['data'][0]['Extinct']  + "</span><br / />"
+            html += "<strong>Author: </strong>" + "<span class='text-muted'>" + data['data'][0]['Author']  + "</span><br / />"
+            div.html(html)
+          }catch(err){
+            div.html("No Details Found")
+          }
+        }
+      })//end get json
+}
+
+function divHide(d){
+  div.transition().duration(500)
+    .style("opacity", 0);
+}
+
+function dblclick(d){
+  $("#myModal").modal('show');
+  $("#myModalLabel").text(d.data.name)
+  $.getJSON("http://api.neotomadb.org/v1/data/taxa?taxonname=" + d.data.name, function(data){
+    if (data['success']){
+      try{
+        $("#taxonIDModal").text(data['data'][0]['TaxonID'])
+        $("#exinctModal").text(data['data'][0]['Extinct'])
+        $("#authorModal").text(data['data'][0]['Author'])
+      }catch(err){
+        console.log(err)
+      }
+    }
+  })
+  // $.getJSON("http://apidev.neotomadb.org/v1/data/occurrences?nametype=base&taxonname=" + d.data.name, function(data){
+  //   if(data['success']){
+  //     console.log("Got occurrences response")
+  //     minAge = d3.min(data['data'], function(d){return d.AgeYounger})
+  //     maxAge = d3.max(data['data'], function(d){return d.AgeOlder})
+  //     console.log(minAge)
+  //     console.log(maxAge)
+  //     $("#numOccurrencesModal").text(data['data'].length)
+  //     $("#ageYoungModal").text()
+  //     $("#ageOldModal").text()
+  //   }else{
+  //     console.log(data)
+  //   }
+  // })
+}
+
+loadAndDraw()
+
+$("#in-neotoma").change(function(){
+  console.log("Changing.")
+  isChecked = $("#in-neotoma").prop('checked')
+  newURL = updateURLParameter(window.location.href, 'inNeotoma', isChecked)
+
+  window.location.href = newURL
+})
+
+
+
+</script>
