@@ -1,0 +1,299 @@
+<html>
+<head>
+  <title>Ice Age Mapper</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+  <link rel='stylesheet' href="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.1/dc.css" />
+  <link rel='stylesheet' href="css/awesomplete.css" />
+  <link rel='stylesheet' href="css/layout-default.css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" />
+  <link rel='stylesheet' href="css/jquery-ui.min.css" />
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/dc/1.7.5/dc.css"/>
+  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.css' rel='stylesheet' />
+  <link rel='stylesheet' href="css/markerCluster.css" />
+  <link rel='stylesheet' href="css/markerCluster.default.css" />
+  <link rel='stylesheet' href="css/ice-age.css" />
+    <link rel='stylesheet' href="css/loading.css" />
+
+</head>
+
+<style>
+
+
+</style>
+
+<body>
+  <div class='cover cover-full'>
+    <!--hide page on load-->
+  </div>
+
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="navbar-header col-xs-8">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <div id='headerRow' class='col-xs-12'>
+          <h3 class='iam-header' id='iam-header'>Ice Age <strong><i>Explorer</i></strong> <span class='text-muted'><small>v2.0</small></span></h3>
+          <button type="button" class="btn btn-success" id='addDataButton' data-toggle="modal" data-target="#addDataModal">
+          <span class='glyphicon glyphicon-plus'></span>Add Data
+        </button>
+
+        <button type="button" class="btn btn-warning" id='shareMapButton' data-toggle="modal" data-target="#shareModal">
+        <span class='glyphicon glyphicon-envelope'></span>Share Map
+      </button>
+        <!-- <label class='text-muted' id='taxonid'></label> -->
+        </div>
+      </div>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" id='dropdown-menu' data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+            <h4>Menu <span class='caret'></span></h4>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a href="gallery.html">Gallery</a></li>
+            <li><a href="#">Tutorial</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="taxonomy.html">Interactive Taxonomy</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div><!--/.container-fluid -->
+  </nav>
+
+	<div class="ui-layout-west">
+    <div id='siteDetails' class='container col-xs-12'>
+      <h3 class='page-header' id='siteName'></h3>
+
+      <table id='pi-table'>
+      </table>
+
+      <p id='siteDescription'>
+
+      </p>
+      <p>
+        Altitude: <span id='siteAltitude'></span>
+      </p>
+      <p>
+        Notes: <span id='siteNotes'></span>
+      </p>
+
+
+
+      <h4>Samples of <span id='taxonName'></span> at this site:</h4>
+        <table id='sampleTable' class='col-xs-12'>
+        </table>
+
+
+    </div>
+  </div>
+  <div class="ui-layout-east">
+    <div class='container' id='analyticsContainer'>
+      <div class='row col-xs-12'>
+        <h5 class='page-header summary-header'>Summary</h5>
+        <a class='reset'
+          href='javascript:myChart.filterAll();dc.redrawAll();'
+          style='visibility: hidden;'>reset</a>
+        <div id='alt-lat-Chart' class = "analytics-chart col-xs-12 col-sm-12 col-md-12">
+
+        </div>
+      </div>
+
+      <div class='row col-xs-12 dashboard-row '>
+        <div class='col-xs-12 col-sm-12 col-md-6'>
+          <h5 class='page-header anatyics-header'>Latitude Distribution</h5>
+          <div class='analytics-chart ' id='latitudeChart'>
+
+          </div>
+        </div>
+        <div class='col-xs-12 col-sm-12 col-md-6'>
+          <h5 class='page-header anatyics-header'>Age Distribution</h5>
+          <div class='analytics-chart' id='ageChart'>
+
+          </div>
+        </div>
+
+      </div> <!-- end row -->
+
+      <div class='row dashboard-row col-xs-12'>
+        <div class='col-xs-12 col-sm-12 col-md-12'>
+          <h5 class='page-header anatyics-header'>Abundance Distribution</h5>
+          <div class='analytics-chart col-xs-12' id='abundanceChart'>
+
+          </div>
+        </div>
+      </div>
+
+
+      <div class='row col-xs-12 dashboard-row'>
+        <div class='col-xs-12 col-sm-12 col-md-6'>
+            <h5 class='page-header anatyics-header'>Investigator</h5>
+            <div class='analytics-chart' id='PIChart'>
+
+            </div>
+        </div>
+        <div class='col-xs-12 col-sm-12 col-md-6'>
+          <h5 class='page-header anatyics-header'>Record Types</h5>
+          <div class='analytics-chart ' id='recordTypeChart'>
+
+          </div>
+        </div>
+      </div> <!-- end row-->
+
+    </div>
+  </div>
+	<div class="ui-layout-center">
+    <div class="wrapper">
+      <div class='container col-xs-4' id='data-table-holder'>
+        <div class='row'>
+            <table class='table table-hover' id='data-table'>
+            </table>
+        </div>
+      </div>
+      <!--here goes the map -->
+      <div id='map'>
+
+
+      </div>
+    </div>
+  </div>
+	<div class="ui-layout-south">
+    <div class='row' id='tempContainer'>
+
+    </div>
+</div>
+
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="addDataModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="addDataModalTitle">Get Data</h2>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class='row'>
+          <div class='col-xs-12 col-sm-6 text-center'>
+            <h3 class='page-header'>Search</h3>
+            <i class='text-muted text-'>
+              Know the name of the taxon you're looking for? Use the search bar to
+              search for the scientific name of a taxon in Neotoma. Wildcards (*, %2A) are supported.
+            </i>
+            <br />
+            <input type='text' class='form-control' id="taxaAutocomplete" />
+          </div><!-- end search div-->
+          <div class='col-xs-12 col-sm-6 text-center verticalLine-left'>
+            <h3 class='page-header'>Browse</h3>
+            <i class='text-muted'>
+              Have a taxon in mind but aren't sure of the name? Select an ecological group and browse the taxa that fall
+              within it.
+            </i>
+            <h5>Ecological Group</h5>
+            <select id='ecolGroupSelect' class='form-control'></select>
+            <h5 id='taxonNameLabel'>Taxon Name</h5>
+            <select id='taxonSelect' class='form-control'></select>
+          </div><!--end browse div-->
+      </div> <!-- end row -->
+      <div class='col-xs-12 text-center' id='searchButtonRow'>
+        <button class='btn btn-success' id='searchButton' data-dismiss="modal">Search</button>
+      </div>
+      <hr />
+      <div class='row text-center' id='otherResourcesRow'>
+        <h4 class='page-header'>Not sure what you're looking for?</h4>
+        <p>
+          <strong><a href="/gallery.html">Check out</a></strong> a gallery of existing Ice Age Maps.
+        </p>
+        <p>
+          <strong><a href="/taxonomy.html">Navigate</a><strong> an interactive taxonomy.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div> <!--end modal body-->
+  </div>
+</div>
+</div> <!-- end modal -->
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="addDataModalTitle">Get Data</h2>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        <button class='btn btn-danger' id='sendShareRequest'>Share!</button>
+        <label>Your unique map id is: </label><span class='' id='shareURL'></span>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div> <!--end modal body-->
+  </div>
+</div> <!-- end modal -->
+
+
+
+  <!-- <script>
+    paceOptions = {
+    initialRate:.1,
+    minTime:1750,
+    maxProgressPerFrame:1,
+    ghostTime: 1000,
+    // eventLag : {
+    //   minSamples: 25,
+    //   sampleCount: 100,
+    //   lagThreshold: 1
+    // }
+  }
+  </script> -->
+
+
+  <!-- library files -->
+  <script src="https://code.jquery.com/jquery-3.1.1.js" integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA=" crossorigin="anonymous"></script>
+  <!-- <script src="https://d3js.org/d3.v4.min.js"></script> -->
+  <script src="https://d3js.org/d3.v3.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+  <script src="lib/jquery-ui.min.js"></script>
+  <script src="lib/jquery.layout_and_plugins.js"></script>
+  <script src= "//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+  <script src="http://d3js.org/queue.v1.min.js"></script>
+  <script src="lib/crossfilter.min.js"></script>
+  <script src="lib/awesomplete.js"></script>
+  <script src="lib/pace.js"></script>
+  <script src="lib/dc.js"></script>
+
+  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.js'></script>
+
+
+  <!-- modified libraries and application files -->
+  <script src="js/default.configuration.js"></script>
+  <script src="js/state.js"></script>
+  <!-- <script src="lib/mapbox_dc_events.js"></script>
+  <script src="lib/markerCluster_mod.js"></script> -->
+  <script src="https://rawgit.com/scottsfarley93/dc-mapbox/master/mapbox_dc.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/main.js"></script>
+
+
+</body>
+</html>

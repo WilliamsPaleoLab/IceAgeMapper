@@ -127,17 +127,28 @@ function getOccurrenceData(callback){
   endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
   console.log(endpoint)
   Pace.restart()
-  $.getJSON(endpoint, function(data){
-    //on success of Neotoma query
-    //check to make sure Neotoma returned okay, often it doesn't
-    if (data['success']){
-      globals.data.occurrences = data['data']
-      toastr.success("Received " + data['data'].length + " occurrences from Neotoma.", "Occurrences Received.")
-      callback(null)
-    }else{
-        toastr.error("Unexpected Neotoma Server Error. It's their fault. Please come back later.", "Server Error")
-        console.log(data)
+  $.ajax(endpoint, {
+    // xhr: function(xhr){
+    //   console.log(xhr)
+    // },
+    success: function(data){
+      //on success of Neotoma query
+      //check to make sure Neotoma returned okay, often it doesn't
+      if (data['success']){
+        globals.data.occurrences = data['data']
+        toastr.success("Received " + data['data'].length + " occurrences from Neotoma.", "Occurrences Received.")
         callback(null)
+      }else{
+          toastr.error("Unexpected Neotoma Server Error. It's their fault. Please come back later.", "Server Error")
+          console.log(data)
+          callback(null)
+      }
+    },
+    error: function(xhr, status, error){
+      toastr.error("Fatal ajax call.")
+      console.log(xhr)
+      console.log(status)
+      console.log(error)
     }
   })
 }
