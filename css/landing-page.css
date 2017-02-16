@@ -48,7 +48,7 @@ h6 {
     position: relative;
     padding-top: 20%;
     /*padding-bottom: 20%;*/
-    background-color: rgba(255, 255, 255, 0.25);
+    /*background-color: rgba(255, 255, 255, 0.25);*/
     height: 100%;
     max-height: 100%;
 }
@@ -67,7 +67,7 @@ h6 {
 }
 
 .intro-message > h3 {
-    /*text-shadow: 2px 2px 3px rgba(0,0,0,0.6);*/
+    text-shadow: 2px 2px 3px rgba(255,255,255,0.6);
     /*color: #ffa700;*/
     color:black;
 }
@@ -186,5 +186,10 @@ p.copyright {
   position: absolute!important;
   bottom: 0px;
   left: 0px;
+  text-align: center;
+}
+
+
+#bottom-contact{
   text-align: center;
 }
