@@ -5,7 +5,6 @@ function loadTaxa(callback){
   //runs the callback specified in the arguments
   $.getJSON("../data/taxa.json", function(data){
     page.taxa = data
-    console.log(page.taxa)
     callback(data)
   })
 }
@@ -68,4 +67,18 @@ function populateTaxaAutocomplete(){
 $(document).ready(function(){
   loadTaxa(populateTaxaAutocomplete) //load the taxa file
   loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups from file
+})
+
+
+$("#searchButton").click(function(d){
+  searchname = $("#taxaAutocomplete").val()
+  uri = "iam.html?taxonname=" + searchname
+  window.location.href = uri
+})
+
+
+$("#selectButton").click(function(){
+  taxonid = $("#taxonSelect :selected").val()
+  uri = "iam.html?taxonid=" + taxonid
+  window.location.href = uri
 })
