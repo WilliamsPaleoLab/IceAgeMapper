@@ -107,16 +107,18 @@ function getOccurrenceData(callback){
   //use the name in the search bar (if globals.config.searchSwitch is in search mode)
   //or the id in the selected dropdown option (if the searchSwitch is in browse mode)
   endpoint = globals.config.dataSources.occurrences
-  if (globals.config.searchSwitch == "browse"){
+  if (globals.state.searchSwitch == "browse"){
     //this is browse mode
     //the user was using the browse dropdowns
     query = "?taxonids=" + globals.state.taxonid
     globals.state.taxonsearch = globals.state.taxonid
-  }else if(globals.config.searchSwitch == "search"){
+    console.log(query)
+  }else if(globals.state.searchSwitch == "search"){
     //this is search mode
     //the user was using the search text entry
     //use the text instead of the id to support wildcard characters
     query = "?taxonname=" + globals.state.taxonname
+    console.log(query)
     globals.state.taxonsearch = globals.state.taxonname
   }
   endpoint += query

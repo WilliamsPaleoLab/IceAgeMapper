@@ -86,28 +86,6 @@ globals.configQ.defer(getConfiguration, shareToken)
 globals.configQ.await(applyConfiguration)
 
 
-
-function autoLoadOccs(){
-  //for now, just load the taxa and proceed without having to manually load data
-  taxonid = +globals.getParameterByName("taxonid")
-  //first check if taxonid is set
-  if ((taxonid != undefined ) & (taxonid > 0)){
-    globals.taxonid = taxonid
-    globals.state.searchSwitch = "browse"
-    loadNeotomaData();  //proceed with load
-    return
-  }
-  taxonname = globals.getParameterByName("taxonname")
-  if ((taxonname != undefined) && (taxonname != "")){
-    globals.taxonname = taxonname
-    globals.state.searchSwitch = "search"
-    loadNeotomaData();  //proceed with load
-    return
-  }
-  //otherwise, don't do anything
-}
-
-
 function applyConfiguration(){
   //ensure that there are no defaults that should be set but aren't
   globals.config = globals.configuration.config
@@ -115,15 +93,17 @@ function applyConfiguration(){
 
   //ability to load occurrences for taxon via url query string
   taxonid = +globals.getParameterByName("taxonid")
+  console.log(taxonid)
   //first check if taxonid is set
   if ((taxonid != undefined ) && (taxonid > 0) && (taxonid != "")){
-    globals.taxonid = taxonid
+    globals.state.taxonid = taxonid
     globals.state.searchSwitch = "browse"
     globals.state.doSearch = true
   }
   taxonname = globals.getParameterByName("taxonname")
+  console.log(taxonname)
   if ((taxonname != undefined) && (taxonname != "")){
-    globals.taxonname = taxonname
+    globals.state.taxonname = taxonname
     globals.state.searchSwitch = "search"
     globals.state.doSearch = true
   }
