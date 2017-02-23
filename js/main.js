@@ -5,9 +5,6 @@
 //University of Wisconsin, Madison
 
 //TODO: Navigation on panels
-//TODO: Taxonomy linking
-//TODO: Table of samples
-//TODO: Share state
 
 console.log("Welcome to Ice Age Mapper.\n\tRunning script version 2.1.\n\tLead Author: Scott Farley\n\tUniversity of Wisconsin, Madison")
 
@@ -106,6 +103,7 @@ function getOccurrenceData(callback){
   //get SampleData for the taxon specified by the user
   //use the name in the search bar (if globals.config.searchSwitch is in search mode)
   //or the id in the selected dropdown option (if the searchSwitch is in browse mode)
+  console.log("Getting occurrences")
   endpoint = globals.config.dataSources.occurrences
   if (globals.state.searchSwitch == "browse"){
     //this is browse mode
@@ -136,6 +134,7 @@ function getOccurrenceData(callback){
     success: function(data){
       //on success of Neotoma query
       //check to make sure Neotoma returned okay, often it doesn't
+      console.log("Got occurrences")
       if (data['success']){
         globals.data.occurrences = data['data']
         toastr.success("Received " + data['data'].length + " occurrences from Neotoma.", "Occurrences Received.")
@@ -180,24 +179,18 @@ function processNeotomaData(){
 
    datafyAnalyticsCharts() //update charts with data
 
-   console.log('Done datafying...')
-  // putPointsOnMap() //put circles on map
-
-
-
-  redrawAnalytics()
+  redrawAnalytics() //render the charts
 
   //apply filters, if they're in the configuration object
   didRedraw = applyFilters()
 
-  globals.state.doSearch = true
+  globals.state.doSearch = true //data is on the map, reflect in state so it will be automatically loaded if the configuration is shared
 
   //open the site panel if required by config
   doOpenSitePanel()
 
   //populate info on banner about search
   //set the header bar
-  console.log(globals.state.taxonsearch)
   if (globals.config.searchSwitch == "search"){
       $("#taxonid").text("Currently showing results for: " + globals.state.taxonsearch)
   }else{
@@ -601,6 +594,7 @@ function createAnalyticsCharts(){
       .yAxisLabel("Frequency")
       .on('filtered', function(chart, filter){
           globals.state.filters.age = filter
+          filterIceSheets()
       })
 
   globals.elements.abundanceChart = dc.barChart("#abundanceChart")
@@ -689,6 +683,7 @@ function filterMap(){
 function getDatasets(callback){
   //this gets dataset metdata
   //useful for some analytics since more is returned, and taxonname/taxonid is a parameter
+  console.log("Getting datasets.")
   endpoint = globals.config.dataSources.datasets
   if (globals.config.searchSwitch == "browse"){
     //this is browse mode
@@ -707,6 +702,7 @@ function getDatasets(callback){
   endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
   $.getJSON(endpoint, function(data){
     //check neotoma server success
+    console.log("Got datasets")
     if (data['success']){
       globals.data.datasetMeta = data['data']
       callback(null)
@@ -717,6 +713,11 @@ function getDatasets(callback){
     }
   })
 }
+
+// function filterIceSheets(){
+//   sheets = globals.map.getLayer('icesheets')
+//   console.log(sheets)
+// }
 
 function mergeMeta(){
   for (var i=0; i < globals.data.occurrences.length; i++){
@@ -823,7 +824,10 @@ function drawNHTempCurve(){
               .style('fill', globals.config.colors.annotations)
         }
 
-      }); //end renderlet function
+      })
+      .on('filtered', function(d){
+        filterIceSheets()
+      })
 
       globals.elements.tChart.render()
     })
@@ -1014,7 +1018,6 @@ function applyFilters(){
   }
 
   if(_needsUpdate){
-    console.log("Rendering with one or more active filters")
       dc.renderAll();
   }
 

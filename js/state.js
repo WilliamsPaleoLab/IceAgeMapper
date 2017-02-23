@@ -93,7 +93,6 @@ function applyConfiguration(){
 
   //ability to load occurrences for taxon via url query string
   taxonid = +globals.getParameterByName("taxonid")
-  console.log(taxonid)
   //first check if taxonid is set
   if ((taxonid != undefined ) && (taxonid > 0) && (taxonid != "")){
     globals.state.taxonid = taxonid
@@ -101,7 +100,6 @@ function applyConfiguration(){
     globals.state.doSearch = true
   }
   taxonname = globals.getParameterByName("taxonname")
-  console.log(taxonname)
   if ((taxonname != undefined) && (taxonname != "")){
     globals.state.taxonname = taxonname
     globals.state.searchSwitch = "search"

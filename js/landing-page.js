@@ -3,7 +3,7 @@ page = {}
 function loadTaxa(callback){
   //loads the taxa file specified in the configuration object
   //runs the callback specified in the arguments
-  $.getJSON("../data/taxa.json", function(data){
+  $.getJSON("data/taxa.json", function(data){
     page.taxa = data
     callback(data)
   })
@@ -81,4 +81,10 @@ $("#selectButton").click(function(){
   taxonid = $("#taxonSelect :selected").val()
   uri = "iam.html?taxonid=" + taxonid
   window.location.href = uri
+})
+
+$("#ecolGroupSelect").change(function(){
+  selectedGrp = $("#ecolGroupSelect :selected").val()
+  filterAndPopulateTaxaDropdown(selectedGrp)
+  globals.config.searchSwitch = "browse"
 })
