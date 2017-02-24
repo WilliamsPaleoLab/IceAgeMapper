@@ -5,13 +5,13 @@ angular.
     templateUrl:"js/gallery/galleryList/galleryList.template.html",
     controller: ['$http', function galleryController($http) {
       var self = this;
-      self.orderProp = 'created_at'; //order by date
+      self.orderProp = 'dateFormat'; //order by date
 
       $http.get('http://grad.geography.wisc.edu:8080/mapConfigs?summaryOnly=true').then(function(response) {
         responseData = response.data
         if (responseData.success){
-          self.items = responseData.data; //this isn't recognized in this scope, so use self
-          self.items.forEach(function(d){
+          dat = responseData.data;
+          dat.forEach(function(d){
             if(d.description == null){
               d.description = "No description."
             }
@@ -24,9 +24,16 @@ angular.
             if (d.author == null){
               d.author = ""
             }
-            d.dateFormat = new Date(d.created_at)
+            d.date = Date.parse(d.created_at)
+            d.dateOrder = -1 * d.date //make negative so they're ordered right;
+            d.dateFormat = new Date(d.date)
             d.dateFormat = d.dateFormat.toDateString();
+            d.link = "iam.html?shareToken=" + d.hash
           })
+
+          self.items = dat//this isn't recognized in this scope, so use self
+
+          self.orderProp = "dateOrder";
         }else{
           self.items = []
         }

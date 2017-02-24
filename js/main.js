@@ -594,7 +594,7 @@ function createAnalyticsCharts(){
       .yAxisLabel("Frequency")
       .on('filtered', function(chart, filter){
           globals.state.filters.age = filter
-          filterIceSheets()
+          // filterIceSheets()
       })
 
   globals.elements.abundanceChart = dc.barChart("#abundanceChart")
@@ -826,7 +826,7 @@ function drawNHTempCurve(){
 
       })
       .on('filtered', function(d){
-        filterIceSheets()
+        // filterIceSheets()
       })
 
       globals.elements.tChart.render()
@@ -900,15 +900,44 @@ function openSiteDetails(siteID){
 function sendShareRequest(){
   //post the share request to the server
   //return the shareid
+
+  //this is the map configuration
   dat = {
     config: globals.config,
     state: globals.state
   }
   datString = JSON.stringify(dat)
 
+  //get metadata
+  author = $("#authorName").val();
+  org = $("#authorOrg").val();
+  mapTitle = $("#mapTitle").val();
+  mapDesc = $("#mapDescription").val();
+
+  if (author == ""){
+    toastr.warning("Please enter your name as the map author!")
+    return
+  }
+  if(org == ""){
+    //not required at this time
+    org = null
+  }
+  if(mapTitle == ""){
+    toastr.warning("Please enter a title for your map!")
+    return
+  }
+  if(mapDesc == ""){
+    //not required at this time
+    mapDesc = null
+  }
+
+  host = globals.config.dataSources.configStore + "?author=" + encodeURIComponent(author) + "&organization=" + encodeURIComponent(org)
+  host += "&title=" + encodeURIComponent(mapTitle) + "&description=" + encodeURIComponent(mapDesc)
+
+  console.log(host)
 
   //send the request
-  $.ajax(globals.config.dataSources.configStore, {
+  $.ajax(host, {
     beforeSend: function(){
       console.log("Sharing your map.")
     },

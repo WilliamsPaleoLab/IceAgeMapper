@@ -12,18 +12,24 @@
         Sort by:
         <select ng-model="$ctrl.orderProp" class='form-control'>
           <option value="title">Title</option>
-          <option value="created_at">Newest</option>
+          <option value="dateOrder">Newest</option>
+          <option value='organization'>
+            Organization
+          </option>
         </select>
       </p>
 
     </div>
     <div class="col-xs-12">
       <!--Body content-->
-      <a href="iam.html">
-        <div class='col-xs-6 col-sm-4 col-md-3 col-lg-2 gallery-item' ng-repeat="item in $ctrl.items | filter:$ctrl.query | orderBy:$ctrl.orderProp ">
+      <a href={{item.link}} ng-repeat="item in $ctrl.items | filter:$ctrl.query | orderBy:$ctrl.orderProp ">
+        <div class='col-xs-6 col-sm-6 col-md-4 col-lg-3 gallery-item' >
         <h5>{{item.title}}</h5>
         <p class='text-muted'>
-          {{item.author}} (<strong>{{item.organization}} </strong>)
+          {{item.author}}
+        </p>
+        <p>
+          <strong>{{item.organization}} </strong>
         </p>
         <p>
           {{item.description}}
