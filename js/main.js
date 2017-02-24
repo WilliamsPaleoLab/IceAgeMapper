@@ -95,7 +95,17 @@ function enableMapViewLogging(){
   })
 }
 
-
+function getTaxonInfo(){
+  if (globals.state.searchSwitch == "browse"){
+    query = "?taxonid=" + globals.state.taxonid
+  }else if (globals.state.searchSwitch == "search"){
+    query = "?taxonname=" + globals.state.taxonname
+  }
+  endpoint = globals.config.dataSources.taxa + query
+  $.getJSON(endpoint, function(data){
+    globals.data.taxonInfo = data.data
+  })
+}
 
 
 function getOccurrenceData(callback){
@@ -716,10 +726,8 @@ function getDatasets(callback){
   //limit to ages set in configuration object
   endpoint += "&ageold=" + globals.config.searchAgeBounds[1]
   endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
-  console.log(endpoint)
   $.getJSON(endpoint, function(data){
     //check neotoma server success
-    console.log("Got datasets")
     if (data['success']){
       globals.data.datasetMeta = data['data']
       callback(null)

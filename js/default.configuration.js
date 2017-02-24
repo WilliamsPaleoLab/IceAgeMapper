@@ -48,7 +48,8 @@ defaultConfiguration = {
       occurrences: "http://api.neotomadb.org/v1/data/SampleData", //endpoint for occurrence data
       datasets: "http://api.neotomadb.org/v1/data/datasets", //endpoint for dataset metadata
       sites: "http://api.neotomadb.org/v1/data/sites",//endpoint for site-level meta
-      configStore: "http://grad.geography.wisc.edu:8080/mapConfigs"
+      configStore: "http://grad.geography.wisc.edu:8080/mapConfigs",//where shared maps are stored
+      taxa: "http://api.neotomadb.org/v1/data/taxa"
     },
     searchSwitch: "search",
     searchGeoBounds: [-167, 5, -50, 90], //corresponds to the `loc` parameter in the Neotoma API

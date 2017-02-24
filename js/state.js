@@ -111,5 +111,6 @@ function applyConfiguration(){
   //if the configuration requires autoloading data, do that now.
   if (globals.state.doSearch){
     loadNeotomaData();
+    getTaxonInfo();
   }
 }
