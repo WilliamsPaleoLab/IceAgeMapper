@@ -167,6 +167,20 @@ function processNeotomaData(){
      }
      globals.data.occurrences[i]._id = internalID
      globals.data.occurrences[i].siteid = globals.data.occurrences[i].DatasetMeta.Site.SiteID
+
+     //check that the values can be included in crossfilter
+     if (globals.data.occurrences[i].altitude == null || globals.data.occurrences[i].altitude == undefined || +globals.data.occurrences[i].altitude == NaN ){
+       globals.data.altitude = -9999;
+     }
+     if (globals.data.occurrences[i].latitude == null || globals.data.occurrences[i].latitude == undefined || +globals.data.occurrences[i].latitude == NaN ){
+       globals.data.latitude = -9999;
+     }
+     if (globals.data.occurrences[i].longitude == null || globals.data.occurrences[i].longitude == undefined || +globals.data.occurrences[i].longitude == NaN ){
+       globals.data.longitude = -9999;
+     }
+     if (globals.data.occurrences[i].age == null || globals.data.occurrences[i].age == undefined || +globals.data.occurrences[i].age == NaN ){
+       globals.data.age = -9999;
+     }
      internalID += 1
    }
 
@@ -180,6 +194,8 @@ function processNeotomaData(){
    datafyAnalyticsCharts() //update charts with data
 
   redrawAnalytics() //render the charts
+
+  globals.map._doRend
 
   //apply filters, if they're in the configuration object
   didRedraw = applyFilters()
@@ -1046,9 +1062,7 @@ function applyFilters(){
     _needsUpdate = true;
   }
 
-  if(_needsUpdate){
       dc.renderAll();
-  }
 
   return _needsUpdate
 }
