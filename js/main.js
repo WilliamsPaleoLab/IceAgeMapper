@@ -701,11 +701,11 @@ function getDatasets(callback){
   //useful for some analytics since more is returned, and taxonname/taxonid is a parameter
   console.log("Getting datasets.")
   endpoint = globals.config.dataSources.datasets
-  if (globals.config.searchSwitch == "browse"){
+  if (globals.state.searchSwitch == "browse"){
     //this is browse mode
     //the user was using the browse dropdowns
     query = "?taxonids=" + globals.state.taxonid
-  }else if(globals.config.searchSwitch == "search"){
+  }else if(globals.state.searchSwitch == "search"){
     //this is search mode
     //the user was using the search text entry
     //use the text instead of the id to support wildcard characters
@@ -716,6 +716,7 @@ function getDatasets(callback){
   //limit to ages set in configuration object
   endpoint += "&ageold=" + globals.config.searchAgeBounds[1]
   endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
+  console.log(endpoint)
   $.getJSON(endpoint, function(data){
     //check neotoma server success
     console.log("Got datasets")

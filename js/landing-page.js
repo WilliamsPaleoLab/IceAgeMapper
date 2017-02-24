@@ -86,5 +86,5 @@ $("#selectButton").click(function(){
 $("#ecolGroupSelect").change(function(){
   selectedGrp = $("#ecolGroupSelect :selected").val()
   filterAndPopulateTaxaDropdown(selectedGrp)
-  globals.config.searchSwitch = "browse"
+  // globals.config.searchSwitch = "browse"
 })
