@@ -16,8 +16,10 @@ module.exports = function(config) {
     files: [
     "lib/angular.js",
     "lib/angular.mocks.js",
-    "js/gallery.js",
-    "units/gallery.spec.js"
+    'js/gallery/galleryList/*.module.js',
+    'js/gallery/galleryList/*.component.js',
+    'js/gallery/galleryList/*.spec.js',
+    'js/gallery/gallery.js'
     ],
 
     // // list of files / patterns to load in the browser
