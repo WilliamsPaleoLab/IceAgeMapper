@@ -45,32 +45,45 @@
 </style>
 <body>
 
-    <!-- Fixed navbar -->
-    <nav class="navbar navbar-default navbar-fixed-top">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="index.html">Ice Age Mapper</a>
-        </div>
-        <div id="navbar" class="navbar-collapse collapse">
-          <ul class="nav navbar-nav">
-            <div class="checkbox navbar-btn">
-              <label class="navbar-link" for="filterUnfulfilled">
-                  <input type="checkbox" class="autosubmit" id="in-neotoma" value="true">
-                  With Sites in NeotomaDB
-              </label>
-          </div>
-          </ul>
+  <nav class="navbar navbar-default">
+    <div class="container-fluid nav-container">
+      <div class="navbar-header col-xs-8">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+          <h3 class='iam-header' id='iam-header'>Ice Age <strong><i>Mapper</i></strong> <span class='text-muted'><small>v2.0</small></span></h3>
 
-          </ul>
-        </div><!--/.nav-collapse -->
+          <label class="navbar-link" for="filterUnfulfilled">
+              <input type="checkbox" class="autosubmit" id="in-neotoma" value="true">
+              With Sites in NeotomaDB
+          </label>
       </div>
-    </nav>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" id='dropdown-menu' data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+            <h4>Menu <span class='caret'></span></h4>
+          </a>
+          <ul class="dropdown-menu">
+            <li href="index.html">
+              Home
+            </li>
+            <li><a href="gallery.html">Gallery</a></li>
+            <!-- <li><a href="#">Tutorial</a></li> -->
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="taxonomy.html">Interactive Taxonomy</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div><!--/.container-fluid -->
+  </nav>
+
+
+
+
+
     <div class='container' id='main'>
 
     </div>
