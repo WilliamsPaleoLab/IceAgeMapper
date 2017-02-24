@@ -88,7 +88,7 @@ defaultConfiguration = {
       annotations: '#9A9C9E'
     },
     doAnnotations: true,
-    baseURL: "http://scottsfarley.com/IceAgeMapper/"
+    baseURL: "iam.html"
   },//end config
 
   state : {//this holds all relevant info to be shared and saved.
