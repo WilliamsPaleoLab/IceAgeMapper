@@ -203,9 +203,8 @@ function processNeotomaData(){
 
    datafyAnalyticsCharts() //update charts with data
 
-  redrawAnalytics() //render the charts
+  dc.renderAll() //render the charts
 
-  globals.map._doRend
 
   //apply filters, if they're in the configuration object
   didRedraw = applyFilters()
@@ -222,6 +221,14 @@ function processNeotomaData(){
   }else{
       $("#taxonid").text("Currently showing results for: " + globals.state.taxonid)
   }
+
+  globals.elements.mapChart.doFilter() //make sure initial filters are set
+
+  // globals.elements.mapChart.doFilter();
+
+  dc.renderAll()
+
+
 }
 
 
