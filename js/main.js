@@ -204,11 +204,8 @@ function processNeotomaData(){
    datafyAnalyticsCharts() //update charts with data
 
 
-   globals.map.on('render', function(){
-     globals.elements.mapChart.doFilter();
-   })
-
-  dc.renderAll() //render the charts
+  dc.renderAll(); //render the charts
+  dc.redrawAll();
 
 
   //apply filters, if they're in the configuration object
@@ -219,13 +216,12 @@ function processNeotomaData(){
   //open the site panel if required by config
   doOpenSitePanel()
 
-}
 
-// function applyMapFilter(){
-//   if (globals.map.isSourceLoaded('points')){
-//
-//   }
-// }
+  //this is hacky
+  //TODO: I don't think there's another event that makes this better
+  setTimeout(globals.elements.mapChart.doFilter, 1000)
+
+}
 
 
 function crossFilterData(){
@@ -495,7 +491,8 @@ function createMap(){
     pointColor: globals.config.map.symbolColor,
     latitudeField: "latitude",
     longitudeField: "longitude",
-    popupTextFunction: globals.config.map.popupTextFunction
+    popupTextFunction: globals.config.map.popupTextFunction,
+    renderPopup: false
   }
 
   globals.elements.mapChart = dc_mapbox.pointSymbolMap("#map", globals.config.map.mapboxToken, mapOptions)
@@ -505,6 +502,31 @@ function createMap(){
   dc.renderAll();
 
   globals.map = globals.elements.mapChart.map()
+
+  globals.map.on('click', function (e) {
+
+      console.log(e)
+      console.log(e.point)
+
+      var features = globals.map.queryRenderedFeatures(e.point, { layers: ['points'] });
+
+      if (!features.length) {
+          return;
+      }
+
+      var feature = features[0];
+
+      coords = new mapboxgl.LngLat(feature.properties.longitude, feature.properties.latitude)
+
+      //
+      // Populate the popup and set its coordinates
+      // based on the feature found.
+      var popup = new mapboxgl.Popup()
+          .setLngLat(coords)
+          .setHTML(mapOptions.popupTextFunction(feature))
+          .addTo(globals.map);
+  });
+
 
 }
 
@@ -583,6 +605,10 @@ function updateMapSize(){
   //re-render the map when panel size changes
   if (globals.map != undefined){
     globals.map.resize();
+  }else{
+    globals.map.on('load', function(){
+        globals.map.resize();
+    })
   }
 }
 
@@ -1089,14 +1115,40 @@ function doOpenSitePanel(){
     //populate the site panel details
     openSiteDetails(globals.state.activeSiteID)
 
-    //TODO: this is different with mapbox
-    site = lookupSite(globals.state.activeSiteID)
+    // ds = _.find(globals.data.datasetMeta, function(d){return d.Site.SiteID == globals.state.activeSiteID})
+    //
+    // site = ds.Site
 
-    lat = (site.LatitudeNorth + site.LatitudeSouth) / 2
-    lng = (site.LongitudeEast + site.LongitudeWest) / 2
+    //TODO: again, hacky to do this with a timeout, instead of an event
+    setTimeout(function(){
 
-    pos = new mapboxgl.LngLat(lng, lat)
+      lng = (globals.state.activeSite.LongitudeWest + globals.state.activeSite.LongitudeEast) / 2
+      lat = (globals.state.activeSite.LatitudeNorth + globals.state.activeSite.LatitudeSouth) / 2
 
-    globals.map.fire("click", {lnglat: pos})
+      coords = new mapboxgl.LngLat(lng, lat)
+      pt = globals.map.project(coords)      
+      console.log(pt)
+      var features = globals.map.queryRenderedFeatures(pt, { layers: ['points'] });
+
+      if (!features.length) {
+          return;
+      }
+
+      var feature = features[0];
+
+      console.log(feature)
+
+      //make sure the popup opens on the point of the symbol, not the point of the event
+      coords = new mapboxgl.LngLat(feature.properties.longitude, feature.properties.latitude)
+
+
+      var popup = new mapboxgl.Popup()
+          .setLngLat(coords)
+          .setHTML(globals.config.map.popupTextFunction(feature))
+          .addTo(globals.map);
+
+
+    }, 1000); //end timeout
+
   }
 }
