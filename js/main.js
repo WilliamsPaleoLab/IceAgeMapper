@@ -927,6 +927,8 @@ function openSiteDetails(siteID){
 
   theseSamples = lookupSamples(siteID)
 
+  theseSamples = _.sortBy(theseSamples, function(d){return d.age})
+
   $("#sampleTable").empty();
 
   table = "<thead><th>Age</th><th>Value</th><th>Units</th></thead>"
@@ -1126,7 +1128,7 @@ function doOpenSitePanel(){
       lat = (globals.state.activeSite.LatitudeNorth + globals.state.activeSite.LatitudeSouth) / 2
 
       coords = new mapboxgl.LngLat(lng, lat)
-      pt = globals.map.project(coords)      
+      pt = globals.map.project(coords)
       console.log(pt)
       var features = globals.map.queryRenderedFeatures(pt, { layers: ['points'] });
 
