@@ -116,6 +116,7 @@ function getOccurrenceData(callback){
   //or the id in the selected dropdown option (if the searchSwitch is in browse mode)
   console.log("Getting occurrences")
   endpoint = globals.config.dataSources.occurrences
+  console.log(globals.state.searchSwitch)
   if (globals.state.searchSwitch == "browse"){
     //this is browse mode
     //the user was using the browse dropdowns
@@ -715,15 +716,18 @@ function getDatasets(callback){
   //useful for some analytics since more is returned, and taxonname/taxonid is a parameter
   console.log("Getting datasets.")
   endpoint = globals.config.dataSources.datasets
+  console.log(endpoint)
   if (globals.state.searchSwitch == "browse"){
     //this is browse mode
     //the user was using the browse dropdowns
     query = "?taxonids=" + globals.state.taxonid
+    console.log("browse")
   }else if(globals.state.searchSwitch == "search"){
     //this is search mode
     //the user was using the search text entry
     //use the text instead of the id to support wildcard characters
     query = "?taxonname=" + globals.state.taxonname
+    console.log("searcg")
   }
   //geoBounds
   endpoint += query + "&loc="+ globals.config.searchGeoBounds[0] + "," + globals.config.searchGeoBounds[1] + "," + globals.config.searchGeoBounds[2] + "," + globals.config.searchGeoBounds[3]
