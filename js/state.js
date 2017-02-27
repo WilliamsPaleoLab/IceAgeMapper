@@ -60,6 +60,9 @@ function getConfiguration(configID, callback){
         console.log(data)
         if ((data['success']) && data['data'].length > 0){
           globals.configuration = data['data'][0]['configdata']
+          //todo, this is lazy
+          //figure out a better way to make this clean
+          globals.configuration.config.map = Object.assign({}, defaultConfiguration.config.map, data['data'][0]['configdata'].config.map)
           console.log("Using remote configuration")
         }else{
           globals.configuration = defaultConfiguration

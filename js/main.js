@@ -78,6 +78,7 @@ function initialize(){
   enableMapViewLogging() //put an event listener on the map view
   console.log("Created map....")
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
+  globals.elements.mapChart.doFilter() //make sure initial filters are set
 }
 
 
@@ -101,7 +102,7 @@ function getTaxonInfo(){
   }else if (globals.state.searchSwitch == "search"){
     query = "?taxonname=" + globals.state.taxonname
   }
-  endpoint = globals.config.dataSources.taxa + query
+  endpoint = globals.config.dataSources.taxonInfo + query
   $.getJSON(endpoint, function(data){
     globals.data.taxonInfo = data.data
   })
@@ -222,12 +223,8 @@ function processNeotomaData(){
       $("#taxonid").text("Currently showing results for: " + globals.state.taxonid)
   }
 
-  globals.elements.mapChart.doFilter() //make sure initial filters are set
-
-  // globals.elements.mapChart.doFilter();
 
   dc.renderAll()
-
 
 }
 
@@ -733,6 +730,7 @@ function getDatasets(callback){
   //limit to ages set in configuration object
   endpoint += "&ageold=" + globals.config.searchAgeBounds[1]
   endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
+  console.log(endpoint)
   $.getJSON(endpoint, function(data){
     //check neotoma server success
     if (data['success']){
@@ -1090,6 +1088,13 @@ function doOpenSitePanel(){
     openSiteDetails(globals.state.activeSiteID)
 
     //TODO: this is different with mapbox
-    //open popup here
+    site = lookupSite(globals.state.activeSiteID)
+
+    lat = (site.LatitudeNorth + site.LatitudeSouth) / 2
+    lng = (site.LongitudeEast + site.LongitudeWest) / 2
+
+    pos = new mapboxgl.LngLat(lng, lat)
+
+    globals.map.fire("click", {lnglat: pos})
   }
 }

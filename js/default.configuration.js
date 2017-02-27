@@ -40,7 +40,11 @@ defaultConfiguration = {
         html = "<h6>" + dsMeta.Site.SiteName + "</h6>"
         html += "<a onclick='openSiteDetails(" + dsMeta.Site.SiteID + ")'>Details</a>"
         return html
-      }
+      },
+      myFunction: function(d){
+        return d
+      },
+      myProp: "blue"
     }, //end map
     dataSources: { //URIs of data used in AJAX calls
       taxa: "data/taxa.json", //customized file with names of taxa to improve performanc
@@ -49,7 +53,7 @@ defaultConfiguration = {
       datasets: "http://api.neotomadb.org/v1/data/datasets", //endpoint for dataset metadata
       sites: "http://api.neotomadb.org/v1/data/sites",//endpoint for site-level meta
       configStore: "http://grad.geography.wisc.edu:8080/mapConfigs",//where shared maps are stored
-      taxa: "http://api.neotomadb.org/v1/data/taxa"
+      taxonInfo: "http://api.neotomadb.org/v1/data/taxa"
     },
     searchSwitch: "search",
     searchGeoBounds: [-167, 5, -50, 90], //corresponds to the `loc` parameter in the Neotoma API
