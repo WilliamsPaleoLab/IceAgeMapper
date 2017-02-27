@@ -109,7 +109,7 @@ defaultConfiguration = {
     },
     map : { //main map panel configuration
       center: [-90, 45], //center of the map
-      zoom: 3, //zoom level of map
+      zoom: 7, //zoom level of map
       showIce: true, //show the ice sheets during browsing
       currentRMin: 0,
       currentRMax: 0

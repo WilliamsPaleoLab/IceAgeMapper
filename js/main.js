@@ -76,9 +76,7 @@ function initialize(){
   loadEcolGroups(populateEcolGroupDropdown)//load the ecological groups
   createMap() //create the map in the center div
   enableMapViewLogging() //put an event listener on the map view
-  console.log("Created map....")
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
-  globals.elements.mapChart.doFilter() //make sure initial filters are set
 }
 
 
@@ -205,29 +203,29 @@ function processNeotomaData(){
 
    datafyAnalyticsCharts() //update charts with data
 
+
+   globals.map.on('render', function(){
+     globals.elements.mapChart.doFilter();
+   })
+
   dc.renderAll() //render the charts
 
 
   //apply filters, if they're in the configuration object
-  didRedraw = applyFilters()
+  applyFilters()
 
   globals.state.doSearch = true //data is on the map, reflect in state so it will be automatically loaded if the configuration is shared
 
   //open the site panel if required by config
   doOpenSitePanel()
 
-  //populate info on banner about search
-  //set the header bar
-  if (globals.config.searchSwitch == "search"){
-      $("#taxonid").text("Currently showing results for: " + globals.state.taxonsearch)
-  }else{
-      $("#taxonid").text("Currently showing results for: " + globals.state.taxonid)
-  }
-
-
-  dc.renderAll()
-
 }
+
+// function applyMapFilter(){
+//   if (globals.map.isSourceLoaded('points')){
+//
+//   }
+// }
 
 
 function crossFilterData(){
@@ -506,9 +504,7 @@ function createMap(){
 
   dc.renderAll();
 
-    globals.map = globals.elements.mapChart.map()
-
-console.log(globals.map)
+  globals.map = globals.elements.mapChart.map()
 
 }
 
@@ -1080,7 +1076,9 @@ function applyFilters(){
     _needsUpdate = true;
   }
 
-      dc.renderAll();
+
+  globals.elements.mapChart.doFilter();
+  dc.renderAll();
 
   return _needsUpdate
 }
