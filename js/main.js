@@ -1093,10 +1093,11 @@ $("#taxonSelect").change(function(){
   console.log($("#taxonSelect :selected").val())
 })
 $("#taxaAutocomplete").on("awesomplete-select", function(){
-  globals.config.searchSwitch = "search"
+  globals.state.searchSwitch = "search"
 })
 $("#taxaAutocomplete").on('input', function(){
-  globals.config.searchSwitch = "search"
+  console.log("Changing.")
+  globals.state.searchSwitch = "search"
 })
 
 //search for Neotoma data when the search button is called
