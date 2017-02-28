@@ -1084,12 +1084,12 @@ $("#sendShareRequest").click(sendShareRequest)
 $("#ecolGroupSelect").change(function(){
   selectedGrp = $("#ecolGroupSelect :selected").val()
   filterAndPopulateTaxaDropdown(selectedGrp)
-  globals.config.searchSwitch = "browse"
+  globals.state.searchSwitch = "browse"
 })
 //toggle the search switch when the user searches with the search bar
 //or browses with the dropdowns
 $("#taxonSelect").change(function(){
-  globals.config.searchSwitch = "browse"
+  globals.state.searchSwitch = "browse"
   console.log($("#taxonSelect :selected").val())
 })
 $("#taxaAutocomplete").on("awesomplete-select", function(){
