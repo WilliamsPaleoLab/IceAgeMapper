@@ -77,7 +77,7 @@ function initialize(){
   createMap() //create the map in the center div
   enableMapViewLogging() //put an event listener on the map view
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
-  loadIceSheets() //load the ice sheet data file
+  // loadIceSheets() //load the ice sheet data file
 }
 
 function loadIceSheets(){
@@ -90,7 +90,7 @@ function loadIceSheets(){
       })
       globals.data.iceTimeSlices = _.uniq(ages)
       console.log(globals.data.iceTimeSlices)
-      styleIceSheets();
+      addIceSheetsToMap();
     },
     error: function(xhr, status, error){
       console.log(xhr)
@@ -101,20 +101,6 @@ function loadIceSheets(){
       console.log("Sending ice sheets request!")
     }
   })
-}
-
-function styleIceSheets(){
-  if (globals.map != undefined){
-    if (globals.map.loaded()){
-      console.log("adding now.")
-        addIceSheetsToMap()
-    }else{
-      globals.map.on('load', function(){
-        console.log("adding later")
-        addIceSheetsToMap();
-      })
-    }
-  }
 }
 
 function addIceSheetsToMap(){
@@ -250,7 +236,6 @@ function processNeotomaData(){
      internalID += 1
    }
 
-   globals.state.map.currentRMax = 100;
 
    crossFilterData() //prepare data for filtering and plotting with crossfilter library
 
@@ -539,8 +524,8 @@ function createMap(){
     container: "map",
     center: globals.state.map.center,
     zoom: globals.state.map.zoom,
-    // bearing: globals.state.map.bearing,
-    // pitch: globals.state.map.pitch,
+    bearing: globals.state.map.bearing,
+    pitch: globals.state.map.pitch,
     style:globals.config.map.style,
     pointType: "circle",
     pointRadius: globals.config.map.symbolRadius,
@@ -583,7 +568,9 @@ function createMap(){
           .addTo(globals.map);
   });
 
-
+  globals.map.on('load', function(){
+    loadIceSheets()
+  })
 }
 
 
@@ -829,16 +816,14 @@ function getDatasets(callback){
 }
 
 function filterIceSheets(age){
-  console.log(age)
   closestSlice = globals.data.iceTimeSlices.closest(age)
-
-  globals.map.setFilter('icesheets', ['==', 'Age', closestSlice])
-}
-
-function getUniqueAges(){
-  u = _.unique(globals.data.icesheets.features, function(d){return d.properties.a})
-  // m = _.pluck(u, function(d){return d.properties.a})
-  return u
+  if (globals.map.loaded()){
+      globals.map.setFilter('icesheets', ['==', 'Age', closestSlice])
+  }else{
+    globals.map.on('load', function(){
+      globals.map.setFilter('icesheets', ['==', 'Age', closestSlice])
+    })
+  }
 }
 
 function mergeMeta(){
@@ -900,7 +885,14 @@ function drawNHTempCurve(){
         .dimension(globals.filters.emptyDimension)
         .group(globals.filters.emptyGroup)
         .on('filtered', function(chart, filter){
-          globals.state.filters.age = filter
+          console.log(filter)
+          if (filter != null){
+            globals.state.filters.age = filter
+            maxAge = filter[1] * 1000
+            filterIceSheets(maxAge)
+            globals.elements.mapChart.render();
+          }
+          // dc.renderAll();
         })
         .on('renderlet', function(chart) {
               globals.tempLineFn = d3.svg.line()
@@ -947,15 +939,6 @@ function drawNHTempCurve(){
         }
 
       })
-      .on('filtered', function(chart, filter){
-        console.log(filter)
-        if (filter.length > 0){
-          globals.state.filters.age = filter
-          maxAge = filter[1] * 1000
-          filterIceSheets(maxAge)
-        }
-      })
-
       globals.elements.tChart.render()
     })
 }
@@ -1080,7 +1063,7 @@ function sendShareRequest(){
         toastr.success("Configuration Storage Complete!")
         hash = data['configHash']
         urlString = globals.config.baseURL +"?shareToken="+ hash
-        globals.state.shareURL = hash
+        globals.state.shareToken = hash
         $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
       }else{
         toastr.error("Failed to share map.")

@@ -3,29 +3,12 @@ defaultConfiguration = {
     //this holds rules for static configuration of the application
     //variables go in here if they will be consistent from session to session and user to user
     map: {
-      primaryTileURL: 'http://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', //where to go to get tiles
-      style: "mapbox://styles/sfarley2/ciz3ab6a2003d2spd7nqf02ax",
-      defaultContainerName: "map",
-      mapboxToken: "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ4anhrMSJ9.jRJCOGU1AOHfNXHH7cwU7Q",
-      maxZoom: 8, //max zoom level of map
-      attribution: "",
-      mapOptions: {
-        zoomControl: false,
-        maxZoom: 8
-      },
-      //marker cluster controls
-      doMarkerClustering: true,
-      showCoverageOnHover: false,
-      zoomToBoundsOnClick: true,
-      sizeRMin: 15,  //minimum radius of the proportional Symbols
-      sizeRMax: 100, // maximum radius of the proportional symbols
-      maxClusterRadius: 50,//maximum size of the cluster in screen pixels (spans all zoom levels),
-      clusterFill: 'steelblue',
-      markerFill: 'steelblue',
-      markerRadius: 6,
-      bearing: 0,
-      pitch: 0,
-      symbolColor: {
+      style: "mapbox://styles/sfarley2/ciz3ab6a2003d2spd7nqf02ax", //style of the map tiles
+      defaultContainerName: "map", //container where the map goes
+      mapboxToken: "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ4anhrMSJ9.jRJCOGU1AOHfNXHH7cwU7Q", //Mapbox.com API key
+      bearing: 0, //direction of map view
+      pitch: 0, //pitch of map view
+      symbolColor: { //symbol paint properties passed to mapbox/map.layer
         "property": "VariableUnits",
         "type": "categorical",
         "stops": [
@@ -34,14 +17,10 @@ defaultConfiguration = {
             ["MNI", "#e55e5e"]
         ]
     },
-      symbolRadius: 5,
-      popupTextFunction: function(d){
-        dsMeta = JSON.parse(d.properties.DatasetMeta)
-        html = "<h6>" + dsMeta.Site.SiteName + "</h6>"
-        html += "<a onclick='openSiteDetails(" + dsMeta.Site.SiteID + ")'>Details</a>"
-        return html
-      }
+      symbolRadius: 5 //size of the map points
     }, //end map
+
+    //where is the data stored
     dataSources: { //URIs of data used in AJAX calls
       taxa: "data/taxa.json", //customized file with names of taxa to improve performanc
       ecolGroups: "http://api.neotomadb.org/v1/dbtables/ecolGroupTypes?fields=EcolGroupID,EcolGroup", //names and ids of ecological groups in neotoma
@@ -49,7 +28,8 @@ defaultConfiguration = {
       datasets: "http://api.neotomadb.org/v1/data/datasets", //endpoint for dataset metadata
       sites: "http://api.neotomadb.org/v1/data/sites",//endpoint for site-level meta
       configStore: "http://grad.geography.wisc.edu:8080/mapConfigs",//where shared maps are stored
-      taxonInfo: "http://api.neotomadb.org/v1/data/taxa"
+      taxonInfo: "http://api.neotomadb.org/v1/data/taxa", //details about specific taxa
+      icesheets: "data/icesheets.json"//geojson representing paleoicesheets
     },
     searchGeoBounds: [-167, 5, -50, 90], //corresponds to the `loc` parameter in the Neotoma API
     searchAgeBounds: [-250, 22000], //corresponds to the ageYoung and ageOld parameters in the Neotoma API
@@ -82,61 +62,47 @@ defaultConfiguration = {
       abundanceBinSize: 1,//how big are the abundance bins in the analytics charts? --> TODO: this gets weird with mammal/pollen percent.
       altitudeBinSize: 500 //altitude bins --> meters
     },
+    //default colors of interface elements
     colors: {
-      tempCurve: 'red',
-      tempAgeHist: 'none',
-      annotations: '#9A9C9E'
+      tempCurve: 'red', //
+      tempAgeHist: 'none', //histogram below the tempCurve (invisible)
+      annotations: '#9A9C9E' //color of annotations on the temp curve
     },
-    doAnnotations: true,
-    baseURL: "iam.html"
+    doAnnotations: true, //should annotations about time periods be put into the tempCurve?
+    baseURL: "iam.html" //where does the *map* reside? e.g., what is this page?
   },//end config
 
   state : {//this holds all relevant info to be shared and saved.
     //variables go in here if they might be modified by the user during a session
-    sitePanel : { //left-hand panel configuration that holds details about the user-selected site
-      open: false, //is the panel open?
-      siteID: -1,//database ID of the site the user selected
-    },
-    timePanel :{ //bottom panel that contains temporal brushing and browsing
-      axis: 1, //multiple y-axes may be chosen, each with the same x-axis --> browsing is the same
-              //1. Greenland Northern Hemisphere Temprature
-              //2. Number of Samples per 500 Years --> histogram layout
-    },
-    time : { //temporal filter controls
-      minYear: -Infinity, //most recent year in current filter
-      maxYear: Infinity, //most distant year in current filter
-      interval: Infinity //the interval in years between min and max years, so the user can set only one of the above
-    },
     map : { //main map panel configuration
       center: [-90, 45], //center of the map
-      zoom: 7, //zoom level of map
-      showIce: true, //show the ice sheets during browsing
-      currentRMin: 0,
-      currentRMax: 0
-    },
-    analytics: { //right hand panel with analytics charts
-      open: false //is the panel open?,
+      zoom: 3, //current zoom level of map
+      pitch: 0, //current angle of the map
+      bearing: 0 //current direction of the map
     },
     layout: {
-      eastPanelIsOpen: true,
-      southPanelIsOpen: true,
-      westPanelIsOpen: false
+      eastPanelIsOpen: true, //is the analytics panel currently open?
+      southPanelIsOpen: true, //is the temperature curve panel currently open?
+      westPanelIsOpen: false //is the site panel currently open?
     },
     taxonsearch: null,
-    taxonid: 0,
-    taxonname: "",
-    doSearch: false,
-    openSite: false,
-    activeSiteID: null,
+    taxonid: 0, //Neotoma ID number of the taxon currently on the map
+    taxonname: "", //Name of the taxon currently on the map
+    doSearch: false, //should the query to neotoma be fired automatially? True if pre-configured with data from config or url param
+    openSite: false, //should the site panel be open?
+    activeSiteID: null, //ID number of the site currently open in the sitePanel
+    activeSite: {}, //details of the site currently open in the sitePanel
+    //active filters currently applied to the map
     filters: {
-      age: null,
-      latitude: null,
-      altitude: null,
-      investigator: null,
-      recordType: null,
-      singleSite: null,
-      abundance: null
+      age: null, //years BP (will be array of [min, max])
+      latitude: null, //degrees north ([min, max])
+      altitude: null, //meters a.s.l ([min, max])
+      investigator: null, //name of investigator (array of names)
+      recordType: null, //type of sample record (array of types )
+      singleSite: null, //list of siteIDs to be filtered
+      abundance: null //relative abundance filter ([min, max])
     },
-   searchSwitch: "browse"
+   searchSwitch: "browse", //is the query to neotoma a search or a browse? if search, query neotoma for taxonname, so wildcards are permitted, else query for taxonid
+   shareToken: "" //share token to recreate this configuration
   }//end state
 } //end default configuration
