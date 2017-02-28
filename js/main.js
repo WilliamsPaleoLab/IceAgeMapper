@@ -77,6 +77,62 @@ function initialize(){
   createMap() //create the map in the center div
   enableMapViewLogging() //put an event listener on the map view
   drawNHTempCurve() //draw the greenland ice core record in the bottom panel.
+  loadIceSheets() //load the ice sheet data file
+}
+
+function loadIceSheets(){
+  $.ajax("data/icesheets.json", {
+    success: function(d){
+      // t= JSON.parse(d)
+      globals.data.icesheets = d
+      ages = globals.data.icesheets.features.map(function(d){
+        return d.properties.Age
+      })
+      globals.data.iceTimeSlices = _.uniq(ages)
+      console.log(globals.data.iceTimeSlices)
+      styleIceSheets();
+    },
+    error: function(xhr, status, error){
+      console.log(xhr)
+      console.log(status)
+      console.log(error)
+    },
+    beforeSend: function(d){
+      console.log("Sending ice sheets request!")
+    }
+  })
+}
+
+function styleIceSheets(){
+  if (globals.map != undefined){
+    if (globals.map.loaded()){
+      console.log("adding now.")
+        addIceSheetsToMap()
+    }else{
+      globals.map.on('load', function(){
+        console.log("adding later")
+        addIceSheetsToMap();
+      })
+    }
+  }
+}
+
+function addIceSheetsToMap(){
+  globals.map.addSource('icesheets', {
+    type: "geojson",
+    data: globals.data.icesheets
+  })
+  globals.map.addLayer({
+    'id': "icesheets",
+    'type': "fill-extrusion",
+    'source': "icesheets",
+    'paint': {
+        'fill-extrusion-color': 'white',
+        'fill-extrusion-height': 10000,
+        'fill-extrusion-base': 0,
+        'fill-extrusion-opacity': 0.75
+    }
+  })
 }
 
 
@@ -647,7 +703,9 @@ function createAnalyticsCharts(){
       .yAxisLabel("Frequency")
       .on('filtered', function(chart, filter){
           globals.state.filters.age = filter
-          // filterIceSheets()
+          maxAge = Math.max(filter)
+          console.log(maxAge)
+          filterIceSheets(maxAge)
       })
 
   globals.elements.abundanceChart = dc.barChart("#abundanceChart")
@@ -770,10 +828,18 @@ function getDatasets(callback){
   })
 }
 
-// function filterIceSheets(){
-//   sheets = globals.map.getLayer('icesheets')
-//   console.log(sheets)
-// }
+function filterIceSheets(age){
+  console.log(age)
+  closestSlice = globals.data.iceTimeSlices.closest(age)
+
+  globals.map.setFilter('icesheets', ['==', 'Age', closestSlice])
+}
+
+function getUniqueAges(){
+  u = _.unique(globals.data.icesheets.features, function(d){return d.properties.a})
+  // m = _.pluck(u, function(d){return d.properties.a})
+  return u
+}
 
 function mergeMeta(){
   for (var i=0; i < globals.data.occurrences.length; i++){
@@ -881,8 +947,13 @@ function drawNHTempCurve(){
         }
 
       })
-      .on('filtered', function(d){
-        // filterIceSheets()
+      .on('filtered', function(chart, filter){
+        console.log(filter)
+        if (filter.length > 0){
+          globals.state.filters.age = filter
+          maxAge = filter[1] * 1000
+          filterIceSheets(maxAge)
+        }
       })
 
       globals.elements.tChart.render()
@@ -1153,4 +1224,18 @@ function doOpenSitePanel(){
     }, 1000); //end timeout
 
   }
+}
+
+Array.prototype.closest =  function  (num) {
+  arr = this
+  var curr = arr[0];
+  var diff = Math.abs (num - curr);
+  for (var val = 0; val < arr.length; val++) {
+      var newdiff = Math.abs (num - arr[val]);
+      if (newdiff < diff) {
+          diff = newdiff;
+          curr = arr[val];
+      }
+  }
+  return curr;
 }
