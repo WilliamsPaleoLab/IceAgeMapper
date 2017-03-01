@@ -223,3 +223,7 @@ tr:hover {background-color: #00b3b3}
   left: 0px;
   z-index: 100000000000000;
 }
+
+.right{
+  float: right;
+}

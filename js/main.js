@@ -816,14 +816,14 @@ function getDatasets(callback){
 }
 
 function filterIceSheets(age){
-  closestSlice = globals.data.iceTimeSlices.closest(age)
-  if (globals.map.loaded()){
-      globals.map.setFilter('icesheets', ['==', 'Age', closestSlice])
-  }else{
-    globals.map.on('load', function(){
-      globals.map.setFilter('icesheets', ['==', 'Age', closestSlice])
-    })
-  }
+  // closestSlice = globals.data.iceTimeSlices.closest(age)
+  // if (globals.map.loaded()){
+  //     globals.map.setFilter('icesheets', ['==', 'Age', closestSlice])
+  // }else{
+  //   globals.map.on('load', function(){
+  //     globals.map.setFilter('icesheets', ['==', 'Age', closestSlice])
+  //   })
+  // }
 }
 
 function mergeMeta(){
@@ -1226,3 +1226,15 @@ Array.prototype.closest =  function  (num) {
   }
   return curr;
 }
+
+
+$("#resetButton").click(function(e){
+  dc.filterAll();
+  dc.renderAll();
+  globals.elements.tChart.filter(null)
+  setTimeout(
+    function(d){globals.elements.mapChart.filter(null);
+      globals.elements.mapChart.render();
+      globals.elements.mapChart.doFilter();
+  },500);
+})
