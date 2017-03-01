@@ -1231,10 +1231,5 @@ Array.prototype.closest =  function  (num) {
 $("#resetButton").click(function(e){
   dc.filterAll();
   dc.renderAll();
-  globals.elements.tChart.filter(null)
-  setTimeout(
-    function(d){globals.elements.mapChart.filter(null);
-      globals.elements.mapChart.render();
-      globals.elements.mapChart.doFilter();
-  },500);
+  globals.elements.mapChart.clearFilter();
 })

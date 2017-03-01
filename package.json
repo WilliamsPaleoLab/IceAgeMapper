@@ -12,9 +12,10 @@
     "protractor": "protractor e2e-tests/protractor.conf.js"
   },
   "dependencies": {
-    "karma": "latest",
-    "protractor": "latest",
     "bower": "latest",
+    "karma": "latest",
+    "mochawesome": "^2.0.4",
+    "protractor": "latest",
     "require": "latest"
   },
   "repository": {
