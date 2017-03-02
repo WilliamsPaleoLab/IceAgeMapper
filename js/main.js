@@ -8,22 +8,22 @@
 
 console.log("Welcome to Ice Age Mapper.\n\tRunning script version 2.1.\n\tLead Author: Scott Farley\n\tUniversity of Wisconsin, Madison")
 
-function loadTaxa(callback){
-  //loads the taxa file specified in the configuration object
-  //runs the callback specified in the arguments
-  $.getJSON(globals.config.dataSources.taxa, function(data){
-    globals.data.taxa = data
-    callback(data)
-  })
-}
+// function loadTaxa(callback){
+//   //loads the taxa file specified in the configuration object
+//   //runs the callback specified in the arguments
+//   $.getJSON(globals.config.dataSources.taxa, function(data){
+//     globals.data.taxa = data
+//     callback(data)
+//   })
+// }
 
-function loadEcolGroups(callback){
-  //load the ecological groups from the file specified in the configuration object
-  $.getJSON(globals.config.dataSources.ecolGroups, function(data){
-    globals.data.ecolGroups = data['data']
-    callback(data )
-  })
-}
+// function loadEcolGroups(callback){
+//   //load the ecological groups from the file specified in the configuration object
+//   $.getJSON(globals.config.dataSources.ecolGroups, function(data){
+//     globals.data.ecolGroups = data['data']
+//     callback(data )
+//   })
+// }
 
 function populateEcolGroupDropdown(){
   //populate the ecological groups dropdown menu
@@ -80,28 +80,28 @@ function initialize(){
   // loadIceSheets() //load the ice sheet data file
 }
 
-function loadIceSheets(){
-  $.ajax("data/icesheets.json", {
-    success: function(d){
-      // t= JSON.parse(d)
-      globals.data.icesheets = d
-      ages = globals.data.icesheets.features.map(function(d){
-        return d.properties.Age
-      })
-      globals.data.iceTimeSlices = _.uniq(ages)
-      console.log(globals.data.iceTimeSlices)
-      addIceSheetsToMap();
-    },
-    error: function(xhr, status, error){
-      console.log(xhr)
-      console.log(status)
-      console.log(error)
-    },
-    beforeSend: function(d){
-      console.log("Sending ice sheets request!")
-    }
-  })
-}
+// function loadIceSheets(){
+//   $.ajax("data/icesheets.json", {
+//     success: function(d){
+//       // t= JSON.parse(d)
+//       globals.data.icesheets = d
+//       ages = globals.data.icesheets.features.map(function(d){
+//         return d.properties.Age
+//       })
+//       globals.data.iceTimeSlices = _.uniq(ages)
+//       console.log(globals.data.iceTimeSlices)
+//       addIceSheetsToMap();
+//     },
+//     error: function(xhr, status, error){
+//       console.log(xhr)
+//       console.log(status)
+//       console.log(error)
+//     },
+//     beforeSend: function(d){
+//       console.log("Sending ice sheets request!")
+//     }
+//   })
+// }
 
 function addIceSheetsToMap(){
   globals.map.addSource('icesheets', {
@@ -136,75 +136,75 @@ function enableMapViewLogging(){
   })
 }
 
-function getTaxonInfo(){
-  if (globals.state.searchSwitch == "browse"){
-    query = "?taxonid=" + globals.state.taxonid
-  }else if (globals.state.searchSwitch == "search"){
-    query = "?taxonname=" + globals.state.taxonname
-  }
-  endpoint = globals.config.dataSources.taxonInfo + query
-  $.getJSON(endpoint, function(data){
-    globals.data.taxonInfo = data.data
-  })
-}
+// function getTaxonInfo(){
+//   if (globals.state.searchSwitch == "browse"){
+//     query = "?taxonid=" + globals.state.taxonid
+//   }else if (globals.state.searchSwitch == "search"){
+//     query = "?taxonname=" + globals.state.taxonname
+//   }
+//   endpoint = globals.config.dataSources.taxonInfo + query
+//   $.getJSON(endpoint, function(data){
+//     globals.data.taxonInfo = data.data
+//   })
+// }
 
 
-function getOccurrenceData(callback){
-  //make an AJAX call to Neotoma API
-  //get SampleData for the taxon specified by the user
-  //use the name in the search bar (if globals.config.searchSwitch is in search mode)
-  //or the id in the selected dropdown option (if the searchSwitch is in browse mode)
-  console.log("Getting occurrences")
-  endpoint = globals.config.dataSources.occurrences
-  console.log(globals.state.searchSwitch)
-  if (globals.state.searchSwitch == "browse"){
-    //this is browse mode
-    //the user was using the browse dropdowns
-    query = "?taxonids=" + globals.state.taxonid
-    globals.state.taxonsearch = globals.state.taxonid
-    console.log(query)
-  }else if(globals.state.searchSwitch == "search"){
-    //this is search mode
-    //the user was using the search text entry
-    //use the text instead of the id to support wildcard characters
-    query = "?taxonname=" + globals.state.taxonname
-    console.log(query)
-    globals.state.taxonsearch = globals.state.taxonname
-  }
-  endpoint += query
-  //limit to bounding box set in configuration object
-  endpoint += "&loc=" + globals.config.searchGeoBounds[0] + "," + globals.config.searchGeoBounds[1] + "," + globals.config.searchGeoBounds[2] + "," + globals.config.searchGeoBounds[3]
-  //limit to ages set in configuration object
-  endpoint += "&ageold=" + globals.config.searchAgeBounds[1]
-  endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
-  console.log(endpoint)
-  Pace.restart()
-  $.ajax(endpoint, {
-    // xhr: function(xhr){
-    //   console.log(xhr)
-    // },
-    success: function(data){
-      //on success of Neotoma query
-      //check to make sure Neotoma returned okay, often it doesn't
-      console.log("Got occurrences")
-      if (data['success']){
-        globals.data.occurrences = data['data']
-        toastr.success("Received " + data['data'].length + " occurrences from Neotoma.", "Occurrences Received.")
-        callback(null)
-      }else{
-          toastr.error("Unexpected Neotoma Server Error. It's their fault. Please come back later.", "Server Error")
-          console.log(data)
-          callback(null)
-      }
-    },
-    error: function(xhr, status, error){
-      toastr.error("Fatal ajax call.")
-      console.log(xhr)
-      console.log(status)
-      console.log(error)
-    }
-  })
-}
+// function getOccurrenceData(callback){
+//   //make an AJAX call to Neotoma API
+//   //get SampleData for the taxon specified by the user
+//   //use the name in the search bar (if globals.config.searchSwitch is in search mode)
+//   //or the id in the selected dropdown option (if the searchSwitch is in browse mode)
+//   console.log("Getting occurrences")
+//   endpoint = globals.config.dataSources.occurrences
+//   console.log(globals.state.searchSwitch)
+//   if (globals.state.searchSwitch == "browse"){
+//     //this is browse mode
+//     //the user was using the browse dropdowns
+//     query = "?taxonids=" + globals.state.taxonid
+//     globals.state.taxonsearch = globals.state.taxonid
+//     console.log(query)
+//   }else if(globals.state.searchSwitch == "search"){
+//     //this is search mode
+//     //the user was using the search text entry
+//     //use the text instead of the id to support wildcard characters
+//     query = "?taxonname=" + globals.state.taxonname
+//     console.log(query)
+//     globals.state.taxonsearch = globals.state.taxonname
+//   }
+//   endpoint += query
+//   //limit to bounding box set in configuration object
+//   endpoint += "&loc=" + globals.config.searchGeoBounds[0] + "," + globals.config.searchGeoBounds[1] + "," + globals.config.searchGeoBounds[2] + "," + globals.config.searchGeoBounds[3]
+//   //limit to ages set in configuration object
+//   endpoint += "&ageold=" + globals.config.searchAgeBounds[1]
+//   endpoint += "&ageyoung="+globals.config.searchAgeBounds[0]
+//   console.log(endpoint)
+//   Pace.restart()
+//   $.ajax(endpoint, {
+//     // xhr: function(xhr){
+//     //   console.log(xhr)
+//     // },
+//     success: function(data){
+//       //on success of Neotoma query
+//       //check to make sure Neotoma returned okay, often it doesn't
+//       console.log("Got occurrences")
+//       if (data['success']){
+//         globals.data.occurrences = data['data']
+//         toastr.success("Received " + data['data'].length + " occurrences from Neotoma.", "Occurrences Received.")
+//         callback(null)
+//       }else{
+//           toastr.error("Unexpected Neotoma Server Error. It's their fault. Please come back later.", "Server Error")
+//           console.log(data)
+//           callback(null)
+//       }
+//     },
+//     error: function(xhr, status, error){
+//       toastr.error("Fatal ajax call.")
+//       console.log(xhr)
+//       console.log(status)
+//       console.log(error)
+//     }
+//   })
+// }
 
 function processNeotomaData(){
   internalID = 0
@@ -643,19 +643,19 @@ function createLayout(){
       }
     });
 }
+//
+// function updateMapSize(){
+//   //re-render the map when panel size changes
+//   if (globals.map != undefined){
+//     globals.map.resize();
+//   }else{
+//     globals.map.on('load', function(){
+//         globals.map.resize();
+//     })
+//   }
+// }
 
-function updateMapSize(){
-  //re-render the map when panel size changes
-  if (globals.map != undefined){
-    globals.map.resize();
-  }else{
-    globals.map.on('load', function(){
-        globals.map.resize();
-    })
-  }
-}
-
-$(window).on('resize', updateMapSize)
+// $(window).on('resize', updateMapSize)
 
 
 function createAnalyticsCharts(){
