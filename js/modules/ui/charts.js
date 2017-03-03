@@ -1,15 +1,15 @@
-var analyticsCharts = {
-  this.abundanceChart,
-  this.latitudeChart,
-  this.ageChart,
-  this.investigatorChart,
-  this.recordTypeChart,
-  this.temperatureChart,
-  this.sumamryChart,
+var analyticsCharts = (function(){
 
+  var latitudeChart,
+      ageChart,
+      bubbleChart,
+      abundanceChart,
+      PIChart,
+      recordTypeChart,
+      temperatureChart;
 
   //constructor function for a dc bar chart
-  createBarChart = function(el, xlab, ylab, filterEvent, height, width, margins, elasticY, brushOn){
+  var analyticsBarChart = function(el, xlab, ylab, filterEvent, height, width, margins, elasticY, brushOn){
     if (el === undefined){
       throw "Element must be defined!"
       return false
@@ -38,7 +38,7 @@ var analyticsCharts = {
       var brushOn = true;
     }
 
-    _chart = dc.barChart(el)
+    this._chart = dc.barChart(el)
       .width(width)
       .height(height)
       .margins(margins)
@@ -47,15 +47,13 @@ var analyticsCharts = {
       .yAxisLabel(ylab)
 
     if (filterEvent != undefined){
-      _chart.on('filtered', function(chart, filter){
-          filterEvent
-      })
+      _chart.on('filtered', filterEvent)
     }
-    return _chart
-  }, //end create bar chart function
+    return this._chart
+  }; //end create bar chart function
 
   //constructor function for a dc bar chart
-  createPIChart = function(el, filterEvent, height, width, margins){
+  var analyticsPieChart = function(el, filterEvent, height, width, margins){
     if (el === undefined){
       throw "Element must be defined!"
       return false
@@ -70,179 +68,144 @@ var analyticsCharts = {
       var margins = {bottom: 30, top: 10, left: 30, right: 25}
     }
 
-    _chart = dc.piChart(el)
+    this._chart = dc.pieChart(el)
       .width(width)
       .height(height)
-      .margins(margins)
-      .elasticY(elasticY)
-      .xAxisLabel(xlab)
-      .yAxisLabel(ylab)
 
     if (filterEvent != undefined){
-      _chart.on('filtered', function(chart, filter){
-          filterEvent
-      })
+      _chart.on('filtered', filterEvent)
     }
-    return _chart
-  }, //end create bar chart function
+    return this._chart
+  }; //end create pie chart function
+  //
+  var temperatureChart = function(data,
+                                  el,
+                                  xLab,
+                                  yLab,
+                                  filterEvent,
+                                  xDomain,
+                                  yDomain,
+                                  height,
+                                  width,
+                                  margins){
+        //draws the greenland ice core temperature curve
+        if (data === undefined){
+          throw "Data is a required argument"
+        }
+        if (el === undefined){
+          throw "Element must be defined!"
+        }
+        if (xLab === undefined){
+          throw "X axis label must be defined!"
+        }
+        if(yLab === undefined){
+          throw "Y axis must be defined!"
+        }
+        if (height == undefined){
+          height = $(el).height();
+        }
+        if(width === undefined){
+          width = $(el).width();
+        }
+        if (margins === undefined){
+          margins = {bottom:30,left:50,right:10,top:10}
+        }
+        if(xDomain === undefined){
+          xDomain = [0, 22]
+        }
+        if(yDomain === undefined){
+          yDomain = d3.extent(data, function(d){return +d.TempC})
+        }
 
+      this._chart = dc.barChart(el)
+            .width(width)
+            .height(height)
+            .x(d3.scale.linear().domain(xDomain))
+            .margins(margins)
+            .y(d3.scale.linear().domain(yDomain))
+            .brushOn(false)
+            .yAxisLabel(yLab, 25)
+            .xAxisLabel(xLab)
+            .on('renderlet', function(chart) {
+                var tempLineFn = d3.svg.line()
+                      .x(function(d) { return chart.x()(+d.Age); })
+                      .y(function(d) { return chart.y()(+d.TempC); })
+                      //get drawing context
+                      var chartBody = chart.select('g.chart-body');
+                      var path = chartBody.selectAll('path').data([data]);
+                      path.enter()
+                        .append('path')
+                        .attr('d', globals.tempLineFn )
+                        .style('fill', 'none')
+                        .style('stroke', config.colors.tempCurve)
 
+            // add annotations
+            if (config.doAnnotations){
+              annotateTempChart(chartBody, chart)
+            }
+          }) // end renderlet
+
+          if (filterEvent != undefined){
+            this._chart.on('filtered', filterEvent)
+          }
+          globals.elements.tChart.render()
+    };
+
+  var annotateTempChart = function(chartBody, chart){
+      chartBody.selectAll("text").remove()
+      chartBody.append('text')
+        .attr('x', chart.x()(18))
+        .attr('y', chart.y()(-40))
+        .attr('text-anchor', 'middle')
+        .text("Deglaciation")
+        .style('fill', config.colors.annotations)
+
+        chartBody.append('text')
+          .attr('x', chart.x()(14.7))
+          .attr('y', chart.y()(-31.7))
+          .attr('text-anchor', 'middle')
+          .text("Bolling Allerod")
+          .style('fill', config.colors.annotations)
+
+          chartBody.append('text')
+            .attr('x', chart.x()(8))
+            .attr('y', chart.y()(-40))
+            .attr('text-anchor', 'end')
+            .text("The Holocene")
+            .style('fill', config.colors.annotations)
+
+        chartBody.append('text')
+          .attr('x', chart.x()(0))
+          .attr('y', chart.y()(-34))
+          .attr('text-anchor', 'begin')
+          .text("Today")
+          .style('fill', config.colors.annotations)
+  }
 
 
   //chart creation functions
 
-  createLatitudeChart = function(el, filterEvent, height, width, margins){
-    this.latitudeChart =
-    return this.latitudeChart
-  }, // end latitude creation function
-
-
-  createAgeChart = function(el, filterEvent, height, width, margins){
-    if (height === undefined){
-      var height = $(el).height();
-    }
-    if(width === undefined){
-      var width = $(el).width();
-    }
-    if(margins === undefined){
-      var margins = {bottom: 30, top: 10, left: 30, right: 25}
-    }
-
-    this.ageChart = dc.barChart(el)
-        .width(width)
-        .height(height)
-        .margins(margins)
-        .elasticY(true)
-        .xAxisLabel("kya")
-        .yAxisLabel("Frequency")
-
-    if (filterEvent != undefined){
-      this.ageChart.on('filtered', filterEvent)
-    }
-
-    return this.ageChart
-  }, //end of age chart create function
-
-  createAbundanceChart = function(el, filterEvent, height, width, margins){
-    if (height === undefined){
-      var height = $(el).height();
-    }
-    if(width === undefined){
-      var width = $(el).width();
-    }
-    if(margins === undefined){
-      var margins = {bottom: 30, top: 10, left: 30, right: 25}
-    }
-
-    this.abundanceChart = dc.barChart(el)
-        .width(width)
-        .height(height)
-        .margins(margins)
-        // .brushOn(true)
-        .elasticY(true)
-        .xAxisLabel("Relative Abundance")
-        .yAxisLabel("Frequency")
-
-    if (filterEvent != undefined){
-      this.abundanceChart.on('filtered', filterEvent)
-    }
-
-    return this.abundanceChart
-  }, // end of create abundanceChart
-
-  createInvestigatorChart = function(el, filterEvent, height, width, margins){
-    if (height === undefined){
-      var height = $(el).height();
-    }
-    if(width === undefined){
-      var width = $(el).width();
-    }
-    if(margins === undefined){
-      var margins = {bottom: 30, top: 10, left: 30, right: 25}
-    }
-
-    globals.elements.PIChart = dc.pieChart("#PIChart")
-        .width($("#PIChart").width())
-        .height($("#PIChart").height())
-        .innerRadius(25)
-        .renderLabel(false)
-        .on('filtered', function(chart, filter){
-            globals.state.filters.PI = filter
-        })
-
-    if (filterEvent != undefined){
-      this.abundanceChart.on('filtered', filterEvent)
-    }
-
-    return this.abundanceChart
-  }, // end of create abundanceChart
-
-
-
-
-    globals.elements.PIChart = dc.pieChart("#PIChart")
-        .width($("#PIChart").width())
-        .height($("#PIChart").height())
-        .innerRadius(25)
-        .renderLabel(false)
-        .on('filtered', function(chart, filter){
-            globals.state.filters.PI = filter
-        })
-
-
-    globals.elements.recordTypeChart = dc.pieChart("#recordTypeChart")
-        .width($("#recordTypeChart").width())
-        .height($("#recordTypeChart").height())
-        .innerRadius(25)
-        .slicesCap(17)
-        .renderTitle(true)
-        .renderLabel(false)
-        .on('filtered', function(chart, filter){
-            globals.state.filters.recordType = filter
-        })
-
-    //radius scale for bubble chart
-    rScale = d3.scale.linear()
-      .domain([0, 150])
-      .range([0, 25])
-
-
-    globals.elements.bubbleChart = dc.bubbleChart("#alt-lat-Chart")
-      .width($("#alt-lat-Chart").width())
-      .height($("#alt-lat-Chart").height())
-      .margins({top: 20, right: 10, bottom: 30, left: 40})
-      .colors('rgba(167, 167, 167, 0.25)')
-      // .brushOn(true)
-      .keyAccessor(function (p) {
-          return p.value.latitude_average;
-      })
-      .valueAccessor(function (p) {
-          return p.value.altitude_average;
-      })
-      .radiusValueAccessor(function (p) {
-        v = rScale(p.value.value_average)
-          return v;
-      })
-      // .colorAccessor(function (p) {
-      //     return p.value.age_average;
-      // })
-      .elasticY(true)
-      .yAxisPadding(10)
-      .xAxisPadding(10)
-      .label(function (p) {
-          return p.key;
-          })
-      .renderTitle(true)
-      .renderLabel(false)
-      .xAxisLabel("Latitude")
-      .yAxisLabel("Altitude")
-      .on('filtered', function(chart, filter){
-          globals.state.filters.singleSite = filter
-      })
-
-      globals.elements.taxaTable = dc.dataTable("#data-table")
-      .height(100)
-      .width(200)
-
+  var initializeAnalytics = function(){
+    this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency");
+    this.ageChart = new analyticsBarChart("#ageChart", "Age (kya)", "Frequency");
+    this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency");
+    this.PIChart = new analyticsPieChart("#PIChart");
+    this.recordTypeChart = new analyticsPieChart("#recordTypeChart")
+    return this
   }
-}
+
+  var initializeTemperatureChart = function(data){
+    this.temperatureChart = new temperatureChart(data, "#temperatureChart", "Age (kya)", "Mean Temperature")
+  }
+
+  return {
+    latitudeChart: latitudeChart,
+    ageChart: ageChart,
+    abundanceChart: abundanceChart,
+    PIChart: PIChart,
+    recordTypeChart: recordTypeChart,
+    initializeAnalytics: initializeAnalytics,
+    temperatureChart: temperatureChart,
+    initializeTemperatureChart: initializeTemperatureChart
+  }
+})();
