@@ -209,3 +209,5 @@ var analyticsCharts = (function(){
     initializeTemperatureChart: initializeTemperatureChart
   }
 })();
+
+module.exports = analyticsCharts;

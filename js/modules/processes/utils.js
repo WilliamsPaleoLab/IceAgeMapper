@@ -39,19 +39,68 @@ var utils = (function(){
       author: author,
       organization: org,
       mapTitle: mapTitle,
-      mapDesc: mapDesc
+      mapDescription: mapDesc
     }
   };
 
+  //validate the map metaddata to ensure it's got the required elements
   function validateShareMapMetadata(metadata){
+    response = {
+      valid: false,
+      failed: []
+    }
+    if (config.validationRules.authorRequired){
+      if ((metadata.author === undefined) || (metadata.author == "") || (metadata.author == null)){
+        response.failed.push("Author")
+      }
+    };
+    if (config.validationRules.organizationRequired){
+      if ((metadata.organization === undefined) || (metadata.organization == "") || (metadata.organization == null)){
+        response.failed.push("Organization")
+      }
+    };
+    if (config.validationRules.titleRequired){
+      if ((metadata.mapTitle === undefined) || (metadata.mapTitle == "") || (metadata.mapTitle == null)){
+        response.failed.push("Title")
+      }
+    };
+    if (config.validationRules.descriptionRequired){
+      if ((metadata.mapDescription === undefined) || (metadata.mapDescription == "") || (metadata.mapDescription == null)){
+        response.failed.push("Description")
+      }
+    };
+    if (response.failed.length == 0){
+      response.valid = 0
+    }
+    return response
+  }
 
+
+  //generate the GET request URL for the shared map
+  function createShareLink(metadata, host){
+    if (host === undefined){
+      host = config.dataSources.configStore;
+    }
+    author = encodeURIComponent(metadata.author)
+    org = encodeURIComponent(metadata.organization)
+    title = encodeURIComponent(metadata.mapTitle)
+    desc = encodeURIComponent(metadata.mapDescription)
+
+    uri = host + "?author=" + author + "&organization=" + org + "&title=" + title + "&description=" + desc
+    return uri
   }
 
 
   return {
     getParameterByName: getParameterByName,
-    lookupSamples:lookupSample,
-    lookupSite: lookupSite
+    lookupSamples:lookupSamples,
+    lookupSite: lookupSite,
+    createShareLink: createShareLink,
+    validateShareMapMetadata: validateShareMapMetadata,
+    getShareMapMetadata: getShareMapMetadata
   }
 
 })();//end utils module
+
+
+module.exports = utils;

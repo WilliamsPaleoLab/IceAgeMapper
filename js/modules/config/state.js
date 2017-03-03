@@ -34,3 +34,5 @@ var state  =  (function(){
    shareToken: "" //share token to recreate this configuration
   }
 })();//end state
+
+module.exports = state;

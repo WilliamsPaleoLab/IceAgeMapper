@@ -162,48 +162,32 @@ var io = (function(){
     })
   };
 
-  //serialize the state and send it to the server 
-  function sendShareRequest(){
+  //serialize the state and send it to the server
+  function sendShareRequest(callback){
     //post the share request to the server
     //return the shareid
 
     //this is the map configuration
+    //as an ajax payload
     dat = {
-      config: globals.config,
-      state: globals.state
+      config: config,
+      state: state
     }
     datString = JSON.stringify(dat)
 
-    //get metadata
-    author = $("#authorName").val();
-    org = $("#authorOrg").val();
-    mapTitle = $("#mapTitle").val();
-    mapDesc = $("#mapDescription").val();
+    //get the metadata and validate it from the form
+    metadata = utils.getShareMapMetadata();
+    isValid = utils.validateShareMapMetadata(metadata);
 
-    if (author == ""){
-      toastr.warning("Please enter your name as the map author!")
-      return
-    }
-    if(org == ""){
-      //not required at this time
-      org = null
-    }
-    if(mapTitle == ""){
-      toastr.warning("Please enter a title for your map!")
-      return
-    }
-    if(mapDesc == ""){
-      //not required at this time
-      mapDesc = null
+    if (!isValid){
+      UIUtils.failShareValidation();
+      return;
     }
 
-    host = globals.config.dataSources.configStore + "?author=" + encodeURIComponent(author) + "&organization=" + encodeURIComponent(org)
-    host += "&title=" + encodeURIComponent(mapTitle) + "&description=" + encodeURIComponent(mapDesc)
-
-    console.log(host)
+    uri = createShareLink(metadata)
 
     //send the request
-    $.ajax(host, {
+    $.ajax(uri, {
       beforeSend: function(){
         console.log("Sharing your map.")
       },
@@ -212,21 +196,10 @@ var io = (function(){
       dataType: "json",
       contentType: "application/json",
       success: function(data){
-        console.log("Success!")
-        if (data.success){
-          toastr.success("Configuration Storage Complete!")
-          hash = data['configHash']
-          urlString = globals.config.baseURL +"?shareToken="+ hash
-          globals.state.shareToken = hash
-          $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
-        }else{
-          toastr.error("Failed to share map.")
-        }
+        callback(data)
       },
       error: function(xhr, status,err){
-        console.log(xhr)
-        console.log(status)
-        console.log(err)
+        console.log(xhr.responseText)
       }
     })
   }
@@ -241,3 +214,5 @@ var io = (function(){
     getDatasets: getDatasets
   }
 })(); //end io module
+
+module.exports = io;

@@ -1,0 +1,38 @@
+{
+  "name": "iceagemapper",
+  "homepage": "https://github.com/scottsfarley93/IceAgeMapper",
+  "authors": [
+    "Scott Farley <sfarley2@wisc.edu>"
+  ],
+  "description": "Exploring ecological change since the last glacial maximum",
+  "main": "js/main.js",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "jquery": "3",
+    "bootstrap": "~3.3",
+    "d3": "~3",
+    "jquery-ui": "latest",
+    "underscore": "latest",
+    "jquery-layout": "latest",
+    "toastr": "latest",
+    "d3-queue": "latest",
+    "awesomplete": "latest",
+    "crossfilter": "latest",
+    "dcjs": "latest",
+    "pace": "latest",
+    "mapbox-gl-js": "https://github.com/mapbox/mapbox-gl-js"
+  },
+  "browserify": {
+  "transform": [
+    "debowerify"
+  ]
+},
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

@@ -75,6 +75,14 @@ var config  = (function(){
       annotations: '#9A9C9E' //color of annotations on the temp curve
     },
     doAnnotations: true, //should annotations about time periods be put into the tempCurve?
-    baseURL : "iam.html" //where does the *map* reside? e.g., what is this page?
+    baseURL : "iam.html", //where does the *map* reside? e.g., what is this page?
+    validationRules: {
+      authorRequired: true,
+      titleRequired: true,
+      descriptionRequired: true,
+      organizationRequired: true
+    }
   }
 })(); //end configuration
+
+module.exports =  config;
