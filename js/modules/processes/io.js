@@ -1,4 +1,6 @@
 //functions to deal with data loading and communication with the server(s)
+var d3 = require('d3');
+
 var io = (function(){
 
   //get a saved map configuration from the server
@@ -155,7 +157,7 @@ var io = (function(){
     })
   };
 
-  var getTemperatureData = function(callback){
+  var getTemperatureData = function(config, callback){
     d3.csv(config.dataSources.NHTemp, function(err, data){
       if (err) throw err;
       callback(data)
@@ -211,7 +213,8 @@ var io = (function(){
     loadEcolGroups: loadEcolGroups,
     loadIceSheets: loadIceSheets,
     getConfiguration: getConfiguration,
-    getDatasets: getDatasets
+    getDatasets: getDatasets,
+    getTemperatureData: getTemperatureData
   }
 })(); //end io module
 
