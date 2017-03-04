@@ -1,0 +1,43 @@
+{
+  "name": "iceagemapper",
+  "version": "1.0.0",
+  "description": "Geovisualization application for data in the Neotoma Paleoecological Database, designed for hypothesis generation and exporation.   Developed at University of Wisconsin, Madison Geography.",
+  "main": "js/modules/static/bundle.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scottsfarley93/IceAgeMapper.git"
+  },
+  "dependencies": {
+    "d3": "3",
+    "jquery": "3",
+    "bootstrap": "~3.3",
+    "d3": "~3",
+    "jquery-ui": "latest",
+    "jquery-ui-bundle": "latest",
+    "underscore": "latest",
+    "jquery-layout": "latest",
+    "toastr": "latest",
+    "d3-queue": "latest",
+    "awesomplete": "latest",
+    "crossfilter": "latest",
+    "dc": "latest",
+    "pace": "latest",
+    "mapbox-gl": "latest"
+  },
+  "author": "Scott Farley",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/scottsfarley93/IceAgeMapper/issues"
+  },
+  "homepage": "https://github.com/scottsfarley93/IceAgeMapper#readme",
+  "devDependencies": {
+    "browserify": "^14.1.0",
+    "browserify-shim": "^3.8.13"
+  }
+}

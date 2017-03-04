@@ -30,7 +30,7 @@ html, body{
 }
 
 .ui-layout-toggler-south {
-  display: none;
+  /*display: none;*/
 }
 .ui-layout-resizer-west {
   border-width:			0 1px;
@@ -101,6 +101,7 @@ margin-bottom: 0px;
   left: 0px;
   opacity: 50%;
   z-index: 1999;
+  visibility: hidden;
 }
 
 .cover-full{

@@ -1,15 +1,22 @@
-console.log("Welcome to Ice Age Mapper (Version 2.2)\n\tAuthor: Scott Farley \n\t University of Wisconsin")
+//This is Ice Age Mapper Version 2.1
+
+console.log("Welcome to Ice Age Mapper (Version 2.2)\n\tAuthor: Scott Farley \n\tUniversity of Wisconsin")
 
 //load external libraries and frameworks
-var jquery = jQuery = $ = require("./../../bower_components/jquery/dist/jquery.min.js");
-var _ = require("./../../bower_components/underscore/underscore-min.js");
-var crossfilter = require("./../../bower_components/crossfilter/crossfilter.min.js");
-var d3 = require("./../../bower_components/d3/d3.min.js");
-var queue = require("./../../bower_components/d3-queue/d3-queue.js");
-var crossfilter = require("./../../bower_components/crossfilter/crossfilter.min.js");
-var awesomplete = require("./../../bower_components/awesomplete/awesomplete.min.js");
-// var dc = require("./../../bower_components/dcjs/dc.min.js");
-
+var $ = jQuery = jquery = require("jquery");
+global.jQuery = window.$ = window.jQuery = $;
+var bootstrap = require("bootstrap");
+require("jquery-ui-bundle");
+require('./../../lib/layout.js');
+var mapboxgl = require('mapbox-gl');
+var _ = require("underscore");
+var crossfilter = require("crossfilter");
+var d3 = require("d3");
+var queue = require("d3-queue");
+var crossfilter = require("crossfilter");
+var awesomplete = require("awesomplete");
+var dc = require("dc");
+var toastr = require('toastr');
 
 //load the application components
 var config = require("./config/config.js");
@@ -27,5 +34,18 @@ var mapUtils = require("./ui/map_utils.js");
 var uiutils = require("./ui/ui-utils.js");
 var ui = require("./ui/ui.js");
 
-//custom methods on javascript object primitives
+
+// custom methods on javascript object primitives
 prototypes.enableAllPrototypes();
+
+
+
+//initialize with configuration
+function initialize(){
+  theLayout = layout.create(config, state);
+  console.log(theLayout)
+}
+
+$(document).ready(function(){
+  initialize();
+})
