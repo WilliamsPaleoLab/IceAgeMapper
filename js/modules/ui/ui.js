@@ -1,10 +1,12 @@
 var mapModule = require('./map.js');
 var layoutModule = require('./layout.js');
-var analyticsModule = require('./charts.js');
 var temperatureChartModule = require("./charts/temperatureChart.js");
 var IO = require("./../processes/io.js");
 var UIUtils = require("./ui-utils.js");
 var process = require("./../processes/process.js");
+var utils = require("./../processes/utils.js");
+var analytics = require("./charts/charts.js");
+var dc = require("dc");
 
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
@@ -35,10 +37,30 @@ var ui = (function(){
 
 
   //create a new default configuration
-  var create = function(){
+  var loadClean = function(){
     var config = require("./../config/config.js");
     var state = require("./../config/state.js");
     initialize(config, state);
+  }
+
+  var create = function(){
+
+    //see if the user passed in any url parameters
+    var shareToken = utils.getParameterByName('shareToken');
+    var taxonName = utils.getParameterByName('taxonname');
+    var taxonID = utils.getParameterByName('taxonid');
+
+
+    //load preferentially off those parameters --> only one will happen
+    if (utils.isValidToken(shareToken)){
+      loadFromToken(shareToken)
+    }else if(utils.isValidTaxonName(taxonName)){
+      loadFromTaxonName(taxonName)
+    }else if (utils.isValidTaxonID(taxonID)){
+      loadFromTaxonID(taxonID);
+    }else{
+      loadClean();
+    }
   }
 
   //initialize a new UI session using the configuration either default or remote
@@ -65,14 +87,18 @@ var ui = (function(){
       throw error
     }
     processedData = process.mergeMetadata(occurrences, datasets);
-    console.log(processedData);
+    crossfilteredData = process.crossfilterIt(processedData)
+    console.log(crossfilteredData)
+    analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
+    render();
+  }
+
+  function render(){
+    dc.renderAll();
   }
 
 
   return {
-    loadFromToken: loadFromToken,
-    loadFromTaxonID: loadFromTaxonID,
-    loadFromTaxonName: loadFromTaxonName,
     create:create,
     layout: layout,
     mapChart: mapChart,

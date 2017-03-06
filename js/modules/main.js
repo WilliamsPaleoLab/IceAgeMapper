@@ -13,10 +13,10 @@ window.mapboxToken = "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ
 
 
 //load the application components
-var config = require("./config/config.js");
-var state = require("./config/state.js");
+// var config = require("./config/config.js");
+// var state = require("./config/state.js");
 var prototypes = require("./config/prototypes.js");
-var utils = require("./processes/utils.js");
+// var utils = require("./processes/utils.js");
 
 
 //holds UI elements
@@ -25,19 +25,6 @@ var ui = require("./ui/ui.js");
 // custom methods on javascript object primitives
 prototypes.enableAllPrototypes();
 
-//see if the user passed in a saved map token
-var shareToken = utils.getParameterByName('shareToken');
-var taxonName = utils.getParameterByName('taxonname');
-var taxonID = utils.getParameterByName('taxonid');
-
 $(document).ready(function(){
-  if (utils.isValidToken(shareToken)){
-    ui.loadFromToken(shareToken)
-  }else if(utils.isValidTaxonName(taxonName)){
-    ui.loadFromTaxonName(taxonName)
-  }else if (utils.isValidTaxonID(taxonID)){
-    ui.loadFromTaxonID(taxonID);
-  }else{
-    ui.create();
-  }
+  ui.create();
 })

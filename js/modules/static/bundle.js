@@ -412,6 +412,11 @@ var io = (function(){
 module.exports = io;
 
 },{"./../ui/ui-utils.js":12,"d3":36,"d3-queue":35}],5:[function(require,module,exports){
+var crossfilter = require("crossfilter");
+var mapboxgl = require('mapbox-gl')
+
+
+
 var processes = (function(){
 
   function mergeMetadata(occurrences, datasets){
@@ -450,7 +455,9 @@ var processes = (function(){
     }
 
     if (occurrence.datasetMeta.DatasetPIs.length == 0){
-      occurrence.datasetMeta.DatasetPIs.push({ContactName: "None Listed"});
+      occurrence.piName =  "None Listed" ;
+    }else{
+      occurrence.piName = occurrence.datasetMeta.DatasetPIs[0].ContactName
     }
 
     occurrence.siteid = occurrence.datasetMeta.Site.SiteID;
@@ -484,6 +491,52 @@ var processes = (function(){
     return true
   }
 
+  function crossfilterIt(data, nameArray){
+    var cf = crossfilter(data);
+    var dimensions = createCrossfilterDimensions(cf)
+    var groups = createCrossfilterGroups(dimensions)
+    return {
+      dimensions: dimensions,
+      groups: groups,
+      cf: cf
+    }
+  }
+
+  function createCrossfilterDimensions(cf){
+    var dimensions = {}
+    dimensions.valueDimension = cf.dimension(function(d){return d.Value});
+    dimensions.ageDimension = cf.dimension(function(d){return d.age});
+    dimensions.latitudeDimension = cf.dimension(function(d){return d.latitude});
+    dimensions.piDimension = cf.dimension(function(d){return d.piName});
+    dimensions.geoDimension = cf.dimension(function(d){return new mapboxgl.LngLat(d.longitude, d.latitude)});
+    dimensions.recordTypeDimension = cf.dimension(function(d){return d.recordType});
+    dimensions.taxaDimension = cf.dimension(function(d){return d.TaxonName});
+    return dimensions
+  }
+
+  function createCrossfilterGroups(dimensions){
+    console.log(dimensions)
+    var groups = {}
+    groups.valueGroup = dimensions.valueDimension.group(function(d){
+        return Math.round(d/1) * 1 //for making bin sizes
+      }).reduceCount()
+
+    groups.ageGroup = dimensions.ageDimension.group(function(d){
+      return Math.round(d/1)*1
+    }).reduceCount()
+
+    groups.latitudeGroup = dimensions.latitudeDimension.group(function(d){
+      return Math.round(d/0.5)*0.5
+    }).reduceCount();
+
+    groups.piGroup = dimensions.piDimension.group().reduceCount();
+    groups.recordTypeGroup = dimensions.recordTypeDimension.group().reduceCount();
+    groups.geoGroup = dimensions.geoDimension.group().reduceCount();
+    groups.taxaGroup = dimensions.taxaDimension.group().reduceCount();
+
+    return groups
+  }
+
 
 
 
@@ -491,14 +544,15 @@ var processes = (function(){
 
 
   return {
-    mergeMetadata: mergeMetadata
+    mergeMetadata: mergeMetadata,
+    crossfilterIt: crossfilterIt
   }
 })();
 
 
 module.exports = processes;
 
-},{}],6:[function(require,module,exports){
+},{"crossfilter":31,"mapbox-gl":121}],6:[function(require,module,exports){
 var utils = (function(){
   var getParameterByName = function(name, url) {
     //get the query parameter values from the URI
@@ -667,7 +721,18 @@ var analyticsCharts = (function(){
       temperatureChart;
 
   //constructor function for a dc bar chart
-  var analyticsBarChart = function(el, xlab, ylab, filterEvent, height, width, margins, elasticY, brushOn){
+  var analyticsBarChart = function(el,
+    xlab,
+    ylab,
+    dimension,
+    group,
+    attribute,
+    height,
+    filterEvent,
+    width,
+    margins,
+    elasticY,
+    brushOn){
     if (el === undefined){
       throw "Element must be defined!"
       return false
@@ -696,6 +761,8 @@ var analyticsCharts = (function(){
       var brushOn = true;
     }
 
+    var xScale = createScale(dimension, attribute)
+
     this._chart = dc.barChart(el)
       .width(width)
       .height(height)
@@ -703,6 +770,9 @@ var analyticsCharts = (function(){
       .elasticY(elasticY)
       .xAxisLabel(xlab)
       .yAxisLabel(ylab)
+      .dimension(dimension)
+      .group(group)
+      .x(xScale);
 
     if (filterEvent != undefined){
       _chart.on('filtered', filterEvent)
@@ -711,7 +781,7 @@ var analyticsCharts = (function(){
   }; //end create bar chart function
 
   //constructor function for a dc bar chart
-  var analyticsPieChart = function(el, filterEvent, height, width, margins){
+  var analyticsPieChart = function(el, dimension, group, filterEvent, height, width, margins){
     if (el === undefined){
       throw "Element must be defined!"
       return false
@@ -729,6 +799,8 @@ var analyticsCharts = (function(){
     this._chart = dc.pieChart(el)
       .width(width)
       .height(height)
+      .dimension(dimension)
+      .group(group)
 
     if (filterEvent != undefined){
       _chart.on('filtered', filterEvent)
@@ -737,16 +809,22 @@ var analyticsCharts = (function(){
   }; //end create pie chart function
   //
 
+  function createScale(dimension, attr){
+    var scale = d3.scale.linear().domain(d3.extent(dimension.top(Infinity), function(d){return d[attr]}));
+    return scale
+  }
 
 
   //chart creation functions
 
-  var create = function(){
-    this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency");
-    this.ageChart = new analyticsBarChart("#ageChart", "Age (kya)", "Frequency");
-    this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency");
-    this.PIChart = new analyticsPieChart("#PIChart");
-    this.recordTypeChart = new analyticsPieChart("#recordTypeChart")
+  var create = function(dimensions, groups){
+    console.log(dimensions)
+    console.log(groups)
+    this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency", dimensions.latitudeDimension, groups.latitudeGroup, "latitude");
+    this.ageChart = new analyticsBarChart("#ageChart", "Age (kya)", "Frequency", dimensions.ageDimension, groups.ageGroup, "age");
+    this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency", dimensions.valueDimension, groups.valueGroup, "Value");
+    this.PIChart = new analyticsPieChart("#PIChart", dimensions.piDimension, groups.piGroup);
+    this.recordTypeChart = new analyticsPieChart("#recordTypeChart", dimensions.recordTypeDimension, groups.recordTypeGroup)
     return this
   }
 
@@ -1673,11 +1751,13 @@ module.exports = UIUtils;
 },{"toastr":238}],13:[function(require,module,exports){
 var mapModule = require('./map.js');
 var layoutModule = require('./layout.js');
-var analyticsModule = require('./charts.js');
 var temperatureChartModule = require("./charts/temperatureChart.js");
 var IO = require("./../processes/io.js");
 var UIUtils = require("./ui-utils.js");
 var process = require("./../processes/process.js");
+var utils = require("./../processes/utils.js");
+var analytics = require("./charts/charts.js");
+var dc = require("dc");
 
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
@@ -1708,10 +1788,30 @@ var ui = (function(){
 
 
   //create a new default configuration
-  var create = function(){
+  var loadClean = function(){
     var config = require("./../config/config.js");
     var state = require("./../config/state.js");
     initialize(config, state);
+  }
+
+  var create = function(){
+
+    //see if the user passed in any url parameters
+    var shareToken = utils.getParameterByName('shareToken');
+    var taxonName = utils.getParameterByName('taxonname');
+    var taxonID = utils.getParameterByName('taxonid');
+
+
+    //load preferentially off those parameters --> only one will happen
+    if (utils.isValidToken(shareToken)){
+      loadFromToken(shareToken)
+    }else if(utils.isValidTaxonName(taxonName)){
+      loadFromTaxonName(taxonName)
+    }else if (utils.isValidTaxonID(taxonID)){
+      loadFromTaxonID(taxonID);
+    }else{
+      loadClean();
+    }
   }
 
   //initialize a new UI session using the configuration either default or remote
@@ -1738,14 +1838,18 @@ var ui = (function(){
       throw error
     }
     processedData = process.mergeMetadata(occurrences, datasets);
-    console.log(processedData);
+    crossfilteredData = process.crossfilterIt(processedData)
+    console.log(crossfilteredData)
+    analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
+    render();
+  }
+
+  function render(){
+    dc.renderAll();
   }
 
 
   return {
-    loadFromToken: loadFromToken,
-    loadFromTaxonID: loadFromTaxonID,
-    loadFromTaxonName: loadFromTaxonName,
     create:create,
     layout: layout,
     mapChart: mapChart,
@@ -1756,7 +1860,7 @@ var ui = (function(){
 
 module.exports = ui;
 
-},{"./../config/config.js":1,"./../config/state.js":3,"./../processes/io.js":4,"./../processes/process.js":5,"./charts.js":7,"./charts/temperatureChart.js":8,"./layout.js":10,"./map.js":11,"./ui-utils.js":12}],14:[function(require,module,exports){
+},{"./../config/config.js":1,"./../config/state.js":3,"./../processes/io.js":4,"./../processes/process.js":5,"./../processes/utils.js":6,"./charts/charts.js":7,"./charts/temperatureChart.js":8,"./layout.js":10,"./map.js":11,"./ui-utils.js":12,"dc":37}],14:[function(require,module,exports){
 /**
  * @preserve
  * jquery.layout 1.4.4
@@ -86384,10 +86488,10 @@ window.mapboxToken = "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ
 
 
 //load the application components
-var config = require("./config/config.js");
-var state = require("./config/state.js");
+// var config = require("./config/config.js");
+// var state = require("./config/state.js");
 var prototypes = require("./config/prototypes.js");
-var utils = require("./processes/utils.js");
+// var utils = require("./processes/utils.js");
 
 
 //holds UI elements
@@ -86396,25 +86500,12 @@ var ui = require("./ui/ui.js");
 // custom methods on javascript object primitives
 prototypes.enableAllPrototypes();
 
-//see if the user passed in a saved map token
-var shareToken = utils.getParameterByName('shareToken');
-var taxonName = utils.getParameterByName('taxonname');
-var taxonID = utils.getParameterByName('taxonid');
-
 $(document).ready(function(){
-  if (utils.isValidToken(shareToken)){
-    ui.loadFromToken(shareToken)
-  }else if(utils.isValidTaxonName(taxonName)){
-    ui.loadFromTaxonName(taxonName)
-  }else if (utils.isValidTaxonID(taxonID)){
-    ui.loadFromTaxonID(taxonID);
-  }else{
-    ui.create();
-  }
+  ui.create();
 })
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./../../lib/layout.js":14,"./config/config.js":1,"./config/prototypes.js":2,"./config/state.js":3,"./processes/utils.js":6,"./ui/ui.js":13,"bootstrap":17,"jquery":54,"jquery-ui-bundle":53}],250:[function(require,module,exports){
+},{"./../../lib/layout.js":14,"./config/prototypes.js":2,"./ui/ui.js":13,"bootstrap":17,"jquery":54,"jquery-ui-bundle":53}],250:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //

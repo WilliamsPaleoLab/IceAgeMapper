@@ -1,3 +1,8 @@
+var crossfilter = require("crossfilter");
+var mapboxgl = require('mapbox-gl')
+
+
+
 var processes = (function(){
 
   function mergeMetadata(occurrences, datasets){
@@ -36,7 +41,9 @@ var processes = (function(){
     }
 
     if (occurrence.datasetMeta.DatasetPIs.length == 0){
-      occurrence.datasetMeta.DatasetPIs.push({ContactName: "None Listed"});
+      occurrence.piName =  "None Listed" ;
+    }else{
+      occurrence.piName = occurrence.datasetMeta.DatasetPIs[0].ContactName
     }
 
     occurrence.siteid = occurrence.datasetMeta.Site.SiteID;
@@ -70,6 +77,52 @@ var processes = (function(){
     return true
   }
 
+  function crossfilterIt(data, nameArray){
+    var cf = crossfilter(data);
+    var dimensions = createCrossfilterDimensions(cf)
+    var groups = createCrossfilterGroups(dimensions)
+    return {
+      dimensions: dimensions,
+      groups: groups,
+      cf: cf
+    }
+  }
+
+  function createCrossfilterDimensions(cf){
+    var dimensions = {}
+    dimensions.valueDimension = cf.dimension(function(d){return d.Value});
+    dimensions.ageDimension = cf.dimension(function(d){return d.age});
+    dimensions.latitudeDimension = cf.dimension(function(d){return d.latitude});
+    dimensions.piDimension = cf.dimension(function(d){return d.piName});
+    dimensions.geoDimension = cf.dimension(function(d){return new mapboxgl.LngLat(d.longitude, d.latitude)});
+    dimensions.recordTypeDimension = cf.dimension(function(d){return d.recordType});
+    dimensions.taxaDimension = cf.dimension(function(d){return d.TaxonName});
+    return dimensions
+  }
+
+  function createCrossfilterGroups(dimensions){
+    console.log(dimensions)
+    var groups = {}
+    groups.valueGroup = dimensions.valueDimension.group(function(d){
+        return Math.round(d/1) * 1 //for making bin sizes
+      }).reduceCount()
+
+    groups.ageGroup = dimensions.ageDimension.group(function(d){
+      return Math.round(d/1)*1
+    }).reduceCount()
+
+    groups.latitudeGroup = dimensions.latitudeDimension.group(function(d){
+      return Math.round(d/0.5)*0.5
+    }).reduceCount();
+
+    groups.piGroup = dimensions.piDimension.group().reduceCount();
+    groups.recordTypeGroup = dimensions.recordTypeDimension.group().reduceCount();
+    groups.geoGroup = dimensions.geoDimension.group().reduceCount();
+    groups.taxaGroup = dimensions.taxaDimension.group().reduceCount();
+
+    return groups
+  }
+
 
 
 
@@ -77,7 +130,8 @@ var processes = (function(){
 
 
   return {
-    mergeMetadata: mergeMetadata
+    mergeMetadata: mergeMetadata,
+    crossfilterIt: crossfilterIt
   }
 })();
 
