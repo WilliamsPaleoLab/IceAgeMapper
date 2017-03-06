@@ -1,5 +1,7 @@
 //functions to deal with data loading and communication with the server(s)
 var d3 = require('d3');
+var queue = require('d3-queue');
+var UIUtils = require('./../ui/ui-utils.js');
 
 var io = (function(){
 
@@ -10,7 +12,7 @@ var io = (function(){
     }else{
       endpoint = host + configID
     }
-    $.ajax("endpoint", {
+    $.ajax(endpoint, {
         type:"GET",
         success: function(data){
           //make sure data came back successfully from neotoma
@@ -21,20 +23,24 @@ var io = (function(){
             //specific configuration that was just loaded
             //this future-proofs the application
             //we can add more configuration settings while maintaining old configurations -- hopefully
-            config = Object.assign({}, config, remoteConfig)
+            config = Object.assign({}, remoteConfig, remoteConfig)
             //do a one-level deep copy
             for (key in config){
               config[key] = Object.assign({}, config[key], remoteConfig[key])
             }
+
+            //debug
+            config.config.dataSources.NHTemp = "data/greenlandT.csv";
+
           }else{
             config = defaultConfiguration
           }
-          callback(null) //done with function --> null is passed to a queue awaiting completion
+          callback(config.config, config.state) //done with function --> null is passed to a queue awaiting completion
         },
         error: function(xhr, status, err){
           if (err) throw err;
           console.log(xhr.responseText);
-          toastr.error(status, "Failed to get configuration")
+          UIUtils.displayError(xhr.responseText)
         }
     }) //end of ajax
   };//end of getConfiguration
@@ -64,7 +70,7 @@ var io = (function(){
       },
       error: function(xhr, status, error){
         console.log(xhr.reponseText)
-        toastr.error(status)
+        // toastr.error(status)
       }
     })
   }; //end of loadIceSheets
@@ -83,10 +89,11 @@ var io = (function(){
   }; //end of getTaxonInfo
 
   //get SampleData/Occurrences from Neotoma
-  var getOccurrenceData = function(callback){
+  var getOccurrenceData = function(config, state, callback){
     //make an AJAX call to Neotoma API
     //get SampleData for the taxon specified by the user
     //search by neotoma id number or by taxonname, depending on search strategy (search vs. browse)
+        state.taxonname = "Sedum*"
     endpoint = config.dataSources.occurrences
     if (state.searchSwitch == "browse"){
       //this is browse mode
@@ -106,29 +113,34 @@ var io = (function(){
     //limit to ages set in configuration object
     endpoint += "&ageold=" + config.searchAgeBounds[1]
     endpoint += "&ageyoung=" + config.searchAgeBounds[0]
+    console.log(endpoint)
     $.ajax(endpoint, {
       success: function(data){
         //on success of Neotoma query
         //check to make sure Neotoma returned okay, often it doesn't
         if (data['success']){
-          toastr.success("Received " + data['data'].length + " occurrences from Neotoma.", "Occurrences Received.")
-          callback(data)
+          // UIUtils.di("Received " + data['data'].length + " occurrences from Neotoma.", "Occurrences Received.")
+          console.log("Got data.")
+          callback(null, data['data']);
         }else{
-            toastr.error("Unexpected Neotoma Server Error. It's their fault. Please come back later.", "Server Error")
+            // toastr.error("Unexpected Neotoma Server Error. It's their fault. Please come back later.", "Server Error")
+            console.log("Failed data.")
             callback(null)
         }
       },
       error: function(xhr, status, error){
-        toastr.error("Unable to get data at this time", "Client-Server Communication Error")
+        // toastr.error("Unable to get data at this time", "Client-Server Communication Error")
+
         console.log(xhr.reponseText)
       }
     })
   }; // end get occurrence data
 
   //get dataset metadata from the Neotoma server
-  function getDatasets(callback){
+  function getDatasets(config, state, callback){
     //this gets dataset metdata
     //useful for some analytics since more is returned, and taxonname/taxonid is a parameter
+    state.taxonname = "Sedum*"
     endpoint = config.dataSources.datasets
     if (state.searchSwitch == "browse"){
       //this is browse mode
@@ -145,17 +157,29 @@ var io = (function(){
     //limit to ages set in configuration object
     endpoint += "&ageold=" + config.searchAgeBounds[1]
     endpoint += "&ageyoung=" + config.searchAgeBounds[0]
+    console.log(endpoint)
+
     $.getJSON(endpoint, function(data){
       //check neotoma server success
       if (data['success']){
-        callback(data['data'])
-        toastr.success("Received " + data['data'].length + " datasets from Neotoma.", "Datasets Recevied.")
+        callback(null, data['data']);
+        console.log("Got datasets")
+
+        // toastr.success("Received " + data['data'].length + " datasets from Neotoma.", "Datasets Recevied.")
       }else{
-        toastr.error("Unexpected Neotoma Server Error.", "Server Error")
+        console.log("Error.")
+        // toastr.error("Unexpected Neotoma Server Error.", "Server Error")
         callback(error)
       }
     })
   };
+
+  var getNeotomaData = function(config, state, callback){
+    var q = queue.queue();
+    q.defer(getOccurrenceData, config, state);
+    q.defer(getDatasets, config, state);
+    q.await(callback);
+  }
 
   var getTemperatureData = function(config, callback){
     d3.csv(config.dataSources.NHTemp, function(err, data){
@@ -214,7 +238,8 @@ var io = (function(){
     loadIceSheets: loadIceSheets,
     getConfiguration: getConfiguration,
     getDatasets: getDatasets,
-    getTemperatureData: getTemperatureData
+    getTemperatureData: getTemperatureData,
+    getNeotomaData: getNeotomaData
   }
 })(); //end io module
 

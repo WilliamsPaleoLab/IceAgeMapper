@@ -16,6 +16,8 @@ window.mapboxToken = "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ
 var config = require("./config/config.js");
 var state = require("./config/state.js");
 var prototypes = require("./config/prototypes.js");
+var utils = require("./processes/utils.js");
+
 
 //holds UI elements
 var ui = require("./ui/ui.js");
@@ -23,6 +25,14 @@ var ui = require("./ui/ui.js");
 // custom methods on javascript object primitives
 prototypes.enableAllPrototypes();
 
+//see if the user passed in a saved map token
+shareToken = utils.getParameterByName('shareToken');
+
+
 $(document).ready(function(){
-  ui.initialize();
+  if (utils.isValidToken(shareToken)){
+    ui.load(shareToken)
+  }else{
+    ui.loadClean();
+  }
 })

@@ -1,6 +1,7 @@
 var config  = (function(){
   //this holds rules for static configuration of the application
   //variables go in here if they will be consistent from session to session and user to user
+
   return {
     meta: {
       version: 2.1,

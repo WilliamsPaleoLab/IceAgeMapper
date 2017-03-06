@@ -25,6 +25,20 @@ var utils = (function(){
     return samples
   }; //end lookupSamples
 
+  function isValidToken(token){
+    //checks if a share token is valid
+    if (token === null){
+      return false
+    }
+    if(token === undefined){
+      return false
+    }
+    if ((token.length == 9)){
+      return true
+    }
+    return false
+  };
+
 
 
   //get details about the person sharing the map
@@ -97,7 +111,8 @@ var utils = (function(){
     lookupSite: lookupSite,
     createShareLink: createShareLink,
     validateShareMapMetadata: validateShareMapMetadata,
-    getShareMapMetadata: getShareMapMetadata
+    getShareMapMetadata: getShareMapMetadata,
+    isValidToken: isValidToken
   }
 
 })();//end utils module

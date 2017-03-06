@@ -1,3 +1,6 @@
+var toastr = require('toastr');
+
+
 var UIUtils = (function(){
   //UI utility method called when metadata for a shared map is not valid
   function failShareValidation(validationResponse){
@@ -72,6 +75,16 @@ var UIUtils = (function(){
     return taxaAutocomplete
   }
 
+  var displayError = function(message, title){
+    toastr.warning(message, title);
+  }
+  var displayInfo = function(message, title){
+    toastr.info(message, title);
+  }
+  var displaySuccess = function(message, title){
+    toastr.success(message, title)
+  }
+
   var addData = function(){
     crossFilterData() //prepare data for filtering and plotting with crossfilter library
 
@@ -105,7 +118,10 @@ var UIUtils = (function(){
     onShareSuccess: onShareSuccess,
     populateEcolGroupDropdown: populateEcolGroupDropdown,
     filterAndPopulateTaxaDropdown: filterAndPopulateTaxaDropdown,
-    createTaxaAutocomplete: createTaxaAutocomplete
+    createTaxaAutocomplete: createTaxaAutocomplete,
+    displayError:displayError,
+    displayInfo: displayInfo,
+    displaySuccess: displaySuccess
   }
 })();
 

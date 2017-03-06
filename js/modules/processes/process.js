@@ -1,5 +1,5 @@
 var processes = (function(){
-  var mergeMeta = function(callback){
+  var mergeMeta = function(occurrences, datasets, callback){
 
     //depends on having arrays for occurrences and metadata
     for (var i=0; i < appData.occurrences.length; i++){
