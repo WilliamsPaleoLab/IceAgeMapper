@@ -45,6 +45,7 @@ var processes = (function(){
     }else{
       occurrence.piName = occurrence.datasetMeta.DatasetPIs[0].ContactName
     }
+    occurrence.recordType = occurrence.VariableUnits
 
     occurrence.siteid = occurrence.datasetMeta.Site.SiteID;
 

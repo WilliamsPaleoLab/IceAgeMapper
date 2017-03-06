@@ -93,7 +93,6 @@ var io = (function(){
     //make an AJAX call to Neotoma API
     //get SampleData for the taxon specified by the user
     //search by neotoma id number or by taxonname, depending on search strategy (search vs. browse)
-        state.taxonname = "Sedum*"
     endpoint = config.dataSources.occurrences
     if (state.searchSwitch == "browse"){
       //this is browse mode
@@ -140,7 +139,6 @@ var io = (function(){
   function getDatasets(config, state, callback){
     //this gets dataset metdata
     //useful for some analytics since more is returned, and taxonname/taxonid is a parameter
-    state.taxonname = "Sedum*"
     endpoint = config.dataSources.datasets
     if (state.searchSwitch == "browse"){
       //this is browse mode

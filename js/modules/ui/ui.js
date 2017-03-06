@@ -23,6 +23,7 @@ var ui = (function(){
     state.doSearch = true;
     state.searchSwitch = "search"
     state.taxonname = taxonname;
+    console.log(taxonname)
     initialize(config, state)
   }
 
@@ -90,6 +91,7 @@ var ui = (function(){
     crossfilteredData = process.crossfilterIt(processedData)
     console.log(crossfilteredData)
     analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
+    mapChart.dimension(crossfilteredData.dimensions.geoDimension, crossfilteredData.dimensions.geoGroup)
     render();
   }
 

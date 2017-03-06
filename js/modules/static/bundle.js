@@ -259,7 +259,6 @@ var io = (function(){
     //make an AJAX call to Neotoma API
     //get SampleData for the taxon specified by the user
     //search by neotoma id number or by taxonname, depending on search strategy (search vs. browse)
-        state.taxonname = "Sedum*"
     endpoint = config.dataSources.occurrences
     if (state.searchSwitch == "browse"){
       //this is browse mode
@@ -306,7 +305,6 @@ var io = (function(){
   function getDatasets(config, state, callback){
     //this gets dataset metdata
     //useful for some analytics since more is returned, and taxonname/taxonid is a parameter
-    state.taxonname = "Sedum*"
     endpoint = config.dataSources.datasets
     if (state.searchSwitch == "browse"){
       //this is browse mode
@@ -459,6 +457,7 @@ var processes = (function(){
     }else{
       occurrence.piName = occurrence.datasetMeta.DatasetPIs[0].ContactName
     }
+    occurrence.recordType = occurrence.VariableUnits
 
     occurrence.siteid = occurrence.datasetMeta.Site.SiteID;
 
@@ -1774,6 +1773,7 @@ var ui = (function(){
     state.doSearch = true;
     state.searchSwitch = "search"
     state.taxonname = taxonname;
+    console.log(taxonname)
     initialize(config, state)
   }
 
@@ -1841,6 +1841,7 @@ var ui = (function(){
     crossfilteredData = process.crossfilterIt(processedData)
     console.log(crossfilteredData)
     analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
+    mapChart.dimension(crossfilteredData.dimensions.geoDimension, crossfilteredData.dimensions.geoGroup)
     render();
   }
 
