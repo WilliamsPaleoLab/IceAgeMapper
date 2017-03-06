@@ -411,7 +411,94 @@ var io = (function(){
 
 module.exports = io;
 
-},{"./../ui/ui-utils.js":11,"d3":35,"d3-queue":34}],5:[function(require,module,exports){
+},{"./../ui/ui-utils.js":12,"d3":36,"d3-queue":35}],5:[function(require,module,exports){
+var processes = (function(){
+
+  function mergeMetadata(occurrences, datasets){
+
+    var processedAndValidated = new Array()
+
+    //depends on having arrays for occurrences and metadata
+    for (var i=0; i < occurrences.length; i++){
+      for (var j=0; j < datasets.length; j++){
+        occ = occurrences[i];
+        dat = datasets[j];
+        datID = dat.DatasetID
+        occID = occ.DatasetID
+        if (datID == occID){ //if the
+          var validatedOccurrence = processRow(occ, dat)
+          if (validatedOccurrence){
+            processedAndValidated.push(validatedOccurrence)
+          }
+        }
+      }
+    }
+    return processedAndValidated;
+  }; // end mergeMeta
+
+  function processRow(occurrence, dataset){
+    //add necessary metadata
+    //derive properties so they're easier to access later with underscore
+    occurrence.datasetMeta = dataset
+    occurrence.latitude = (occurrence.SiteLatitudeNorth + occurrence.SiteLatitudeSouth)/2
+    occurrence.longitude = (occurrence.SiteLongitudeWest + occurrence.SiteLongitudeEast)/2
+    occurrence.age = occurrence.SampleAge
+    occurrence.ageUncertainty = 0
+    if (occurrence.age == null){
+    occurrence.age = (occurrence.SampleAgeYounger + occurrence.SampleAgeOlder)/2
+    occurrence.ageUncertainty = (occurrence.SampleAgeOlder - occurrence.SampleAgeYounger) / 2
+    }
+
+    if (occurrence.datasetMeta.DatasetPIs.length == 0){
+      occurrence.datasetMeta.DatasetPIs.push({ContactName: "None Listed"});
+    }
+
+    occurrence.siteid = occurrence.datasetMeta.Site.SiteID;
+
+    var _isValidRow = validateRow(occurrence)
+    if (_isValidRow){
+        return occurrence;
+    }
+    return false;
+  }
+
+
+
+  function validateRow(row){
+    //check that the values can be included in crossfilter
+    var _valid = new Array();
+    _valid.push(validateField(row.altitude))
+    _valid.push(validateField(row.latitude))
+    _valid.push(validateField(row.longitude))
+    _valid.push(validateField(row.age))
+    if (_valid.indexOf(false) > 0){
+      return false
+    }
+    return true
+  }
+
+  function validateField(fieldValue){
+    if (fieldValue == null || fieldValue == undefined || +fieldValue == NaN ){
+      return false
+    }
+    return true
+  }
+
+
+
+
+
+
+
+  return {
+    mergeMetadata: mergeMetadata
+  }
+})();
+
+
+module.exports = processes;
+
+},{}],6:[function(require,module,exports){
 var utils = (function(){
   var getParameterByName = function(name, url) {
     //get the query parameter values from the URI
@@ -425,6 +512,7 @@ var utils = (function(){
       if (!results[2]) return '';
       return decodeURIComponent(results[2].replace(/\+/g, " "));
   }; //end get parameter by name function
+
 
   var lookupSite = function(siteID){
     //pick out the site meta from occurrences with a certain siteID
@@ -452,6 +540,34 @@ var utils = (function(){
     }
     return false
   };
+
+  function isValidTaxonName(taxonname){
+    if (taxonname === ""){
+      return false
+    }
+    if (taxonname === null){
+      return false
+    }
+    if (taxonname === undefined){
+      return false
+    }
+    return true;
+  }
+  function isValidTaxonID(taxonid){
+    if (taxonid === ""){
+      return false
+    }
+    if (taxonid === null){
+      return false
+    }
+    if (taxonid === undefined){
+      return false
+    }
+    if (+taxonid === NaN){
+      return false
+    }
+    return true;
+  }
 
 
 
@@ -526,7 +642,9 @@ var utils = (function(){
     createShareLink: createShareLink,
     validateShareMapMetadata: validateShareMapMetadata,
     getShareMapMetadata: getShareMapMetadata,
-    isValidToken: isValidToken
+    isValidToken: isValidToken,
+    isValidTaxonName: isValidTaxonName,
+    isValidTaxonID: isValidTaxonID
   }
 
 })();//end utils module
@@ -534,7 +652,7 @@ var utils = (function(){
 
 module.exports = utils;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var dc = require('dc');
 var d3 = require('d3');
 
@@ -648,7 +766,7 @@ var analyticsCharts = (function(){
 
 module.exports = analyticsCharts;
 
-},{"d3":35,"dc":36}],7:[function(require,module,exports){
+},{"d3":36,"dc":37}],8:[function(require,module,exports){
 var dc = require("dc");
 var IO = require("./../../processes/io.js");
 var d3 = require('d3');
@@ -803,7 +921,7 @@ var tempChart = (function(){
 
 module.exports = tempChart
 
-},{"./../../config/config.js":1,"./../../processes/io.js":4,"crossfilter":30,"d3":35,"dc":36}],8:[function(require,module,exports){
+},{"./../../config/config.js":1,"./../../processes/io.js":4,"crossfilter":31,"d3":36,"dc":37}],9:[function(require,module,exports){
 /*
 This is mapbox-dc.js
 
@@ -1249,7 +1367,7 @@ var mapboxgl = require('mapbox-gl');
 
 module.exports = dc_mapbox;
 
-},{"dc":36,"mapbox-gl":120}],9:[function(require,module,exports){
+},{"dc":37,"mapbox-gl":121}],10:[function(require,module,exports){
 var mapUtils = require('./map.js');
 
 
@@ -1330,7 +1448,7 @@ var layout = (function(){
 
 module.exports = layout;
 
-},{"./map.js":10}],10:[function(require,module,exports){
+},{"./map.js":11}],11:[function(require,module,exports){
 var crossfilter = require("crossfilter");
 var dc = require('dc');
 var dc_mapbox = require("./dc-mapbox.js");
@@ -1423,7 +1541,7 @@ var map = (function(){
 
 module.exports = map;
 
-},{"./../config/config.js":1,"./../config/state.js":3,"./dc-mapbox.js":8,"crossfilter":30,"dc":36}],11:[function(require,module,exports){
+},{"./../config/config.js":1,"./../config/state.js":3,"./dc-mapbox.js":9,"crossfilter":31,"dc":37}],12:[function(require,module,exports){
 var toastr = require('toastr');
 
 
@@ -1538,7 +1656,6 @@ var UIUtils = (function(){
    setTimeout(globals.elements.mapChart.doFilter, 1000)
   }
 
-
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,
@@ -1553,27 +1670,52 @@ var UIUtils = (function(){
 
 module.exports = UIUtils;
 
-},{"toastr":237}],12:[function(require,module,exports){
+},{"toastr":238}],13:[function(require,module,exports){
 var mapModule = require('./map.js');
 var layoutModule = require('./layout.js');
 var analyticsModule = require('./charts.js');
 var temperatureChartModule = require("./charts/temperatureChart.js");
 var IO = require("./../processes/io.js");
+var UIUtils = require("./ui-utils.js");
+var process = require("./../processes/process.js");
 
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
 
-  var load = function(configToken){
+
+  //load a configuration from the database
+  var loadFromToken = function(configToken){
     IO.getConfiguration(configToken, initialize)
+  };
+
+  var loadFromTaxonName = function(taxonname){
+    var config = require("./../config/config.js");
+    var state = require("./../config/state.js");
+    state.doSearch = true;
+    state.searchSwitch = "search"
+    state.taxonname = taxonname;
+    initialize(config, state)
   }
 
-  var loadClean = function(){
+  var loadFromTaxonID = function(taxonid){
+    var config = require("./../config/config.js");
+    var state = require("./../config/state.js");
+    state.doSearch = true;
+    state.searchSwitch = "browse"
+    state.taxonid = taxonid;
+    initialize(config, state)
+  }
+
+
+  //create a new default configuration
+  var create = function(){
     var config = require("./../config/config.js");
     var state = require("./../config/state.js");
     initialize(config, state);
   }
 
-  var initialize = function(config, state){
+  //initialize a new UI session using the configuration either default or remote
+  var  initialize = function(config, state){
 
     //create UI components
     layout = layoutModule.create(config, state);
@@ -1586,20 +1728,25 @@ var ui = (function(){
 
     //get the data from neotoma
     if (state.doSearch){
-      IO.getNeotomaData(config, state, function(results, d1, d2){
-        console.log(results);
-        console.log(d1);
-        console.log(d2);
-      })
+      IO.getNeotomaData(config, state, onNeotomDataReceipt)
     }
+  } // end initialize
 
+  function onNeotomDataReceipt(error, occurrences, datasets){
+    if (error){
+      UIUtils.displayError(error)
+      throw error
+    }
+    processedData = process.mergeMetadata(occurrences, datasets);
+    console.log(processedData);
   }
 
 
-
   return {
-    load: load,
-    loadClean:loadClean,
+    loadFromToken: loadFromToken,
+    loadFromTaxonID: loadFromTaxonID,
+    loadFromTaxonName: loadFromTaxonName,
+    create:create,
     layout: layout,
     mapChart: mapChart,
     map: map,
@@ -1609,7 +1756,7 @@ var ui = (function(){
 
 module.exports = ui;
 
-},{"./../config/config.js":1,"./../config/state.js":3,"./../processes/io.js":4,"./charts.js":6,"./charts/temperatureChart.js":7,"./layout.js":9,"./map.js":10}],13:[function(require,module,exports){
+},{"./../config/config.js":1,"./../config/state.js":3,"./../processes/io.js":4,"./../processes/process.js":5,"./charts.js":7,"./charts/temperatureChart.js":8,"./layout.js":10,"./map.js":11,"./ui-utils.js":12}],14:[function(require,module,exports){
 /**
  * @preserve
  * jquery.layout 1.4.4
@@ -7686,7 +7833,7 @@ if ($.effects) {
 
 })( jQuery );
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
@@ -8200,7 +8347,7 @@ return mapboxBuild;
 
 })));
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /*
  * Copyright (C) 2008 Apple Inc. All Rights Reserved.
  *
@@ -8307,7 +8454,7 @@ UnitBezier.prototype.solve = function(x, epsilon) {
     return this.sampleCurveY(this.solveCurveX(x, epsilon));
 };
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 // This file is autogenerated via the `commonjs` Grunt task. You can require() this file in a CommonJS environment.
 require('../../js/transition.js')
 require('../../js/alert.js')
@@ -8321,7 +8468,7 @@ require('../../js/popover.js')
 require('../../js/scrollspy.js')
 require('../../js/tab.js')
 require('../../js/affix.js')
-},{"../../js/affix.js":17,"../../js/alert.js":18,"../../js/button.js":19,"../../js/carousel.js":20,"../../js/collapse.js":21,"../../js/dropdown.js":22,"../../js/modal.js":23,"../../js/popover.js":24,"../../js/scrollspy.js":25,"../../js/tab.js":26,"../../js/tooltip.js":27,"../../js/transition.js":28}],17:[function(require,module,exports){
+},{"../../js/affix.js":18,"../../js/alert.js":19,"../../js/button.js":20,"../../js/carousel.js":21,"../../js/collapse.js":22,"../../js/dropdown.js":23,"../../js/modal.js":24,"../../js/popover.js":25,"../../js/scrollspy.js":26,"../../js/tab.js":27,"../../js/tooltip.js":28,"../../js/transition.js":29}],18:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: affix.js v3.3.7
  * http://getbootstrap.com/javascript/#affix
@@ -8485,7 +8632,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: alert.js v3.3.7
  * http://getbootstrap.com/javascript/#alerts
@@ -8581,7 +8728,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: button.js v3.3.7
  * http://getbootstrap.com/javascript/#buttons
@@ -8708,7 +8855,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: carousel.js v3.3.7
  * http://getbootstrap.com/javascript/#carousel
@@ -8947,7 +9094,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: collapse.js v3.3.7
  * http://getbootstrap.com/javascript/#collapse
@@ -9161,7 +9308,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: dropdown.js v3.3.7
  * http://getbootstrap.com/javascript/#dropdowns
@@ -9328,7 +9475,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: modal.js v3.3.7
  * http://getbootstrap.com/javascript/#modals
@@ -9669,7 +9816,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: popover.js v3.3.7
  * http://getbootstrap.com/javascript/#popovers
@@ -9779,7 +9926,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: scrollspy.js v3.3.7
  * http://getbootstrap.com/javascript/#scrollspy
@@ -9953,7 +10100,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: tab.js v3.3.7
  * http://getbootstrap.com/javascript/#tabs
@@ -10110,7 +10257,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: tooltip.js v3.3.7
  * http://getbootstrap.com/javascript/#tooltip
@@ -10632,7 +10779,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: transition.js v3.3.7
  * http://getbootstrap.com/javascript/#transitions
@@ -10693,7 +10840,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 (function(exports){
 crossfilter.version = "1.3.12";
 function crossfilter_identity(d) {
@@ -12096,10 +12243,10 @@ function crossfilter_capacity(w) {
 }
 })(typeof exports !== 'undefined' && exports || this);
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 module.exports = require("./crossfilter").crossfilter;
 
-},{"./crossfilter":29}],31:[function(require,module,exports){
+},{"./crossfilter":30}],32:[function(require,module,exports){
 (function(exports){
 crossfilter.version = "1.3.14";
 function crossfilter_identity(d) {
@@ -13502,9 +13649,9 @@ function crossfilter_capacity(w) {
 }
 })(typeof exports !== 'undefined' && exports || this);
 
-},{}],32:[function(require,module,exports){
-arguments[4][30][0].apply(exports,arguments)
-},{"./crossfilter":31,"dup":30}],33:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
+arguments[4][31][0].apply(exports,arguments)
+},{"./crossfilter":32,"dup":31}],34:[function(require,module,exports){
 // (c) Dean McNamee <dean@gmail.com>, 2012.
 //
 // https://github.com/deanm/css-color-parser-js
@@ -13707,7 +13854,7 @@ function parseCSSColor(css_str) {
 
 try { exports.parseCSSColor = parseCSSColor } catch(e) { }
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 // https://d3js.org/d3-queue/ Version 3.0.4. Copyright 2017 Mike Bostock.
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -13839,7 +13986,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 !function() {
   var d3 = {
     version: "3.5.17"
@@ -23394,7 +23541,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
   });
   if (typeof define === "function" && define.amd) this.d3 = d3, define(d3); else if (typeof module === "object" && module.exports) module.exports = d3; else this.d3 = d3;
 }();
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 /*!
  *  dc 2.1.3
  *  http://dc-js.github.io/dc.js/
@@ -34474,7 +34621,7 @@ return dc;}
 )();
 
 
-},{"crossfilter2":32,"d3":35}],37:[function(require,module,exports){
+},{"crossfilter2":33,"d3":36}],38:[function(require,module,exports){
 'use strict';
 
 module.exports = earcut;
@@ -35120,7 +35267,7 @@ earcut.flatten = function (data) {
     return result;
 };
 
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 var toString = {}.toString,
 	isArray = Array.isArray || function(obj){
 		return toString.call(obj) === "[object Array]";
@@ -35215,7 +35362,7 @@ function sss(val) {
 	}
 }
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 'use strict';
 
 module.exports = createFilter;
@@ -35299,7 +35446,7 @@ function compare(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
 }
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 var wgs84 = require('wgs84');
 
 module.exports.geometry = geometry;
@@ -35365,7 +35512,7 @@ function rad(_) {
     return _ * Math.PI / 180;
 }
 
-},{"wgs84":246}],41:[function(require,module,exports){
+},{"wgs84":247}],42:[function(require,module,exports){
 var geojsonArea = require('geojson-area');
 
 module.exports = rewind;
@@ -35416,7 +35563,7 @@ function cw(_) {
     return geojsonArea.ring(_) >= 0;
 }
 
-},{"geojson-area":40}],42:[function(require,module,exports){
+},{"geojson-area":41}],43:[function(require,module,exports){
 'use strict';
 
 module.exports = clip;
@@ -35567,7 +35714,7 @@ function newSlice(slices, slice, area, dist, outer) {
     return [];
 }
 
-},{"./feature":44}],43:[function(require,module,exports){
+},{"./feature":45}],44:[function(require,module,exports){
 'use strict';
 
 module.exports = convert;
@@ -35690,7 +35837,7 @@ function calcSize(points) {
     points.dist = dist;
 }
 
-},{"./feature":44,"./simplify":46}],44:[function(require,module,exports){
+},{"./feature":45,"./simplify":47}],45:[function(require,module,exports){
 'use strict';
 
 module.exports = createFeature;
@@ -35735,7 +35882,7 @@ function calcRingBBox(min, max, points) {
     }
 }
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 'use strict';
 
 module.exports = geojsonvt;
@@ -35979,7 +36126,7 @@ function isClippedSquare(tile, extent, buffer) {
     return true;
 }
 
-},{"./clip":42,"./convert":43,"./tile":47,"./transform":48,"./wrap":49}],46:[function(require,module,exports){
+},{"./clip":43,"./convert":44,"./tile":48,"./transform":49,"./wrap":50}],47:[function(require,module,exports){
 'use strict';
 
 module.exports = simplify;
@@ -36055,7 +36202,7 @@ function getSqSegDist(p, a, b) {
     return dx * dx + dy * dy;
 }
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 'use strict';
 
 module.exports = createTile;
@@ -36163,7 +36310,7 @@ function signedArea(ring) {
     return sum;
 }
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 'use strict';
 
 exports.tile = transformTile;
@@ -36206,7 +36353,7 @@ function transformPoint(p, extent, z2, tx, ty) {
     return [x, y];
 }
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 'use strict';
 
 var clip = require('./clip');
@@ -36264,7 +36411,7 @@ function shiftCoords(points, offset) {
     return newPoints;
 }
 
-},{"./clip":42,"./feature":44}],50:[function(require,module,exports){
+},{"./clip":43,"./feature":45}],51:[function(require,module,exports){
 'use strict';
 
 module.exports = GridIndex;
@@ -36426,7 +36573,7 @@ GridIndex.prototype.toArrayBuffer = function() {
     return array.buffer;
 };
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -36512,7 +36659,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 /*! jQuery UI - v1.11.4 - 2015-03-11
 * http://jqueryui.com
 * Includes: core.js, widget.js, mouse.js, position.js, accordion.js, autocomplete.js, button.js, datepicker.js, dialog.js, draggable.js, droppable.js, effect.js, effect-blind.js, effect-bounce.js, effect-clip.js, effect-drop.js, effect-explode.js, effect-fade.js, effect-fold.js, effect-highlight.js, effect-puff.js, effect-pulsate.js, effect-scale.js, effect-shake.js, effect-size.js, effect-slide.js, effect-transfer.js, menu.js, progressbar.js, resizable.js, selectable.js, selectmenu.js, slider.js, sortable.js, spinner.js, tabs.js, tooltip.js
@@ -53130,7 +53277,7 @@ var tooltip = $.widget( "ui.tooltip", {
 
 
 }));
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.1.1
  * https://jquery.com/
@@ -63352,7 +63499,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 'use strict';
 
 var sort = require('./sort');
@@ -63398,7 +63545,7 @@ KDBush.prototype = {
 function defaultGetX(p) { return p[0]; }
 function defaultGetY(p) { return p[1]; }
 
-},{"./range":55,"./sort":56,"./within":57}],55:[function(require,module,exports){
+},{"./range":56,"./sort":57,"./within":58}],56:[function(require,module,exports){
 'use strict';
 
 module.exports = range;
@@ -63446,7 +63593,7 @@ function range(ids, coords, minX, minY, maxX, maxY, nodeSize) {
     return result;
 }
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 'use strict';
 
 module.exports = sortKD;
@@ -63514,7 +63661,7 @@ function swap(arr, i, j) {
     arr[j] = tmp;
 }
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 'use strict';
 
 module.exports = within;
@@ -63566,7 +63713,7 @@ function sqDist(ax, ay, bx, by) {
     return dx * dx + dy * dy;
 }
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 /**
  * lodash 3.0.7 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -63910,7 +64057,7 @@ function isObject(value) {
 
 module.exports = baseIsEqual;
 
-},{"lodash.isarray":62,"lodash.istypedarray":64,"lodash.keys":65}],59:[function(require,module,exports){
+},{"lodash.isarray":63,"lodash.istypedarray":65,"lodash.keys":66}],60:[function(require,module,exports){
 /**
  * lodash 3.0.1 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -63977,7 +64124,7 @@ function identity(value) {
 
 module.exports = bindCallback;
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 /**
  * lodash 3.9.1 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -64116,7 +64263,7 @@ function isNative(value) {
 
 module.exports = getNative;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 /**
  * lodash (Custom Build) <https://lodash.com/>
  * Build: `lodash modularize exports="npm" -o ./`
@@ -64347,7 +64494,7 @@ function isObjectLike(value) {
 
 module.exports = isArguments;
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 /**
  * lodash 3.0.4 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -64529,7 +64676,7 @@ function isNative(value) {
 
 module.exports = isArray;
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 /**
  * lodash 3.0.4 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -64593,7 +64740,7 @@ function isEqual(value, other, customizer, thisArg) {
 
 module.exports = isEqual;
 
-},{"lodash._baseisequal":58,"lodash._bindcallback":59}],64:[function(require,module,exports){
+},{"lodash._baseisequal":59,"lodash._bindcallback":60}],65:[function(require,module,exports){
 /**
  * lodash 3.0.6 (Custom Build) <https://lodash.com/>
  * Build: `lodash modularize exports="npm" -o ./`
@@ -64743,7 +64890,7 @@ function isTypedArray(value) {
 
 module.exports = isTypedArray;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 /**
  * lodash 3.1.2 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -64981,7 +65128,7 @@ function keysIn(object) {
 
 module.exports = keys;
 
-},{"lodash._getnative":60,"lodash.isarguments":61,"lodash.isarray":62}],66:[function(require,module,exports){
+},{"lodash._getnative":61,"lodash.isarguments":62,"lodash.isarray":63}],67:[function(require,module,exports){
 // Constants
 var Kn = 18,
     Xn = 0.950470, // D65 standard referent
@@ -65081,7 +65228,7 @@ module.exports ={
   }
 };
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 'use strict';
 
 var colorSpaces = require('./color_spaces');
@@ -65290,7 +65437,7 @@ module.exports['piecewise-constant'] = function(parameters) {
     return createFunction(parameters, 'interval');
 };
 
-},{"./color_spaces":66}],68:[function(require,module,exports){
+},{"./color_spaces":67}],69:[function(require,module,exports){
 'use strict';
 
 var refProperties = require('./util/ref_properties');
@@ -65344,7 +65491,7 @@ function derefLayers(layers) {
     return layers;
 }
 
-},{"./util/ref_properties":74}],69:[function(require,module,exports){
+},{"./util/ref_properties":75}],70:[function(require,module,exports){
 'use strict';
 
 var isEqual = require('lodash.isequal');
@@ -65703,7 +65850,7 @@ function diffStyles(before, after) {
 module.exports = diffStyles;
 module.exports.operations = operations;
 
-},{"lodash.isequal":63}],70:[function(require,module,exports){
+},{"lodash.isequal":64}],71:[function(require,module,exports){
 'use strict';
 
 var format = require('util').format;
@@ -65721,7 +65868,7 @@ function ValidationError(key, value /*, message, ...*/) {
 
 module.exports = ValidationError;
 
-},{"util":253}],71:[function(require,module,exports){
+},{"util":254}],72:[function(require,module,exports){
 'use strict';
 
 var refProperties = require('./util/ref_properties');
@@ -65769,7 +65916,7 @@ function groupByLayout(layers) {
     return result;
 }
 
-},{"./util/ref_properties":74,"fast-stable-stringify":38}],72:[function(require,module,exports){
+},{"./util/ref_properties":75,"fast-stable-stringify":39}],73:[function(require,module,exports){
 'use strict';
 
 module.exports = function (output) {
@@ -65782,7 +65929,7 @@ module.exports = function (output) {
     return output;
 };
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 'use strict';
 
 module.exports = function getType(val) {
@@ -65801,12 +65948,12 @@ module.exports = function getType(val) {
     }
 };
 
-},{}],74:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 'use strict';
 
 module.exports = ['type', 'source', 'source-layer', 'minzoom', 'maxzoom', 'filter', 'layout'];
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 'use strict';
 
 // Turn jsonlint-lines-primitives objects into primitive objects
@@ -65818,7 +65965,7 @@ module.exports = function unbundle(value) {
     }
 };
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -65886,7 +66033,7 @@ module.exports = function validate(options) {
     }
 };
 
-},{"../error/validation_error":70,"../util/extend":72,"../util/get_type":73,"./validate_array":77,"./validate_boolean":78,"./validate_color":79,"./validate_constants":80,"./validate_enum":81,"./validate_filter":82,"./validate_function":83,"./validate_layer":85,"./validate_light":87,"./validate_number":88,"./validate_object":89,"./validate_source":91,"./validate_string":92}],77:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/extend":73,"../util/get_type":74,"./validate_array":78,"./validate_boolean":79,"./validate_color":80,"./validate_constants":81,"./validate_enum":82,"./validate_filter":83,"./validate_function":84,"./validate_layer":86,"./validate_light":88,"./validate_number":89,"./validate_object":90,"./validate_source":92,"./validate_string":93}],78:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -65940,7 +66087,7 @@ module.exports = function validateArray(options) {
     return errors;
 };
 
-},{"../error/validation_error":70,"../util/get_type":73,"./validate":76}],78:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74,"./validate":77}],79:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -65958,7 +66105,7 @@ module.exports = function validateBoolean(options) {
     return [];
 };
 
-},{"../error/validation_error":70,"../util/get_type":73}],79:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74}],80:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -65981,7 +66128,7 @@ module.exports = function validateColor(options) {
     return [];
 };
 
-},{"../error/validation_error":70,"../util/get_type":73,"csscolorparser":33}],80:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74,"csscolorparser":34}],81:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66015,7 +66162,7 @@ module.exports = function validateConstants(options) {
 
 };
 
-},{"../error/validation_error":70,"../util/get_type":73}],81:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74}],82:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66039,7 +66186,7 @@ module.exports = function validateEnum(options) {
     return errors;
 };
 
-},{"../error/validation_error":70,"../util/unbundle_jsonlint":75}],82:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/unbundle_jsonlint":76}],83:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66144,7 +66291,7 @@ module.exports = function validateFilter(options) {
     return errors;
 };
 
-},{"../error/validation_error":70,"../util/get_type":73,"../util/unbundle_jsonlint":75,"./validate_enum":81}],83:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74,"../util/unbundle_jsonlint":76,"./validate_enum":82}],84:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66332,7 +66479,7 @@ module.exports = function validateFunction(options) {
 
 };
 
-},{"../error/validation_error":70,"../util/get_type":73,"../util/unbundle_jsonlint":75,"./validate":76,"./validate_array":77,"./validate_number":88,"./validate_object":89}],84:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74,"../util/unbundle_jsonlint":76,"./validate":77,"./validate_array":78,"./validate_number":89,"./validate_object":90}],85:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66356,7 +66503,7 @@ module.exports = function(options) {
     return errors;
 };
 
-},{"../error/validation_error":70,"./validate_string":92}],85:[function(require,module,exports){
+},{"../error/validation_error":71,"./validate_string":93}],86:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66472,7 +66619,7 @@ module.exports = function validateLayer(options) {
     return errors;
 };
 
-},{"../error/validation_error":70,"../util/extend":72,"../util/unbundle_jsonlint":75,"./validate_filter":82,"./validate_layout_property":86,"./validate_object":89,"./validate_paint_property":90}],86:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/extend":73,"../util/unbundle_jsonlint":76,"./validate_filter":83,"./validate_layout_property":87,"./validate_object":90,"./validate_paint_property":91}],87:[function(require,module,exports){
 'use strict';
 
 var validate = require('./validate');
@@ -66513,7 +66660,7 @@ module.exports = function validateLayoutProperty(options) {
 
 };
 
-},{"../error/validation_error":70,"./validate":76}],87:[function(require,module,exports){
+},{"../error/validation_error":71,"./validate":77}],88:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66563,7 +66710,7 @@ module.exports = function validateLight(options) {
     return errors;
 };
 
-},{"../error/validation_error":70,"../util/get_type":73,"./validate":76}],88:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74,"./validate":77}],89:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -66590,7 +66737,7 @@ module.exports = function validateNumber(options) {
     return [];
 };
 
-},{"../error/validation_error":70,"../util/get_type":73}],89:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74}],90:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66649,7 +66796,7 @@ module.exports = function validateObject(options) {
     return errors;
 };
 
-},{"../error/validation_error":70,"../util/get_type":73,"./validate":76}],90:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74,"./validate":77}],91:[function(require,module,exports){
 'use strict';
 
 var validate = require('./validate');
@@ -66691,7 +66838,7 @@ module.exports = function validatePaintProperty(options) {
 
 };
 
-},{"../error/validation_error":70,"./validate":76}],91:[function(require,module,exports){
+},{"../error/validation_error":71,"./validate":77}],92:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66777,7 +66924,7 @@ module.exports = function validateSource(options) {
     }
 };
 
-},{"../error/validation_error":70,"../util/unbundle_jsonlint":75,"./validate_enum":81,"./validate_object":89}],92:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/unbundle_jsonlint":76,"./validate_enum":82,"./validate_object":90}],93:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -66795,7 +66942,7 @@ module.exports = function validateString(options) {
     return [];
 };
 
-},{"../error/validation_error":70,"../util/get_type":73}],93:[function(require,module,exports){
+},{"../error/validation_error":71,"../util/get_type":74}],94:[function(require,module,exports){
 'use strict';
 
 var validateConstants = require('./validate/validate_constants');
@@ -66869,12 +67016,12 @@ function wrapCleanErrors(inner) {
 
 module.exports = validateStyleMin;
 
-},{"../reference/latest.min":94,"./validate/validate":76,"./validate/validate_constants":80,"./validate/validate_filter":82,"./validate/validate_glyphs_url":84,"./validate/validate_layer":85,"./validate/validate_layout_property":86,"./validate/validate_light":87,"./validate/validate_paint_property":90,"./validate/validate_source":91}],94:[function(require,module,exports){
+},{"../reference/latest.min":95,"./validate/validate":77,"./validate/validate_constants":81,"./validate/validate_filter":83,"./validate/validate_glyphs_url":85,"./validate/validate_layer":86,"./validate/validate_layout_property":87,"./validate/validate_light":88,"./validate/validate_paint_property":91,"./validate/validate_source":92}],95:[function(require,module,exports){
 module.exports = require('./v8.min.json');
 
-},{"./v8.min.json":95}],95:[function(require,module,exports){
+},{"./v8.min.json":96}],96:[function(require,module,exports){
 module.exports={"$version":8,"$root":{"version":{"required":true,"type":"enum","values":[8]},"name":{"type":"string"},"metadata":{"type":"*"},"center":{"type":"array","value":"number"},"zoom":{"type":"number"},"bearing":{"type":"number","default":0,"period":360,"units":"degrees"},"pitch":{"type":"number","default":0,"units":"degrees"},"light":{"type":"light"},"sources":{"required":true,"type":"sources"},"sprite":{"type":"string"},"glyphs":{"type":"string"},"transition":{"type":"transition"},"layers":{"required":true,"type":"array","value":"layer"}},"sources":{"*":{"type":"source"}},"source":["source_tile","source_geojson","source_video","source_image","source_canvas"],"source_tile":{"type":{"required":true,"type":"enum","values":{"vector":{},"raster":{}}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"tileSize":{"type":"number","default":512,"units":"pixels"},"*":{"type":"*"}},"source_geojson":{"type":{"required":true,"type":"enum","values":{"geojson":{}}},"data":{"type":"*"},"maxzoom":{"type":"number","default":18},"buffer":{"type":"number","default":128,"maximum":512,"minimum":0},"tolerance":{"type":"number","default":0.375},"cluster":{"type":"boolean","default":false},"clusterRadius":{"type":"number","default":50,"minimum":0},"clusterMaxZoom":{"type":"number"}},"source_video":{"type":{"required":true,"type":"enum","values":{"video":{}}},"urls":{"required":true,"type":"array","value":"string"},"coordinates":{"required":true,"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"source_image":{"type":{"required":true,"type":"enum","values":{"image":{}}},"url":{"required":true,"type":"string"},"coordinates":{"required":true,"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"source_canvas":{"type":{"required":true,"type":"enum","values":{"canvas":{}}},"coordinates":{"required":true,"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}},"animate":{"type":"boolean","default":"true"},"canvas":{"type":"string","required":true}},"layer":{"id":{"type":"string","required":true},"type":{"type":"enum","values":{"fill":{},"line":{},"symbol":{},"circle":{},"fill-extrusion":{},"raster":{},"background":{}}},"metadata":{"type":"*"},"ref":{"type":"string"},"source":{"type":"string"},"source-layer":{"type":"string"},"minzoom":{"type":"number","minimum":0,"maximum":24},"maxzoom":{"type":"number","minimum":0,"maximum":24},"filter":{"type":"filter"},"layout":{"type":"layout"},"paint":{"type":"paint"},"paint.*":{"type":"paint"}},"layout":["layout_fill","layout_line","layout_circle","layout_fill-extrusion","layout_symbol","layout_raster","layout_background"],"layout_background":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_fill":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_circle":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_fill-extrusion":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_line":{"line-cap":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"butt":{},"round":{},"square":{}},"default":"butt"},"line-join":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"bevel":{},"round":{},"miter":{}},"default":"miter"},"line-miter-limit":{"type":"number","default":2,"function":"interpolated","zoom-function":true,"requires":[{"line-join":"miter"}]},"line-round-limit":{"type":"number","default":1.05,"function":"interpolated","zoom-function":true,"requires":[{"line-join":"round"}]},"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_symbol":{"symbol-placement":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"point":{},"line":{}},"default":"point"},"symbol-spacing":{"type":"number","default":250,"minimum":1,"function":"interpolated","zoom-function":true,"units":"pixels","requires":[{"symbol-placement":"line"}]},"symbol-avoid-edges":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false},"icon-allow-overlap":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image"]},"icon-ignore-placement":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image"]},"icon-optional":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image","text-field"]},"icon-rotation-alignment":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{},"auto":{}},"default":"auto","requires":["icon-image"]},"icon-size":{"type":"number","default":1,"minimum":0,"function":"interpolated","zoom-function":true,"requires":["icon-image"]},"icon-text-fit":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"none":{},"width":{},"height":{},"both":{}},"default":"none","requires":["icon-image","text-field"]},"icon-text-fit-padding":{"type":"array","value":"number","length":4,"default":[0,0,0,0],"units":"pixels","function":"interpolated","zoom-function":true,"requires":["icon-image","text-field",{"icon-text-fit":["both","width","height"]}]},"icon-image":{"type":"string","function":"piecewise-constant","zoom-function":true,"tokens":true},"icon-rotate":{"type":"number","default":0,"period":360,"function":"interpolated","zoom-function":true,"property-function":true,"units":"degrees","requires":["icon-image"]},"icon-padding":{"type":"number","default":2,"minimum":0,"function":"interpolated","zoom-function":true,"units":"pixels","requires":["icon-image"]},"icon-keep-upright":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image",{"icon-rotation-alignment":"map"},{"symbol-placement":"line"}]},"icon-offset":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"property-function":true,"requires":["icon-image"]},"text-pitch-alignment":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{},"auto":{}},"default":"auto","requires":["text-field"]},"text-rotation-alignment":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{},"auto":{}},"default":"auto","requires":["text-field"]},"text-field":{"type":"string","function":"piecewise-constant","zoom-function":true,"default":"","tokens":true},"text-font":{"type":"array","value":"string","function":"piecewise-constant","zoom-function":true,"default":["Open Sans Regular","Arial Unicode MS Regular"],"requires":["text-field"]},"text-size":{"type":"number","default":16,"minimum":0,"units":"pixels","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-max-width":{"type":"number","default":10,"minimum":0,"units":"ems","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-line-height":{"type":"number","default":1.2,"units":"ems","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-letter-spacing":{"type":"number","default":0,"units":"ems","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-justify":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"left":{},"center":{},"right":{}},"default":"center","requires":["text-field"]},"text-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"center":{},"left":{},"right":{},"top":{},"bottom":{},"top-left":{},"top-right":{},"bottom-left":{},"bottom-right":{}},"default":"center","requires":["text-field"]},"text-max-angle":{"type":"number","default":45,"units":"degrees","function":"interpolated","zoom-function":true,"requires":["text-field",{"symbol-placement":"line"}]},"text-rotate":{"type":"number","default":0,"period":360,"units":"degrees","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-padding":{"type":"number","default":2,"minimum":0,"units":"pixels","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-keep-upright":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":true,"requires":["text-field",{"text-rotation-alignment":"map"},{"symbol-placement":"line"}]},"text-transform":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"none":{},"uppercase":{},"lowercase":{}},"default":"none","requires":["text-field"]},"text-offset":{"type":"array","value":"number","units":"ems","function":"interpolated","zoom-function":true,"length":2,"default":[0,0],"requires":["text-field"]},"text-allow-overlap":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["text-field"]},"text-ignore-placement":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["text-field"]},"text-optional":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["text-field","icon-image"]},"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_raster":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"filter":{"type":"array","value":"*"},"filter_operator":{"type":"enum","values":{"==":{},"!=":{},">":{},">=":{},"<":{},"<=":{},"in":{},"!in":{},"all":{},"any":{},"none":{},"has":{},"!has":{}}},"geometry_type":{"type":"enum","values":{"Point":{},"LineString":{},"Polygon":{}}},"function":{"stops":{"type":"array","value":"function_stop"},"base":{"type":"number","default":1,"minimum":0},"property":{"type":"string","default":"$zoom"},"type":{"type":"enum","values":{"identity":{},"exponential":{},"interval":{},"categorical":{}},"default":"exponential"},"colorSpace":{"type":"enum","values":{"rgb":{},"lab":{},"hcl":{}},"default":"rgb"}},"function_stop":{"type":"array","minimum":0,"maximum":22,"value":["number","color"],"length":2},"light":{"anchor":{"type":"enum","default":"viewport","values":{"map":{},"viewport":{}},"transition":false},"position":{"type":"array","default":[1.15,210,30],"length":3,"value":"number","transition":true,"function":"interpolated","zoom-function":true,"property-function":false},"color":{"type":"color","default":"#ffffff","function":"interpolated","zoom-function":true,"property-function":false,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"property-function":false,"transition":true}},"paint":["paint_fill","paint_line","paint_circle","paint_fill-extrusion","paint_symbol","paint_raster","paint_background"],"paint_fill":{"fill-antialias":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":true},"fill-opacity":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":1,"minimum":0,"maximum":1,"transition":true},"fill-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"fill-pattern"}]},"fill-outline-color":{"type":"color","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"fill-pattern"},{"fill-antialias":true}]},"fill-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"fill-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["fill-translate"]},"fill-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true}},"paint_fill-extrusion":{"fill-extrusion-opacity":{"type":"number","function":"interpolated","zoom-function":true,"property-function":false,"default":1,"minimum":0,"maximum":1,"transition":true},"fill-extrusion-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"fill-extrusion-pattern"}]},"fill-extrusion-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"fill-extrusion-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["fill-extrusion-translate"]},"fill-extrusion-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true},"fill-extrusion-height":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":0,"minimum":0,"units":"meters","transition":true},"fill-extrusion-base":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":0,"minimum":0,"units":"meters","transition":true,"requires":["fill-extrusion-height"]}},"paint_line":{"line-opacity":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":1,"minimum":0,"maximum":1,"transition":true},"line-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"line-pattern"}]},"line-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"line-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["line-translate"]},"line-width":{"type":"number","default":1,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"line-gap-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"line-offset":{"type":"number","default":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"line-blur":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"line-dasharray":{"type":"array","value":"number","function":"piecewise-constant","zoom-function":true,"minimum":0,"transition":true,"units":"line widths","requires":[{"!":"line-pattern"}]},"line-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true}},"paint_circle":{"circle-radius":{"type":"number","default":5,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"circle-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-blur":{"type":"number","default":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"circle-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["circle-translate"]},"circle-pitch-scale":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map"},"circle-stroke-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"circle-stroke-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-stroke-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true}},"paint_symbol":{"icon-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true,"requires":["icon-image"]},"icon-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"transition":true,"requires":["icon-image"]},"icon-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","function":"interpolated","zoom-function":true,"transition":true,"requires":["icon-image"]},"icon-halo-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["icon-image"]},"icon-halo-blur":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["icon-image"]},"icon-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["icon-image"]},"icon-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["icon-image","icon-translate"]},"text-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true,"requires":["text-field"]},"text-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"transition":true,"requires":["text-field"]},"text-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","function":"interpolated","zoom-function":true,"transition":true,"requires":["text-field"]},"text-halo-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["text-field"]},"text-halo-blur":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["text-field"]},"text-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["text-field"]},"text-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["text-field","text-translate"]}},"paint_raster":{"raster-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true},"raster-hue-rotate":{"type":"number","default":0,"period":360,"function":"interpolated","zoom-function":true,"transition":true,"units":"degrees"},"raster-brightness-min":{"type":"number","function":"interpolated","zoom-function":true,"default":0,"minimum":0,"maximum":1,"transition":true},"raster-brightness-max":{"type":"number","function":"interpolated","zoom-function":true,"default":1,"minimum":0,"maximum":1,"transition":true},"raster-saturation":{"type":"number","default":0,"minimum":-1,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true},"raster-contrast":{"type":"number","default":0,"minimum":-1,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true},"raster-fade-duration":{"type":"number","default":300,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"milliseconds"}},"paint_background":{"background-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"transition":true,"requires":[{"!":"background-pattern"}]},"background-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true},"background-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true}},"transition":{"duration":{"type":"number","default":300,"minimum":0,"units":"milliseconds"},"delay":{"type":"number","default":0,"minimum":0,"units":"milliseconds"}}}
-},{}],96:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 'use strict';
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -67005,7 +67152,7 @@ function isWebGLSupported(failIfMajorPerformanceCaveat) {
     }
 }
 
-},{}],97:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 'use strict';
 var ProgramConfiguration = require('./program_configuration');
 var Segment = function Segment(vertexOffset, primitiveOffset) {
@@ -67093,7 +67240,7 @@ function serializePaintVertexArrays(layerData, transferables) {
 }
 ArrayGroup.MAX_VERTEX_ARRAY_LENGTH = Math.pow(2, 16) - 1;
 module.exports = ArrayGroup;
-},{"./program_configuration":111}],98:[function(require,module,exports){
+},{"./program_configuration":112}],99:[function(require,module,exports){
 'use strict';
 var ArrayGroup = require('./array_group');
 var BufferGroup = require('./buffer_group');
@@ -67158,7 +67305,7 @@ Bucket.deserialize = function (input, style) {
     }
     return output;
 };
-},{"../util/util":225,"./array_group":97,"./buffer_group":105}],99:[function(require,module,exports){
+},{"../util/util":226,"./array_group":98,"./buffer_group":106}],100:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -67246,7 +67393,7 @@ var CircleBucket = function (Bucket) {
     return CircleBucket;
 }(Bucket);
 module.exports = CircleBucket;
-},{"../bucket":98,"../element_array_type":106,"../extent":107,"../load_geometry":109,"../vertex_array_type":113}],100:[function(require,module,exports){
+},{"../bucket":99,"../element_array_type":107,"../extent":108,"../load_geometry":110,"../vertex_array_type":114}],101:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -67335,7 +67482,7 @@ var FillBucket = function (Bucket) {
     return FillBucket;
 }(Bucket);
 module.exports = FillBucket;
-},{"../../util/classify_rings":209,"../bucket":98,"../element_array_type":106,"../load_geometry":109,"../vertex_array_type":113,"earcut":37}],101:[function(require,module,exports){
+},{"../../util/classify_rings":210,"../bucket":99,"../element_array_type":107,"../load_geometry":110,"../vertex_array_type":114,"earcut":38}],102:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -67451,7 +67598,7 @@ module.exports = FillExtrusionBucket;
 function isBoundaryEdge(p1, p2) {
     return p1.x === p2.x && (p1.x < 0 || p1.x > EXTENT) || p1.y === p2.y && (p1.y < 0 || p1.y > EXTENT);
 }
-},{"../../util/classify_rings":209,"../bucket":98,"../element_array_type":106,"../extent":107,"../load_geometry":109,"../vertex_array_type":113,"earcut":37}],102:[function(require,module,exports){
+},{"../../util/classify_rings":210,"../bucket":99,"../element_array_type":107,"../extent":108,"../load_geometry":110,"../vertex_array_type":114,"earcut":38}],103:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -67736,7 +67883,7 @@ var LineBucket = function (Bucket) {
     return LineBucket;
 }(Bucket);
 module.exports = LineBucket;
-},{"../bucket":98,"../element_array_type":106,"../extent":107,"../load_geometry":109,"../vertex_array_type":113}],103:[function(require,module,exports){
+},{"../bucket":99,"../element_array_type":107,"../extent":108,"../load_geometry":110,"../vertex_array_type":114}],104:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var ArrayGroup = require('../array_group');
@@ -68264,7 +68411,7 @@ SymbolBucket.prototype.addSymbolQuad = function addSymbolQuad(symbolQuad) {
 };
 SymbolBucket.MAX_QUADS = 65535;
 module.exports = SymbolBucket;
-},{"../../source/rtl_text_plugin":145,"../../symbol/anchor":171,"../../symbol/clip_line":173,"../../symbol/collision_feature":175,"../../symbol/get_anchors":177,"../../symbol/mergelines":180,"../../symbol/quads":181,"../../symbol/resolve_text":182,"../../symbol/shaping":183,"../../util/classify_rings":209,"../../util/find_pole_of_inaccessibility":215,"../../util/script_detection":222,"../../util/token":224,"../../util/util":225,"../array_group":97,"../buffer_group":105,"../element_array_type":106,"../extent":107,"../load_geometry":109,"../vertex_array_type":113,"point-geometry":232,"vector-tile":238}],104:[function(require,module,exports){
+},{"../../source/rtl_text_plugin":146,"../../symbol/anchor":172,"../../symbol/clip_line":174,"../../symbol/collision_feature":176,"../../symbol/get_anchors":178,"../../symbol/mergelines":181,"../../symbol/quads":182,"../../symbol/resolve_text":183,"../../symbol/shaping":184,"../../util/classify_rings":210,"../../util/find_pole_of_inaccessibility":216,"../../util/script_detection":223,"../../util/token":225,"../../util/util":226,"../array_group":98,"../buffer_group":106,"../element_array_type":107,"../extent":108,"../load_geometry":110,"../vertex_array_type":114,"point-geometry":233,"vector-tile":239}],105:[function(require,module,exports){
 'use strict';
 var AttributeType = {
     Int8: 'BYTE',
@@ -68315,7 +68462,7 @@ Buffer.BufferType = {
     ELEMENT: 'ELEMENT_ARRAY_BUFFER'
 };
 module.exports = Buffer;
-},{}],105:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var Buffer = require('./buffer');
@@ -68385,7 +68532,7 @@ BufferGroup.prototype.destroy = function destroy() {
     }
 };
 module.exports = BufferGroup;
-},{"../render/vertex_array_object":135,"../util/util":225,"./buffer":104,"./program_configuration":111}],106:[function(require,module,exports){
+},{"../render/vertex_array_object":136,"../util/util":226,"./buffer":105,"./program_configuration":112}],107:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 module.exports = createElementArrayType;
@@ -68398,10 +68545,10 @@ function createElementArrayType(components) {
             }]
     });
 }
-},{"../util/struct_array":223}],107:[function(require,module,exports){
+},{"../util/struct_array":224}],108:[function(require,module,exports){
 'use strict';
 module.exports = 8192;
-},{}],108:[function(require,module,exports){
+},{}],109:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var loadGeometry = require('./load_geometry');
@@ -68659,7 +68806,7 @@ function offsetLine(rings, offset) {
     }
     return newRings;
 }
-},{"../util/dictionary_coder":211,"../util/intersection_tests":218,"../util/struct_array":223,"../util/util":225,"../util/vectortile_to_geojson":226,"./extent":107,"./load_geometry":109,"feature-filter":39,"grid-index":50,"pbf":231,"point-geometry":232,"vector-tile":238}],109:[function(require,module,exports){
+},{"../util/dictionary_coder":212,"../util/intersection_tests":219,"../util/struct_array":224,"../util/util":226,"../util/vectortile_to_geojson":227,"./extent":108,"./load_geometry":110,"feature-filter":40,"grid-index":51,"pbf":232,"point-geometry":233,"vector-tile":239}],110:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var EXTENT = require('./extent');
@@ -68690,7 +68837,7 @@ module.exports = function loadGeometry(feature, bits) {
     }
     return geometry;
 };
-},{"../util/util":225,"./extent":107}],110:[function(require,module,exports){
+},{"../util/util":226,"./extent":108}],111:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var PosArray = createStructArrayType({
@@ -68701,7 +68848,7 @@ var PosArray = createStructArrayType({
         }]
 });
 module.exports = PosArray;
-},{"../util/struct_array":223}],111:[function(require,module,exports){
+},{"../util/struct_array":224}],112:[function(require,module,exports){
 'use strict';
 var createVertexArrayType = require('./vertex_array_type');
 var util = require('../util/util');
@@ -68876,7 +69023,7 @@ function normalizePaintAttribute(attribute, layer) {
     }, attribute);
 }
 module.exports = ProgramConfiguration;
-},{"../util/util":225,"./vertex_array_type":113}],112:[function(require,module,exports){
+},{"../util/util":226,"./vertex_array_type":114}],113:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var RasterBoundsArray = createStructArrayType({
@@ -68894,7 +69041,7 @@ var RasterBoundsArray = createStructArrayType({
     ]
 });
 module.exports = RasterBoundsArray;
-},{"../util/struct_array":223}],113:[function(require,module,exports){
+},{"../util/struct_array":224}],114:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 module.exports = createVertexArrayType;
@@ -68904,7 +69051,7 @@ function createVertexArrayType(members) {
         alignment: 4
     });
 }
-},{"../util/struct_array":223}],114:[function(require,module,exports){
+},{"../util/struct_array":224}],115:[function(require,module,exports){
 'use strict';
 var Coordinate = function Coordinate(column, row, zoom) {
     this.column = column;
@@ -68934,7 +69081,7 @@ Coordinate.prototype._sub = function _sub(c) {
     return this;
 };
 module.exports = Coordinate;
-},{}],115:[function(require,module,exports){
+},{}],116:[function(require,module,exports){
 'use strict';
 var wrap = require('../util/util').wrap;
 var LngLat = function LngLat(lng, lat) {
@@ -68971,7 +69118,7 @@ LngLat.convert = function (input) {
     }
 };
 module.exports = LngLat;
-},{"../util/util":225}],116:[function(require,module,exports){
+},{"../util/util":226}],117:[function(require,module,exports){
 'use strict';
 var LngLat = require('./lng_lat');
 var LngLatBounds = function LngLatBounds(sw, ne) {
@@ -69073,7 +69220,7 @@ LngLatBounds.convert = function (input) {
     return new LngLatBounds(input);
 };
 module.exports = LngLatBounds;
-},{"./lng_lat":115}],117:[function(require,module,exports){
+},{"./lng_lat":116}],118:[function(require,module,exports){
 'use strict';
 var LngLat = require('./lng_lat'), Point = require('point-geometry'), Coordinate = require('./coordinate'), util = require('../util/util'), interp = require('../util/interpolate'), TileCoord = require('../source/tile_coord'), EXTENT = require('../data/extent'), glmatrix = require('@mapbox/gl-matrix');
 var vec4 = glmatrix.vec4, mat4 = glmatrix.mat4, mat2 = glmatrix.mat2;
@@ -69442,7 +69589,7 @@ Transform.prototype._calcMatrices = function _calcMatrices() {
 };
 Object.defineProperties(Transform.prototype, prototypeAccessors);
 module.exports = Transform;
-},{"../data/extent":107,"../source/tile_coord":149,"../util/interpolate":217,"../util/util":225,"./coordinate":114,"./lng_lat":115,"@mapbox/gl-matrix":14,"point-geometry":232}],118:[function(require,module,exports){
+},{"../data/extent":108,"../source/tile_coord":150,"../util/interpolate":218,"../util/util":226,"./coordinate":115,"./lng_lat":116,"@mapbox/gl-matrix":15,"point-geometry":233}],119:[function(require,module,exports){
 'use strict';
 var WorkerPool = require('./util/worker_pool');
 var globalWorkerPool;
@@ -69452,7 +69599,7 @@ module.exports = function getGlobalWorkerPool() {
     }
     return globalWorkerPool;
 };
-},{"./util/worker_pool":228}],119:[function(require,module,exports){
+},{"./util/worker_pool":229}],120:[function(require,module,exports){
 'use strict';
 var simplexFont = {
     ' ': [
@@ -72346,7 +72493,7 @@ module.exports = function textVertices(text, left, baseline, scale) {
     }
     return strokes;
 };
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 'use strict';
 var browser = require('./util/browser');
 var mapboxgl = module.exports = {};
@@ -72381,7 +72528,7 @@ Object.defineProperty(mapboxgl, 'accessToken', {
         config.ACCESS_TOKEN = token;
     }
 });
-},{"../package.json":229,"./geo/lng_lat":115,"./geo/lng_lat_bounds":116,"./source/rtl_text_plugin":145,"./style/style":159,"./ui/control/attribution_control":189,"./ui/control/geolocate_control":190,"./ui/control/navigation_control":191,"./ui/control/scale_control":192,"./ui/map":201,"./ui/marker":202,"./ui/popup":203,"./util/ajax":205,"./util/browser":206,"./util/config":210,"./util/evented":214,"./util/util":225,"point-geometry":232}],121:[function(require,module,exports){
+},{"../package.json":230,"./geo/lng_lat":116,"./geo/lng_lat_bounds":117,"./source/rtl_text_plugin":146,"./style/style":160,"./ui/control/attribution_control":190,"./ui/control/geolocate_control":191,"./ui/control/navigation_control":192,"./ui/control/scale_control":193,"./ui/map":202,"./ui/marker":203,"./ui/popup":204,"./util/ajax":206,"./util/browser":207,"./util/config":211,"./util/evented":215,"./util/util":226,"point-geometry":233}],122:[function(require,module,exports){
 'use strict';
 var pattern = require('./pattern');
 module.exports = drawBackground;
@@ -72421,7 +72568,7 @@ function drawBackground(painter, sourceCache, layer) {
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, painter.tileExtentBuffer.length);
     }
 }
-},{"./pattern":133}],122:[function(require,module,exports){
+},{"./pattern":134}],123:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 module.exports = drawCircles;
@@ -72459,7 +72606,7 @@ function drawCircles(painter, sourceCache, layer, coords) {
         }
     }
 }
-},{"../util/browser":206}],123:[function(require,module,exports){
+},{"../util/browser":207}],124:[function(require,module,exports){
 'use strict';
 module.exports = drawCollisionDebug;
 function drawCollisionDebug(painter, sourceCache, layer, coords) {
@@ -72488,7 +72635,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords) {
         }
     }
 }
-},{}],124:[function(require,module,exports){
+},{}],125:[function(require,module,exports){
 'use strict';
 var textVertices = require('../lib/debugtext');
 var browser = require('../util/browser');
@@ -72555,7 +72702,7 @@ function drawDebugTile(painter, sourceCache, coord) {
     gl.uniformMatrix4fv(program.u_matrix, false, posMatrix);
     gl.drawArrays(gl.LINES, 0, debugTextBuffer.length);
 }
-},{"../data/buffer":104,"../data/extent":107,"../data/pos_array":110,"../lib/debugtext":119,"../util/browser":206,"./vertex_array_object":135,"@mapbox/gl-matrix":14}],125:[function(require,module,exports){
+},{"../data/buffer":105,"../data/extent":108,"../data/pos_array":111,"../lib/debugtext":120,"../util/browser":207,"./vertex_array_object":136,"@mapbox/gl-matrix":15}],126:[function(require,module,exports){
 'use strict';
 var pattern = require('./pattern');
 module.exports = drawFill;
@@ -72628,7 +72775,7 @@ function setFillProgram(programId, usePattern, painter, layerData, layer, tile, 
     painter.gl.uniformMatrix4fv(program.u_matrix, false, painter.translatePosMatrix(coord.posMatrix, tile, layer.paint['fill-translate'], layer.paint['fill-translate-anchor']));
     return program;
 }
-},{"./pattern":133}],126:[function(require,module,exports){
+},{"./pattern":134}],127:[function(require,module,exports){
 'use strict';
 var glMatrix = require('@mapbox/gl-matrix');
 var Buffer = require('../data/buffer');
@@ -72778,7 +72925,7 @@ function setLight(program, painter) {
     gl.uniform1f(program.u_lightintensity, light.calculated.intensity);
     gl.uniform3fv(program.u_lightcolor, light.calculated.color.slice(0, 3));
 }
-},{"../data/buffer":104,"../data/pos_array":110,"./pattern":133,"./vertex_array_object":135,"@mapbox/gl-matrix":14}],127:[function(require,module,exports){
+},{"../data/buffer":105,"../data/pos_array":111,"./pattern":134,"./vertex_array_object":136,"@mapbox/gl-matrix":15}],128:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 var pixelsToTileUnits = require('../source/pixels_to_tile_units');
@@ -72868,7 +73015,7 @@ function drawLineTile(program, painter, tile, buffers, layer, coord, layerData, 
         gl.drawElements(gl.TRIANGLES, segment.primitiveLength * 3, gl.UNSIGNED_SHORT, segment.primitiveOffset * 3 * 2);
     }
 }
-},{"../source/pixels_to_tile_units":142,"../util/browser":206}],128:[function(require,module,exports){
+},{"../source/pixels_to_tile_units":143,"../util/browser":207}],129:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 module.exports = drawRaster;
@@ -72977,7 +73124,7 @@ function getFadeValues(tile, parentTile, layer, transform) {
         };
     }
 }
-},{"../util/util":225}],129:[function(require,module,exports){
+},{"../util/util":226}],130:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 var drawCollisionDebug = require('./draw_collision_debug');
@@ -73102,7 +73249,7 @@ function drawSymbolElements(buffers, layer, gl, program) {
         gl.drawElements(gl.TRIANGLES, segment.primitiveLength * 3, gl.UNSIGNED_SHORT, segment.primitiveOffset * 3 * 2);
     }
 }
-},{"../source/pixels_to_tile_units":142,"../util/browser":206,"./draw_collision_debug":123}],130:[function(require,module,exports){
+},{"../source/pixels_to_tile_units":143,"../util/browser":207,"./draw_collision_debug":124}],131:[function(require,module,exports){
 'use strict';
 var FrameHistory = function FrameHistory() {
     this.changeTimes = new Float64Array(256);
@@ -73161,7 +73308,7 @@ FrameHistory.prototype.bind = function bind(gl) {
     }
 };
 module.exports = FrameHistory;
-},{}],131:[function(require,module,exports){
+},{}],132:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var LineAtlas = function LineAtlas(width, height) {
@@ -73259,7 +73406,7 @@ LineAtlas.prototype.bind = function bind(gl) {
     }
 };
 module.exports = LineAtlas;
-},{"../util/util":225}],132:[function(require,module,exports){
+},{"../util/util":226}],133:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 var mat4 = require('@mapbox/gl-matrix').mat4;
@@ -73589,7 +73736,7 @@ Painter.prototype.useProgram = function useProgram(name, programConfiguration) {
     return nextProgram;
 };
 module.exports = Painter;
-},{"../data/buffer":104,"../data/extent":107,"../data/pos_array":110,"../data/program_configuration":111,"../data/raster_bounds_array":112,"../source/pixels_to_tile_units":142,"../source/source_cache":147,"../util/browser":206,"../util/util":225,"./draw_background":121,"./draw_circle":122,"./draw_debug":124,"./draw_fill":125,"./draw_fill_extrusion":126,"./draw_line":127,"./draw_raster":128,"./draw_symbol":129,"./frame_history":130,"./shaders":134,"./vertex_array_object":135,"@mapbox/gl-matrix":14}],133:[function(require,module,exports){
+},{"../data/buffer":105,"../data/extent":108,"../data/pos_array":111,"../data/program_configuration":112,"../data/raster_bounds_array":113,"../source/pixels_to_tile_units":143,"../source/source_cache":148,"../util/browser":207,"../util/util":226,"./draw_background":122,"./draw_circle":123,"./draw_debug":125,"./draw_fill":126,"./draw_fill_extrusion":127,"./draw_line":128,"./draw_raster":129,"./draw_symbol":130,"./frame_history":131,"./shaders":135,"./vertex_array_object":136,"@mapbox/gl-matrix":15}],134:[function(require,module,exports){
 'use strict';
 var pixelsToTileUnits = require('../source/pixels_to_tile_units');
 exports.prepare = function (image, painter, program) {
@@ -73621,7 +73768,7 @@ exports.setTile = function (tile, painter, program) {
     gl.uniform2f(program.u_pixel_coord_upper, pixelX >> 16, pixelY >> 16);
     gl.uniform2f(program.u_pixel_coord_lower, pixelX & 65535, pixelY & 65535);
 };
-},{"../source/pixels_to_tile_units":142}],134:[function(require,module,exports){
+},{"../source/pixels_to_tile_units":143}],135:[function(require,module,exports){
 'use strict';
 
 var path = require('path');
@@ -73695,7 +73842,7 @@ module.exports = {
         vertexSource: "const float PI = 3.141592653589793;\n\nattribute vec2 a_pos;\nattribute vec2 a_offset;\nattribute vec2 a_texture_pos;\nattribute vec4 a_data;\n\n\n// matrix is for the vertex position.\nuniform mat4 u_matrix;\n\nuniform mediump float u_zoom;\nuniform bool u_rotate_with_map;\nuniform bool u_pitch_with_map;\nuniform mediump float u_pitch;\nuniform mediump float u_bearing;\nuniform mediump float u_aspect_ratio;\nuniform vec2 u_extrude_scale;\n\nuniform vec2 u_texsize;\n\nvarying vec2 v_tex;\nvarying vec2 v_fade_tex;\nvarying float v_gamma_scale;\n\nvoid main() {\n    vec2 a_tex = a_texture_pos.xy;\n    mediump float a_labelminzoom = a_data[0];\n    mediump vec2 a_zoom = a_data.pq;\n    mediump float a_minzoom = a_zoom[0];\n    mediump float a_maxzoom = a_zoom[1];\n\n    // u_zoom is the current zoom level adjusted for the change in font size\n    mediump float z = 2.0 - step(a_minzoom, u_zoom) - (1.0 - step(a_maxzoom, u_zoom));\n\n    // pitch-alignment: map\n    // rotation-alignment: map | viewport\n    if (u_pitch_with_map) {\n        lowp float angle = u_rotate_with_map ? (a_data[1] / 256.0 * 2.0 * PI) : u_bearing;\n        lowp float asin = sin(angle);\n        lowp float acos = cos(angle);\n        mat2 RotationMatrix = mat2(acos, asin, -1.0 * asin, acos);\n        vec2 offset = RotationMatrix * a_offset;\n        vec2 extrude = u_extrude_scale * (offset / 64.0);\n        gl_Position = u_matrix * vec4(a_pos + extrude, 0, 1);\n        gl_Position.z += z * gl_Position.w;\n    // pitch-alignment: viewport\n    // rotation-alignment: map\n    } else if (u_rotate_with_map) {\n        // foreshortening factor to apply on pitched maps\n        // as a label goes from horizontal <=> vertical in angle\n        // it goes from 0% foreshortening to up to around 70% foreshortening\n        lowp float pitchfactor = 1.0 - cos(u_pitch * sin(u_pitch * 0.75));\n\n        lowp float lineangle = a_data[1] / 256.0 * 2.0 * PI;\n\n        // use the lineangle to position points a,b along the line\n        // project the points and calculate the label angle in projected space\n        // this calculation allows labels to be rendered unskewed on pitched maps\n        vec4 a = u_matrix * vec4(a_pos, 0, 1);\n        vec4 b = u_matrix * vec4(a_pos + vec2(cos(lineangle),sin(lineangle)), 0, 1);\n        lowp float angle = atan((b[1]/b[3] - a[1]/a[3])/u_aspect_ratio, b[0]/b[3] - a[0]/a[3]);\n        lowp float asin = sin(angle);\n        lowp float acos = cos(angle);\n        mat2 RotationMatrix = mat2(acos, -1.0 * asin, asin, acos);\n\n        vec2 offset = RotationMatrix * (vec2((1.0-pitchfactor)+(pitchfactor*cos(angle*2.0)), 1.0) * a_offset);\n        vec2 extrude = u_extrude_scale * (offset / 64.0);\n        gl_Position = u_matrix * vec4(a_pos, 0, 1) + vec4(extrude, 0, 0);\n        gl_Position.z += z * gl_Position.w;\n    // pitch-alignment: viewport\n    // rotation-alignment: viewport\n    } else {\n        vec2 extrude = u_extrude_scale * (a_offset / 64.0);\n        gl_Position = u_matrix * vec4(a_pos, 0, 1) + vec4(extrude, 0, 0);\n    }\n\n    v_gamma_scale = gl_Position.w;\n\n    v_tex = a_tex / u_texsize;\n    v_fade_tex = vec2(a_labelminzoom / 255.0, 0.0);\n}\n"
     }
 };
-},{"path":249}],135:[function(require,module,exports){
+},{"path":250}],136:[function(require,module,exports){
 'use strict';
 var VertexArrayObject = function VertexArrayObject() {
     this.boundProgram = null;
@@ -73758,7 +73905,7 @@ VertexArrayObject.prototype.destroy = function destroy() {
     }
 };
 module.exports = VertexArrayObject;
-},{}],136:[function(require,module,exports){
+},{}],137:[function(require,module,exports){
 'use strict';
 var ImageSource = require('./image_source');
 var window = require('../util/window');
@@ -73839,7 +73986,7 @@ var CanvasSource = function (ImageSource) {
     return CanvasSource;
 }(ImageSource);
 module.exports = CanvasSource;
-},{"../util/window":208,"./image_source":140}],137:[function(require,module,exports){
+},{"../util/window":209,"./image_source":141}],138:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var util = require('../util/util');
@@ -73991,7 +74138,7 @@ function resolveURL(url) {
     return a.href;
 }
 module.exports = GeoJSONSource;
-},{"../data/extent":107,"../util/evented":214,"../util/util":225,"../util/window":208}],138:[function(require,module,exports){
+},{"../data/extent":108,"../util/evented":215,"../util/util":226,"../util/window":209}],139:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var rewind = require('geojson-rewind');
@@ -74081,7 +74228,7 @@ var GeoJSONWorkerSource = function (VectorTileWorkerSource) {
     return GeoJSONWorkerSource;
 }(VectorTileWorkerSource);
 module.exports = GeoJSONWorkerSource;
-},{"../util/ajax":205,"./geojson_wrapper":139,"./vector_tile_worker_source":151,"geojson-rewind":41,"geojson-vt":45,"supercluster":235,"vt-pbf":242}],139:[function(require,module,exports){
+},{"../util/ajax":206,"./geojson_wrapper":140,"./vector_tile_worker_source":152,"geojson-rewind":42,"geojson-vt":46,"supercluster":236,"vt-pbf":243}],140:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var VectorTileFeature = require('vector-tile').VectorTileFeature;
@@ -74147,7 +74294,7 @@ GeoJSONWrapper.prototype.feature = function feature(i) {
     return new FeatureWrapper(this.features[i]);
 };
 module.exports = GeoJSONWrapper;
-},{"../data/extent":107,"point-geometry":232,"vector-tile":238}],140:[function(require,module,exports){
+},{"../data/extent":108,"point-geometry":233,"vector-tile":239}],141:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var window = require('../util/window');
@@ -74272,7 +74419,7 @@ var ImageSource = function (Evented) {
     return ImageSource;
 }(Evented);
 module.exports = ImageSource;
-},{"../data/buffer":104,"../data/extent":107,"../data/raster_bounds_array":112,"../geo/lng_lat":115,"../render/vertex_array_object":135,"../util/ajax":205,"../util/evented":214,"../util/util":225,"../util/window":208,"./tile_coord":149,"point-geometry":232}],141:[function(require,module,exports){
+},{"../data/buffer":105,"../data/extent":108,"../data/raster_bounds_array":113,"../geo/lng_lat":116,"../render/vertex_array_object":136,"../util/ajax":206,"../util/evented":215,"../util/util":226,"../util/window":209,"./tile_coord":150,"point-geometry":233}],142:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var ajax = require('../util/ajax');
@@ -74303,13 +74450,13 @@ module.exports = function (options, callback) {
         browser.frame(loaded.bind(null, null, options));
     }
 };
-},{"../util/ajax":205,"../util/browser":206,"../util/mapbox":221,"../util/util":225}],142:[function(require,module,exports){
+},{"../util/ajax":206,"../util/browser":207,"../util/mapbox":222,"../util/util":226}],143:[function(require,module,exports){
 'use strict';
 var EXTENT = require('../data/extent');
 module.exports = function (tile, pixelValue, z) {
     return pixelValue * (EXTENT / (tile.tileSize * Math.pow(2, z - tile.coord.z)));
 };
-},{"../data/extent":107}],143:[function(require,module,exports){
+},{"../data/extent":108}],144:[function(require,module,exports){
 'use strict';
 var TileCoord = require('./tile_coord');
 exports.rendered = function (sourceCache, styleLayers, queryGeometry, params, zoom, bearing) {
@@ -74369,7 +74516,7 @@ function mergeRenderedFeatureLayers(tiles) {
     }
     return result;
 }
-},{"./tile_coord":149}],144:[function(require,module,exports){
+},{"./tile_coord":150}],145:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var ajax = require('../util/ajax');
@@ -74473,7 +74620,7 @@ var RasterTileSource = function (Evented) {
     return RasterTileSource;
 }(Evented);
 module.exports = RasterTileSource;
-},{"../util/ajax":205,"../util/evented":214,"../util/mapbox":221,"../util/util":225,"./load_tilejson":141}],145:[function(require,module,exports){
+},{"../util/ajax":206,"../util/evented":215,"../util/mapbox":222,"../util/util":226,"./load_tilejson":142}],146:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var window = require('../util/window');
@@ -74506,7 +74653,7 @@ module.exports.setRTLTextPlugin = function (pluginURL, callback) {
         }
     });
 };
-},{"../util/ajax":205,"../util/window":208}],146:[function(require,module,exports){
+},{"../util/ajax":206,"../util/window":209}],147:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var sourceTypes = {
@@ -74537,7 +74684,7 @@ exports.getType = function (name) {
 exports.setType = function (name, type) {
     sourceTypes[name] = type;
 };
-},{"../source/canvas_source":136,"../source/geojson_source":137,"../source/image_source":140,"../source/raster_tile_source":144,"../source/vector_tile_source":150,"../source/video_source":152,"../util/util":225}],147:[function(require,module,exports){
+},{"../source/canvas_source":137,"../source/geojson_source":138,"../source/image_source":141,"../source/raster_tile_source":145,"../source/vector_tile_source":151,"../source/video_source":153,"../util/util":226}],148:[function(require,module,exports){
 'use strict';
 var Source = require('./source');
 var Tile = require('./tile');
@@ -74964,7 +75111,7 @@ function isRasterType(type) {
     return type === 'raster' || type === 'image' || type === 'video';
 }
 module.exports = SourceCache;
-},{"../data/extent":107,"../geo/coordinate":114,"../util/evented":214,"../util/lru_cache":220,"../util/util":225,"./source":146,"./tile":148,"./tile_coord":149}],148:[function(require,module,exports){
+},{"../data/extent":108,"../geo/coordinate":115,"../util/evented":215,"../util/lru_cache":221,"../util/util":226,"./source":147,"./tile":149,"./tile_coord":150}],149:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var Bucket = require('../data/bucket');
@@ -75125,7 +75272,7 @@ Tile.prototype.getExpiry = function getExpiry() {
     }
 };
 module.exports = Tile;
-},{"../data/bucket":98,"../data/feature_index":108,"../symbol/collision_box":174,"../symbol/collision_tile":176,"../symbol/symbol_instances":185,"../symbol/symbol_quads":186,"../util/util":225,"../util/vectortile_to_geojson":226,"feature-filter":39,"pbf":231,"vector-tile":238}],149:[function(require,module,exports){
+},{"../data/bucket":99,"../data/feature_index":109,"../symbol/collision_box":175,"../symbol/collision_tile":177,"../symbol/symbol_instances":186,"../symbol/symbol_quads":187,"../util/util":226,"../util/vectortile_to_geojson":227,"feature-filter":40,"pbf":232,"vector-tile":239}],150:[function(require,module,exports){
 'use strict';
 var WhooTS = require('whoots-js');
 var Coordinate = require('../geo/coordinate');
@@ -75283,7 +75430,7 @@ function getQuadkey(z, x, y) {
     return quadkey;
 }
 module.exports = TileCoord;
-},{"../geo/coordinate":114,"whoots-js":247}],150:[function(require,module,exports){
+},{"../geo/coordinate":115,"whoots-js":248}],151:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var util = require('../util/util');
@@ -75395,7 +75542,7 @@ var VectorTileSource = function (Evented) {
     return VectorTileSource;
 }(Evented);
 module.exports = VectorTileSource;
-},{"../util/evented":214,"../util/mapbox":221,"../util/util":225,"./load_tilejson":141}],151:[function(require,module,exports){
+},{"../util/evented":215,"../util/mapbox":222,"../util/util":226,"./load_tilejson":142}],152:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var vt = require('vector-tile');
@@ -75499,7 +75646,7 @@ VectorTileWorkerSource.prototype.redoPlacement = function redoPlacement(params, 
     }
 };
 module.exports = VectorTileWorkerSource;
-},{"../util/ajax":205,"../util/util":225,"./worker_tile":154,"pbf":231,"vector-tile":238}],152:[function(require,module,exports){
+},{"../util/ajax":206,"../util/util":226,"./worker_tile":155,"pbf":232,"vector-tile":239}],153:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var ImageSource = require('./image_source');
@@ -75565,7 +75712,7 @@ var VideoSource = function (ImageSource) {
     return VideoSource;
 }(ImageSource);
 module.exports = VideoSource;
-},{"../util/ajax":205,"./image_source":140}],153:[function(require,module,exports){
+},{"../util/ajax":206,"./image_source":141}],154:[function(require,module,exports){
 'use strict';
 var Actor = require('../util/actor');
 var StyleLayerIndex = require('../style/style_layer_index');
@@ -75664,7 +75811,7 @@ Worker.prototype.getWorkerSource = function getWorkerSource(mapId, type) {
 module.exports = function createWorker(self) {
     return new Worker(self);
 };
-},{"../style/style_layer_index":167,"../util/actor":204,"./geojson_worker_source":138,"./rtl_text_plugin":145,"./vector_tile_worker_source":151}],154:[function(require,module,exports){
+},{"../style/style_layer_index":168,"../util/actor":205,"./geojson_worker_source":139,"./rtl_text_plugin":146,"./vector_tile_worker_source":152}],155:[function(require,module,exports){
 'use strict';
 var FeatureIndex = require('../data/feature_index');
 var CollisionTile = require('../symbol/collision_tile');
@@ -75848,7 +75995,7 @@ function serializeBuckets(buckets, transferables) {
     });
 }
 module.exports = WorkerTile;
-},{"../data/feature_index":108,"../symbol/collision_box":174,"../symbol/collision_tile":176,"../symbol/symbol_instances":185,"../symbol/symbol_quads":186,"../util/dictionary_coder":211,"../util/util":225}],155:[function(require,module,exports){
+},{"../data/feature_index":109,"../symbol/collision_box":175,"../symbol/collision_tile":177,"../symbol/symbol_instances":186,"../symbol/symbol_quads":187,"../util/dictionary_coder":212,"../util/util":226}],156:[function(require,module,exports){
 'use strict';
 var AnimationLoop = function AnimationLoop() {
     this.n = 0;
@@ -75873,7 +76020,7 @@ AnimationLoop.prototype.cancel = function cancel(n) {
     });
 };
 module.exports = AnimationLoop;
-},{}],156:[function(require,module,exports){
+},{}],157:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var ajax = require('../util/ajax');
@@ -75954,7 +76101,7 @@ var ImageSprite = function (Evented) {
     return ImageSprite;
 }(Evented);
 module.exports = ImageSprite;
-},{"../util/ajax":205,"../util/browser":206,"../util/evented":214,"../util/mapbox":221}],157:[function(require,module,exports){
+},{"../util/ajax":206,"../util/browser":207,"../util/evented":215,"../util/mapbox":222}],158:[function(require,module,exports){
 'use strict';
 var styleSpec = require('./style_spec');
 var util = require('../util/util');
@@ -76086,7 +76233,7 @@ var Light = function (Evented) {
     return Light;
 }(Evented);
 module.exports = Light;
-},{"../util/evented":214,"../util/util":225,"./style_declaration":160,"./style_spec":168,"./style_transition":169,"./validate_style":170}],158:[function(require,module,exports){
+},{"../util/evented":215,"../util/util":226,"./style_declaration":161,"./style_spec":169,"./style_transition":170,"./validate_style":171}],159:[function(require,module,exports){
 'use strict';
 var parseColorString = require('csscolorparser').parseCSSColor;
 var util = require('../util/util');
@@ -76125,7 +76272,7 @@ module.exports = function parseColor(input) {
         throw new Error('Invalid color ' + input);
     }
 };
-},{"../util/util":225,"csscolorparser":33,"mapbox-gl-function":67}],159:[function(require,module,exports){
+},{"../util/util":226,"csscolorparser":34,"mapbox-gl-function":68}],160:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var StyleLayer = require('./style_layer');
@@ -76800,7 +76947,7 @@ var Style = function (Evented) {
     return Style;
 }(Evented);
 module.exports = Style;
-},{"../global_worker_pool":118,"../render/line_atlas":131,"../source/query_features":143,"../source/rtl_text_plugin":145,"../source/source":146,"../source/source_cache":147,"../symbol/glyph_source":179,"../symbol/sprite_atlas":184,"../util/ajax":205,"../util/browser":206,"../util/dispatcher":212,"../util/evented":214,"../util/mapbox":221,"../util/util":225,"./animation_loop":155,"./image_sprite":156,"./light":157,"./style_layer":161,"./style_spec":168,"./validate_style":170,"mapbox-gl-function":67,"mapbox-gl-style-spec/lib/deref":68,"mapbox-gl-style-spec/lib/diff":69}],160:[function(require,module,exports){
+},{"../global_worker_pool":119,"../render/line_atlas":132,"../source/query_features":144,"../source/rtl_text_plugin":146,"../source/source":147,"../source/source_cache":148,"../symbol/glyph_source":180,"../symbol/sprite_atlas":185,"../util/ajax":206,"../util/browser":207,"../util/dispatcher":213,"../util/evented":215,"../util/mapbox":222,"../util/util":226,"./animation_loop":156,"./image_sprite":157,"./light":158,"./style_layer":162,"./style_spec":169,"./validate_style":171,"mapbox-gl-function":68,"mapbox-gl-style-spec/lib/deref":69,"mapbox-gl-style-spec/lib/diff":70}],161:[function(require,module,exports){
 'use strict';
 var MapboxGLFunction = require('mapbox-gl-function');
 var parseColor = require('./parse_color');
@@ -76854,7 +77001,7 @@ StyleDeclaration.prototype.calculateInterpolationT = function calculateInterpola
     return this.functionInterpolationT(globalProperties && globalProperties.zoom, featureProperties || {});
 };
 module.exports = StyleDeclaration;
-},{"../util/util":225,"./parse_color":158,"mapbox-gl-function":67}],161:[function(require,module,exports){
+},{"../util/util":226,"./parse_color":159,"mapbox-gl-function":68}],162:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var StyleTransition = require('./style_transition');
@@ -77141,7 +77288,7 @@ StyleLayer.create = function (layer) {
 function getDeclarationValue(declaration) {
     return declaration.value;
 }
-},{"../util/evented":214,"../util/util":225,"./parse_color":158,"./style_declaration":160,"./style_layer/circle_style_layer":162,"./style_layer/fill_extrusion_style_layer":163,"./style_layer/fill_style_layer":164,"./style_layer/line_style_layer":165,"./style_layer/symbol_style_layer":166,"./style_spec":168,"./style_transition":169,"./validate_style":170}],162:[function(require,module,exports){
+},{"../util/evented":215,"../util/util":226,"./parse_color":159,"./style_declaration":161,"./style_layer/circle_style_layer":163,"./style_layer/fill_extrusion_style_layer":164,"./style_layer/fill_style_layer":165,"./style_layer/line_style_layer":166,"./style_layer/symbol_style_layer":167,"./style_spec":169,"./style_transition":170,"./validate_style":171}],163:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var CircleBucket = require('../../data/bucket/circle_bucket');
@@ -77159,7 +77306,7 @@ var CircleStyleLayer = function (StyleLayer) {
     return CircleStyleLayer;
 }(StyleLayer);
 module.exports = CircleStyleLayer;
-},{"../../data/bucket/circle_bucket":99,"../style_layer":161}],163:[function(require,module,exports){
+},{"../../data/bucket/circle_bucket":100,"../style_layer":162}],164:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var FillExtrusionBucket = require('../../data/bucket/fill_extrusion_bucket');
@@ -77184,7 +77331,7 @@ var FillExtrusionStyleLayer = function (StyleLayer) {
     return FillExtrusionStyleLayer;
 }(StyleLayer);
 module.exports = FillExtrusionStyleLayer;
-},{"../../data/bucket/fill_extrusion_bucket":101,"../style_layer":161}],164:[function(require,module,exports){
+},{"../../data/bucket/fill_extrusion_bucket":102,"../style_layer":162}],165:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var FillBucket = require('../../data/bucket/fill_bucket');
@@ -77247,7 +77394,7 @@ var FillStyleLayer = function (StyleLayer) {
     return FillStyleLayer;
 }(StyleLayer);
 module.exports = FillStyleLayer;
-},{"../../data/bucket/fill_bucket":100,"../style_layer":161}],165:[function(require,module,exports){
+},{"../../data/bucket/fill_bucket":101,"../style_layer":162}],166:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var LineBucket = require('../../data/bucket/line_bucket');
@@ -77275,7 +77422,7 @@ var LineStyleLayer = function (StyleLayer) {
     return LineStyleLayer;
 }(StyleLayer);
 module.exports = LineStyleLayer;
-},{"../../data/bucket/line_bucket":102,"../../util/util":225,"../style_layer":161}],166:[function(require,module,exports){
+},{"../../data/bucket/line_bucket":103,"../../util/util":226,"../style_layer":162}],167:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var SymbolBucket = require('../../data/bucket/symbol_bucket');
@@ -77308,7 +77455,7 @@ var SymbolStyleLayer = function (StyleLayer) {
     return SymbolStyleLayer;
 }(StyleLayer);
 module.exports = SymbolStyleLayer;
-},{"../../data/bucket/symbol_bucket":103,"../style_layer":161}],167:[function(require,module,exports){
+},{"../../data/bucket/symbol_bucket":104,"../style_layer":162}],168:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('./style_layer');
 var util = require('../util/util');
@@ -77374,10 +77521,10 @@ StyleLayerIndex.prototype.update = function update(layerConfigs, removedIds, sym
     }
 };
 module.exports = StyleLayerIndex;
-},{"../util/util":225,"./style_layer":161,"feature-filter":39,"mapbox-gl-style-spec/lib/group_by_layout":71}],168:[function(require,module,exports){
+},{"../util/util":226,"./style_layer":162,"feature-filter":40,"mapbox-gl-style-spec/lib/group_by_layout":72}],169:[function(require,module,exports){
 'use strict';
 module.exports = require('mapbox-gl-style-spec/reference/latest.min');
-},{"mapbox-gl-style-spec/reference/latest.min":94}],169:[function(require,module,exports){
+},{"mapbox-gl-style-spec/reference/latest.min":95}],170:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var interpolate = require('../util/interpolate');
@@ -77449,7 +77596,7 @@ function interpZoomTransitioned(from, to, t) {
         t: t
     };
 }
-},{"../util/interpolate":217,"../util/util":225}],170:[function(require,module,exports){
+},{"../util/interpolate":218,"../util/util":226}],171:[function(require,module,exports){
 'use strict';
 module.exports = require('mapbox-gl-style-spec/lib/validate_style.min');
 module.exports.emitErrors = function (emitter, errors) {
@@ -77462,7 +77609,7 @@ module.exports.emitErrors = function (emitter, errors) {
         return false;
     }
 };
-},{"mapbox-gl-style-spec/lib/validate_style.min":93}],171:[function(require,module,exports){
+},{"mapbox-gl-style-spec/lib/validate_style.min":94}],172:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var Anchor = function (Point) {
@@ -77483,7 +77630,7 @@ var Anchor = function (Point) {
     return Anchor;
 }(Point);
 module.exports = Anchor;
-},{"point-geometry":232}],172:[function(require,module,exports){
+},{"point-geometry":233}],173:[function(require,module,exports){
 'use strict';
 module.exports = checkMaxAngle;
 function checkMaxAngle(line, anchor, labelLength, windowSize, maxAngle) {
@@ -77526,7 +77673,7 @@ function checkMaxAngle(line, anchor, labelLength, windowSize, maxAngle) {
     }
     return true;
 }
-},{}],173:[function(require,module,exports){
+},{}],174:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 module.exports = clipLine;
@@ -77575,7 +77722,7 @@ function clipLine(lines, x1, y1, x2, y2) {
     }
     return clippedLines;
 }
-},{"point-geometry":232}],174:[function(require,module,exports){
+},{"point-geometry":233}],175:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var Point = require('point-geometry');
@@ -77649,7 +77796,7 @@ Object.defineProperty(CollisionBoxArray.prototype.StructType.prototype, 'anchorP
     }
 });
 module.exports = CollisionBoxArray;
-},{"../util/struct_array":223,"point-geometry":232}],175:[function(require,module,exports){
+},{"../util/struct_array":224,"point-geometry":233}],176:[function(require,module,exports){
 'use strict';
 var CollisionFeature = function CollisionFeature(collisionBoxArray, line, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaped, boxScale, padding, alignLine, straight) {
     var y1 = shaped.top * boxScale - padding;
@@ -77714,7 +77861,7 @@ CollisionFeature.prototype._addLineCollisionBoxes = function _addLineCollisionBo
     return bboxes;
 };
 module.exports = CollisionFeature;
-},{}],176:[function(require,module,exports){
+},{}],177:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var EXTENT = require('../data/extent');
@@ -77940,7 +78087,7 @@ CollisionTile.prototype.insertCollisionFeature = function insertCollisionFeature
     }
 };
 module.exports = CollisionTile;
-},{"../data/extent":107,"../util/intersection_tests":218,"grid-index":50,"point-geometry":232}],177:[function(require,module,exports){
+},{"../data/extent":108,"../util/intersection_tests":219,"grid-index":51,"point-geometry":233}],178:[function(require,module,exports){
 'use strict';
 var interpolate = require('../util/interpolate');
 var Anchor = require('../symbol/anchor');
@@ -77985,7 +78132,7 @@ function resample(line, offset, spacing, angleWindowSize, maxAngle, labelLength,
     }
     return anchors;
 }
-},{"../symbol/anchor":171,"../util/interpolate":217,"./check_max_angle":172}],178:[function(require,module,exports){
+},{"../symbol/anchor":172,"../util/interpolate":218,"./check_max_angle":173}],179:[function(require,module,exports){
 'use strict';
 var ShelfPack = require('shelf-pack');
 var util = require('../util/util');
@@ -78116,7 +78263,7 @@ GlyphAtlas.prototype.updateTexture = function updateTexture(gl) {
     }
 };
 module.exports = GlyphAtlas;
-},{"../util/util":225,"shelf-pack":234}],179:[function(require,module,exports){
+},{"../util/util":226,"shelf-pack":235}],180:[function(require,module,exports){
 'use strict';
 var normalizeURL = require('../util/mapbox').normalizeGlyphsURL;
 var ajax = require('../util/ajax');
@@ -78225,7 +78372,7 @@ function glyphUrl(fontstack, range, url, subdomains) {
     return url.replace('{s}', subdomains[fontstack.length % subdomains.length]).replace('{fontstack}', fontstack).replace('{range}', range);
 }
 module.exports = GlyphSource;
-},{"../symbol/glyph_atlas":178,"../util/ajax":205,"../util/glyphs":216,"../util/mapbox":221,"../util/verticalize_punctuation":227,"pbf":231}],180:[function(require,module,exports){
+},{"../symbol/glyph_atlas":179,"../util/ajax":206,"../util/glyphs":217,"../util/mapbox":222,"../util/verticalize_punctuation":228,"pbf":232}],181:[function(require,module,exports){
 'use strict';
 module.exports = function (features) {
     var leftIndex = {};
@@ -78286,7 +78433,7 @@ module.exports = function (features) {
         return f.geometry;
     });
 };
-},{}],181:[function(require,module,exports){
+},{}],182:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 module.exports = {
@@ -78462,7 +78609,7 @@ function getSegmentGlyphs(glyphs, anchor, offset, line, segment, forward) {
     }
     return placementScale;
 }
-},{"point-geometry":232}],182:[function(require,module,exports){
+},{"point-geometry":233}],183:[function(require,module,exports){
 'use strict';
 var resolveTokens = require('../util/token');
 module.exports = function resolveText(feature, layout) {
@@ -78479,7 +78626,7 @@ module.exports = function resolveText(feature, layout) {
     }
     return text;
 };
-},{"../util/token":224}],183:[function(require,module,exports){
+},{"../util/token":225}],184:[function(require,module,exports){
 'use strict';
 var scriptDetection = require('../util/script_detection');
 var verticalizePunctuation = require('../util/verticalize_punctuation');
@@ -78718,7 +78865,7 @@ function PositionedIcon(image, top, bottom, left, right) {
     this.left = left;
     this.right = right;
 }
-},{"../source/rtl_text_plugin":145,"../util/script_detection":222,"../util/verticalize_punctuation":227}],184:[function(require,module,exports){
+},{"../source/rtl_text_plugin":146,"../util/script_detection":223,"../util/verticalize_punctuation":228}],185:[function(require,module,exports){
 'use strict';
 var ShelfPack = require('shelf-pack');
 var browser = require('../util/browser');
@@ -78883,7 +79030,7 @@ function copyBitmap(src, srcStride, srcX, srcY, dst, dstStride, dstX, dstY, widt
         }
     }
 }
-},{"../util/browser":206,"../util/util":225,"shelf-pack":234}],185:[function(require,module,exports){
+},{"../util/browser":207,"../util/util":226,"shelf-pack":235}],186:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var Point = require('point-geometry');
@@ -78945,7 +79092,7 @@ Object.defineProperty(SymbolInstancesArray.prototype.StructType.prototype, 'anch
     }
 });
 module.exports = SymbolInstancesArray;
-},{"../util/struct_array":223,"point-geometry":232}],186:[function(require,module,exports){
+},{"../util/struct_array":224,"point-geometry":233}],187:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var Point = require('point-geometry');
@@ -79048,7 +79195,7 @@ Object.defineProperty(SymbolQuadsArray.prototype.StructType.prototype, 'SymbolQu
     }
 });
 module.exports = SymbolQuadsArray;
-},{"../util/struct_array":223,"./quads":181,"point-geometry":232}],187:[function(require,module,exports){
+},{"../util/struct_array":224,"./quads":182,"point-geometry":233}],188:[function(require,module,exports){
 'use strict';
 var DOM = require('../util/dom');
 var Point = require('point-geometry');
@@ -79182,7 +79329,7 @@ module.exports = function bindHandlers(map, options) {
         });
     }
 };
-},{"../util/dom":213,"./handler/box_zoom":193,"./handler/dblclick_zoom":194,"./handler/drag_pan":195,"./handler/drag_rotate":196,"./handler/keyboard":197,"./handler/scroll_zoom":198,"./handler/touch_zoom_rotate":199,"point-geometry":232}],188:[function(require,module,exports){
+},{"../util/dom":214,"./handler/box_zoom":194,"./handler/dblclick_zoom":195,"./handler/drag_pan":196,"./handler/drag_rotate":197,"./handler/keyboard":198,"./handler/scroll_zoom":199,"./handler/touch_zoom_rotate":200,"point-geometry":233}],189:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var interpolate = require('../util/interpolate');
@@ -79548,7 +79695,7 @@ var Camera = function (Evented) {
     return Camera;
 }(Evented);
 module.exports = Camera;
-},{"../geo/lng_lat":115,"../geo/lng_lat_bounds":116,"../util/browser":206,"../util/evented":214,"../util/interpolate":217,"../util/util":225,"point-geometry":232}],189:[function(require,module,exports){
+},{"../geo/lng_lat":116,"../geo/lng_lat_bounds":117,"../util/browser":207,"../util/evented":215,"../util/interpolate":218,"../util/util":226,"point-geometry":233}],190:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -79631,7 +79778,7 @@ AttributionControl.prototype._updateCompact = function _updateCompact() {
     this._container.classList[compact ? 'add' : 'remove']('compact');
 };
 module.exports = AttributionControl;
-},{"../../util/dom":213,"../../util/util":225}],190:[function(require,module,exports){
+},{"../../util/dom":214,"../../util/util":226}],191:[function(require,module,exports){
 'use strict';
 var Evented = require('../../util/evented');
 var DOM = require('../../util/dom');
@@ -79738,7 +79885,7 @@ var GeolocateControl = function (Evented) {
     return GeolocateControl;
 }(Evented);
 module.exports = GeolocateControl;
-},{"../../util/dom":213,"../../util/evented":214,"../../util/util":225,"../../util/window":208}],191:[function(require,module,exports){
+},{"../../util/dom":214,"../../util/evented":215,"../../util/util":226,"../../util/window":209}],192:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var window = require('../../util/window');
@@ -79828,7 +79975,7 @@ function copyMouseEvent(e) {
         metaKey: e.metaKey
     });
 }
-},{"../../util/dom":213,"../../util/util":225,"../../util/window":208}],192:[function(require,module,exports){
+},{"../../util/dom":214,"../../util/util":226,"../../util/window":209}],193:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -79899,7 +80046,7 @@ function getRoundNum(num) {
     d = d >= 10 ? 10 : d >= 5 ? 5 : d >= 3 ? 3 : d >= 2 ? 2 : 1;
     return pow10 * d;
 }
-},{"../../util/dom":213,"../../util/util":225}],193:[function(require,module,exports){
+},{"../../util/dom":214,"../../util/util":226}],194:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var LngLatBounds = require('../../geo/lng_lat_bounds');
@@ -79992,7 +80139,7 @@ BoxZoomHandler.prototype._fireEvent = function _fireEvent(type, e) {
     return this._map.fire(type, { originalEvent: e });
 };
 module.exports = BoxZoomHandler;
-},{"../../geo/lng_lat_bounds":116,"../../util/dom":213,"../../util/util":225,"../../util/window":208}],194:[function(require,module,exports){
+},{"../../geo/lng_lat_bounds":117,"../../util/dom":214,"../../util/util":226,"../../util/window":209}],195:[function(require,module,exports){
 'use strict';
 var DoubleClickZoomHandler = function DoubleClickZoomHandler(map) {
     this._map = map;
@@ -80017,7 +80164,7 @@ DoubleClickZoomHandler.prototype._onDblClick = function _onDblClick(e) {
     this._map.zoomTo(this._map.getZoom() + (e.originalEvent.shiftKey ? -1 : 1), { around: e.lngLat }, e);
 };
 module.exports = DoubleClickZoomHandler;
-},{}],195:[function(require,module,exports){
+},{}],196:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -80165,7 +80312,7 @@ DragPanHandler.prototype._drainInertiaBuffer = function _drainInertiaBuffer() {
         inertia.shift();
 };
 module.exports = DragPanHandler;
-},{"../../util/dom":213,"../../util/util":225,"../../util/window":208}],196:[function(require,module,exports){
+},{"../../util/dom":214,"../../util/util":226,"../../util/window":209}],197:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -80310,7 +80457,7 @@ DragRotateHandler.prototype._drainInertiaBuffer = function _drainInertiaBuffer()
         inertia.shift();
 };
 module.exports = DragRotateHandler;
-},{"../../util/dom":213,"../../util/util":225,"../../util/window":208}],197:[function(require,module,exports){
+},{"../../util/dom":214,"../../util/util":226,"../../util/window":209}],198:[function(require,module,exports){
 'use strict';
 var panStep = 100, bearingStep = 15, pitchStep = 10;
 var KeyboardHandler = function KeyboardHandler(map) {
@@ -80407,7 +80554,7 @@ function easeOut(t) {
     return t * (2 - t);
 }
 module.exports = KeyboardHandler;
-},{}],198:[function(require,module,exports){
+},{}],199:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -80498,7 +80645,7 @@ ScrollZoomHandler.prototype._zoom = function _zoom(delta, e) {
     }, { originalEvent: e });
 };
 module.exports = ScrollZoomHandler;
-},{"../../util/browser":206,"../../util/dom":213,"../../util/util":225,"../../util/window":208}],199:[function(require,module,exports){
+},{"../../util/browser":207,"../../util/dom":214,"../../util/util":226,"../../util/window":209}],200:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -80625,7 +80772,7 @@ TouchZoomRotateHandler.prototype._drainInertiaBuffer = function _drainInertiaBuf
         inertia.shift();
 };
 module.exports = TouchZoomRotateHandler;
-},{"../../util/dom":213,"../../util/util":225,"../../util/window":208}],200:[function(require,module,exports){
+},{"../../util/dom":214,"../../util/util":226,"../../util/window":209}],201:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var window = require('../util/window');
@@ -80673,7 +80820,7 @@ Hash.prototype._updateHash = function _updateHash() {
     window.history.replaceState('', '', hash);
 };
 module.exports = Hash;
-},{"../util/util":225,"../util/window":208}],201:[function(require,module,exports){
+},{"../util/util":226,"../util/window":209}],202:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var browser = require('../util/browser');
@@ -81321,7 +81468,7 @@ function removeNode(node) {
         node.parentNode.removeChild(node);
     }
 }
-},{"../geo/lng_lat":115,"../geo/lng_lat_bounds":116,"../geo/transform":117,"../render/painter":132,"../style/animation_loop":155,"../style/style":159,"../util/browser":206,"../util/dom":213,"../util/util":225,"../util/window":208,"./bind_handlers":187,"./camera":188,"./control/attribution_control":189,"./hash":200,"mapbox-gl-supported":96,"point-geometry":232}],202:[function(require,module,exports){
+},{"../geo/lng_lat":116,"../geo/lng_lat_bounds":117,"../geo/transform":118,"../render/painter":133,"../style/animation_loop":156,"../style/style":160,"../util/browser":207,"../util/dom":214,"../util/util":226,"../util/window":209,"./bind_handlers":188,"./camera":189,"./control/attribution_control":190,"./hash":201,"mapbox-gl-supported":97,"point-geometry":233}],203:[function(require,module,exports){
 'use strict';
 var DOM = require('../util/dom');
 var LngLat = require('../geo/lng_lat');
@@ -81413,7 +81560,7 @@ Marker.prototype._update = function _update(e) {
     DOM.setTransform(this._element, 'translate(' + pos.x + 'px, ' + pos.y + 'px)');
 };
 module.exports = Marker;
-},{"../geo/lng_lat":115,"../util/dom":213,"point-geometry":232}],203:[function(require,module,exports){
+},{"../geo/lng_lat":116,"../util/dom":214,"point-geometry":233}],204:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var Evented = require('../util/evented');
@@ -81631,7 +81778,7 @@ function isPointLike(input) {
     return input instanceof Point || Array.isArray(input);
 }
 module.exports = Popup;
-},{"../geo/lng_lat":115,"../util/dom":213,"../util/evented":214,"../util/util":225,"../util/window":208,"point-geometry":232}],204:[function(require,module,exports){
+},{"../geo/lng_lat":116,"../util/dom":214,"../util/evented":215,"../util/util":226,"../util/window":209,"point-geometry":233}],205:[function(require,module,exports){
 'use strict';
 var Actor = function Actor(target, parent, mapId) {
     this.target = target;
@@ -81688,7 +81835,7 @@ Actor.prototype.remove = function remove() {
     this.target.removeEventListener('message', this.receive, false);
 };
 module.exports = Actor;
-},{}],205:[function(require,module,exports){
+},{}],206:[function(require,module,exports){
 'use strict';
 var window = require('./window');
 exports.getJSON = function (url, callback) {
@@ -81775,7 +81922,7 @@ exports.getVideo = function (urls, callback) {
     }
     return video;
 };
-},{"./window":208}],206:[function(require,module,exports){
+},{"./window":209}],207:[function(require,module,exports){
 'use strict';
 var window = require('./window');
 module.exports.now = function () {
@@ -81837,7 +81984,7 @@ webpImgTest.onload = function () {
     exports.supportsWebp = true;
 };
 webpImgTest.src = 'data:image/webp;base64,UklGRh4AAABXRUJQVlA4TBEAAAAvAQAAAAfQ//73v/+BiOh/AAA=';
-},{"./window":208,"mapbox-gl-supported":96}],207:[function(require,module,exports){
+},{"./window":209,"mapbox-gl-supported":97}],208:[function(require,module,exports){
 'use strict';
 var WebWorkify = require('webworkify');
 var window = require('../window');
@@ -81845,10 +81992,10 @@ var workerURL = window.URL.createObjectURL(new WebWorkify(require('../../source/
 module.exports = function () {
     return new window.Worker(workerURL);
 };
-},{"../../source/worker":153,"../window":208,"webworkify":245}],208:[function(require,module,exports){
+},{"../../source/worker":154,"../window":209,"webworkify":246}],209:[function(require,module,exports){
 'use strict';
 module.exports = self;
-},{}],209:[function(require,module,exports){
+},{}],210:[function(require,module,exports){
 'use strict';
 var quickselect = require('quickselect');
 var calculateSignedArea = require('./util').calculateSignedArea;
@@ -81888,7 +82035,7 @@ module.exports = function classifyRings(rings, maxRings) {
 function compareAreas(a, b) {
     return b.area - a.area;
 }
-},{"./util":225,"quickselect":233}],210:[function(require,module,exports){
+},{"./util":226,"quickselect":234}],211:[function(require,module,exports){
 'use strict';
 var config = {
     API_URL: 'https://api.mapbox.com',
@@ -81896,7 +82043,7 @@ var config = {
     ACCESS_TOKEN: null
 };
 module.exports = config;
-},{}],211:[function(require,module,exports){
+},{}],212:[function(require,module,exports){
 'use strict';
 var DictionaryCoder = function DictionaryCoder(strings) {
     var this$1 = this;
@@ -81915,7 +82062,7 @@ DictionaryCoder.prototype.decode = function decode(n) {
     return this._numberToString[n];
 };
 module.exports = DictionaryCoder;
-},{}],212:[function(require,module,exports){
+},{}],213:[function(require,module,exports){
 'use strict';
 var util = require('./util');
 var Actor = require('./actor');
@@ -81955,7 +82102,7 @@ Dispatcher.prototype.remove = function remove() {
     this.workerPool.release(this.id);
 };
 module.exports = Dispatcher;
-},{"./actor":204,"./util":225}],213:[function(require,module,exports){
+},{"./actor":205,"./util":226}],214:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var window = require('./window');
@@ -82030,7 +82177,7 @@ exports.remove = function (node) {
         node.parentNode.removeChild(node);
     }
 };
-},{"./window":208,"point-geometry":232}],214:[function(require,module,exports){
+},{"./window":209,"point-geometry":233}],215:[function(require,module,exports){
 'use strict';
 var util = require('./util');
 var Evented = function Evented() {
@@ -82087,7 +82234,7 @@ Evented.prototype.setEventedParent = function setEventedParent(parent, data) {
     return this;
 };
 module.exports = Evented;
-},{"./util":225}],215:[function(require,module,exports){
+},{"./util":226}],216:[function(require,module,exports){
 'use strict';
 var Queue = require('tinyqueue');
 var Point = require('point-geometry');
@@ -82180,7 +82327,7 @@ function getCentroidCell(polygon) {
     }
     return new Cell(x / area, y / area, 0, polygon);
 }
-},{"./intersection_tests":218,"point-geometry":232,"tinyqueue":236}],216:[function(require,module,exports){
+},{"./intersection_tests":219,"point-geometry":233,"tinyqueue":237}],217:[function(require,module,exports){
 'use strict';
 module.exports = Glyphs;
 function Glyphs(pbf, end) {
@@ -82218,7 +82365,7 @@ function readGlyph(tag, glyph, pbf) {
     else if (tag === 7)
         glyph.advance = pbf.readVarint();
 }
-},{}],217:[function(require,module,exports){
+},{}],218:[function(require,module,exports){
 'use strict';
 module.exports = interpolate;
 function interpolate(a, b, t) {
@@ -82244,7 +82391,7 @@ interpolate.array = function (from, to, t) {
         return interpolate(d, to[i], t);
     });
 };
-},{}],218:[function(require,module,exports){
+},{}],219:[function(require,module,exports){
 'use strict';
 var isCounterClockwise = require('./util').isCounterClockwise;
 module.exports = {
@@ -82404,7 +82551,7 @@ function polygonContainsPoint(ring, p) {
     }
     return c;
 }
-},{"./util":225}],219:[function(require,module,exports){
+},{"./util":226}],220:[function(require,module,exports){
 'use strict';
 var unicodeBlockLookup = {
     'Latin-1 Supplement': function (char) {
@@ -82535,7 +82682,7 @@ var unicodeBlockLookup = {
     }
 };
 module.exports = unicodeBlockLookup;
-},{}],220:[function(require,module,exports){
+},{}],221:[function(require,module,exports){
 'use strict';
 var LRUCache = function LRUCache(max, onRemove) {
     this.max = max;
@@ -82603,7 +82750,7 @@ LRUCache.prototype.setMaxSize = function setMaxSize(max) {
     return this;
 };
 module.exports = LRUCache;
-},{}],221:[function(require,module,exports){
+},{}],222:[function(require,module,exports){
 'use strict';
 var config = require('./config');
 var browser = require('./browser');
@@ -82692,7 +82839,7 @@ function formatUrl(obj) {
     var params = obj.params.length ? '?' + obj.params.join('&') : '';
     return obj.protocol + '://' + obj.authority + obj.path + params;
 }
-},{"./browser":206,"./config":210}],222:[function(require,module,exports){
+},{"./browser":207,"./config":211}],223:[function(require,module,exports){
 'use strict';
 var isChar = require('./is_char_in_unicode_block');
 module.exports.allowsIdeographicBreaking = function (chars) {
@@ -82897,7 +83044,7 @@ exports.charHasNeutralVerticalOrientation = function (char) {
 exports.charHasRotatedVerticalOrientation = function (char) {
     return !(exports.charHasUprightVerticalOrientation(char) || exports.charHasNeutralVerticalOrientation(char));
 };
-},{"./is_char_in_unicode_block":219}],223:[function(require,module,exports){
+},{"./is_char_in_unicode_block":220}],224:[function(require,module,exports){
 'use strict';
 module.exports = createStructArrayType;
 var viewTypes = {
@@ -83095,7 +83242,7 @@ function createGetter(member, c) {
 function createSetter(member, c) {
     return new Function('x', createMemberComponentString(member, c) + ' = x;');
 }
-},{}],224:[function(require,module,exports){
+},{}],225:[function(require,module,exports){
 'use strict';
 module.exports = resolveTokens;
 function resolveTokens(properties, text) {
@@ -83103,7 +83250,7 @@ function resolveTokens(properties, text) {
         return key in properties ? properties[key] : '';
     });
 }
-},{}],225:[function(require,module,exports){
+},{}],226:[function(require,module,exports){
 'use strict';
 var UnitBezier = require('@mapbox/unitbezier');
 var Coordinate = require('../geo/coordinate');
@@ -83332,7 +83479,7 @@ exports.parseCacheControl = function (cacheControl) {
     }
     return header;
 };
-},{"../geo/coordinate":114,"@mapbox/unitbezier":15,"point-geometry":232}],226:[function(require,module,exports){
+},{"../geo/coordinate":115,"@mapbox/unitbezier":16,"point-geometry":233}],227:[function(require,module,exports){
 'use strict';
 var Feature = function Feature(vectorTileFeature, z, x, y) {
     this.type = 'Feature';
@@ -83367,7 +83514,7 @@ Feature.prototype.toJSON = function toJSON() {
 };
 Object.defineProperties(Feature.prototype, prototypeAccessors);
 module.exports = Feature;
-},{}],227:[function(require,module,exports){
+},{}],228:[function(require,module,exports){
 'use strict';
 var scriptDetection = require('./script_detection');
 module.exports = function verticalizePunctuation(input) {
@@ -83469,7 +83616,7 @@ module.exports.lookup = {
     '\uFF62': '\uFE41',
     '\uFF63': '\uFE42'
 };
-},{"./script_detection":222}],228:[function(require,module,exports){
+},{"./script_detection":223}],229:[function(require,module,exports){
 'use strict';
 var WebWorker = require('./web_worker');
 var WorkerPool = function WorkerPool() {
@@ -83497,11 +83644,11 @@ WorkerPool.prototype.release = function release(mapId) {
     }
 };
 module.exports = WorkerPool;
-},{"../mapbox-gl":120,"./web_worker":207}],229:[function(require,module,exports){
+},{"../mapbox-gl":121,"./web_worker":208}],230:[function(require,module,exports){
 module.exports={
   "version": "0.32.1"
 }
-},{}],230:[function(require,module,exports){
+},{}],231:[function(require,module,exports){
 'use strict';
 
 // lightweight Buffer shim for pbf browser build
@@ -83662,7 +83809,7 @@ function encodeString(str) {
     return bytes;
 }
 
-},{"ieee754":51}],231:[function(require,module,exports){
+},{"ieee754":52}],232:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -84088,7 +84235,7 @@ function writePackedFixed64(arr, pbf)  { for (var i = 0; i < arr.length; i++) pb
 function writePackedSFixed64(arr, pbf) { for (var i = 0; i < arr.length; i++) pbf.writeSFixed64(arr[i]); }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./buffer":230}],232:[function(require,module,exports){
+},{"./buffer":231}],233:[function(require,module,exports){
 'use strict';
 
 module.exports = Point;
@@ -84221,7 +84368,7 @@ Point.convert = function (a) {
     return a;
 };
 
-},{}],233:[function(require,module,exports){
+},{}],234:[function(require,module,exports){
 'use strict';
 
 module.exports = partialSort;
@@ -84283,7 +84430,7 @@ function defaultCompare(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
 }
 
-},{}],234:[function(require,module,exports){
+},{}],235:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
@@ -84538,7 +84685,7 @@ Shelf.prototype.resize = function(w) {
 return ShelfPack;
 
 }));
-},{}],235:[function(require,module,exports){
+},{}],236:[function(require,module,exports){
 'use strict';
 
 var kdbush = require('kdbush');
@@ -84872,7 +85019,7 @@ function getY(p) {
     return p.y;
 }
 
-},{"kdbush":54}],236:[function(require,module,exports){
+},{"kdbush":55}],237:[function(require,module,exports){
 'use strict';
 
 module.exports = TinyQueue;
@@ -84953,7 +85100,7 @@ function swap(data, i, j) {
     data[j] = tmp;
 }
 
-},{}],237:[function(require,module,exports){
+},{}],238:[function(require,module,exports){
 /*
  * Toastr
  * Copyright 2012-2015
@@ -85390,12 +85537,12 @@ function swap(data, i, j) {
     }
 }));
 
-},{"jquery":53}],238:[function(require,module,exports){
+},{"jquery":54}],239:[function(require,module,exports){
 module.exports.VectorTile = require('./lib/vectortile.js');
 module.exports.VectorTileFeature = require('./lib/vectortilefeature.js');
 module.exports.VectorTileLayer = require('./lib/vectortilelayer.js');
 
-},{"./lib/vectortile.js":239,"./lib/vectortilefeature.js":240,"./lib/vectortilelayer.js":241}],239:[function(require,module,exports){
+},{"./lib/vectortile.js":240,"./lib/vectortilefeature.js":241,"./lib/vectortilelayer.js":242}],240:[function(require,module,exports){
 'use strict';
 
 var VectorTileLayer = require('./vectortilelayer');
@@ -85414,7 +85561,7 @@ function readTile(tag, layers, pbf) {
 }
 
 
-},{"./vectortilelayer":241}],240:[function(require,module,exports){
+},{"./vectortilelayer":242}],241:[function(require,module,exports){
 'use strict';
 
 var Point = require('point-geometry');
@@ -85649,7 +85796,7 @@ function signedArea(ring) {
     return sum;
 }
 
-},{"point-geometry":232}],241:[function(require,module,exports){
+},{"point-geometry":233}],242:[function(require,module,exports){
 'use strict';
 
 var VectorTileFeature = require('./vectortilefeature.js');
@@ -85712,7 +85859,7 @@ VectorTileLayer.prototype.feature = function(i) {
     return new VectorTileFeature(this._pbf, end, this.extent, this._keys, this._values);
 };
 
-},{"./vectortilefeature.js":240}],242:[function(require,module,exports){
+},{"./vectortilefeature.js":241}],243:[function(require,module,exports){
 var Pbf = require('pbf')
 var vtpb = require('./vector-tile-pb')
 var GeoJSONWrapper = require('./lib/geojson_wrapper')
@@ -85868,7 +86015,7 @@ function wrapValue (value) {
   return result
 }
 
-},{"./lib/geojson_wrapper":243,"./vector-tile-pb":244,"pbf":231}],243:[function(require,module,exports){
+},{"./lib/geojson_wrapper":244,"./vector-tile-pb":245,"pbf":232}],244:[function(require,module,exports){
 'use strict'
 
 var Point = require('point-geometry')
@@ -85936,7 +86083,7 @@ FeatureWrapper.prototype.bbox = function () {
 
 FeatureWrapper.prototype.toGeoJSON = VectorTileFeature.prototype.toGeoJSON
 
-},{"point-geometry":232,"vector-tile":238}],244:[function(require,module,exports){
+},{"point-geometry":233,"vector-tile":239}],245:[function(require,module,exports){
 'use strict';
 
 // tile ========================================
@@ -86042,7 +86189,7 @@ function writeLayer(layer, pbf) {
     if (layer.extent !== undefined) pbf.writeVarintField(5, layer.extent);
 }
 
-},{}],245:[function(require,module,exports){
+},{}],246:[function(require,module,exports){
 var bundleFn = arguments[3];
 var sources = arguments[4];
 var cache = arguments[5];
@@ -86125,12 +86272,12 @@ module.exports = function (fn, options) {
     return worker;
 };
 
-},{}],246:[function(require,module,exports){
+},{}],247:[function(require,module,exports){
 module.exports.RADIUS = 6378137;
 module.exports.FLATTENING = 1/298.257223563;
 module.exports.POLAR_RADIUS = 6356752.3142;
 
-},{}],247:[function(require,module,exports){
+},{}],248:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -86220,7 +86367,7 @@ exports.getMercCoords = getMercCoords;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 }));
-},{}],248:[function(require,module,exports){
+},{}],249:[function(require,module,exports){
 (function (global){
 //This is Ice Age Mapper Version 2.1
 
@@ -86250,19 +86397,24 @@ var ui = require("./ui/ui.js");
 prototypes.enableAllPrototypes();
 
 //see if the user passed in a saved map token
-shareToken = utils.getParameterByName('shareToken');
-
+var shareToken = utils.getParameterByName('shareToken');
+var taxonName = utils.getParameterByName('taxonname');
+var taxonID = utils.getParameterByName('taxonid');
 
 $(document).ready(function(){
   if (utils.isValidToken(shareToken)){
-    ui.load(shareToken)
+    ui.loadFromToken(shareToken)
+  }else if(utils.isValidTaxonName(taxonName)){
+    ui.loadFromTaxonName(taxonName)
+  }else if (utils.isValidTaxonID(taxonID)){
+    ui.loadFromTaxonID(taxonID);
   }else{
-    ui.loadClean();
+    ui.create();
   }
 })
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./../../lib/layout.js":13,"./config/config.js":1,"./config/prototypes.js":2,"./config/state.js":3,"./processes/utils.js":5,"./ui/ui.js":12,"bootstrap":16,"jquery":53,"jquery-ui-bundle":52}],249:[function(require,module,exports){
+},{"./../../lib/layout.js":14,"./config/config.js":1,"./config/prototypes.js":2,"./config/state.js":3,"./processes/utils.js":6,"./ui/ui.js":13,"bootstrap":17,"jquery":54,"jquery-ui-bundle":53}],250:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -86490,7 +86642,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,require('_process'))
-},{"_process":250}],250:[function(require,module,exports){
+},{"_process":251}],251:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -86672,7 +86824,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],251:[function(require,module,exports){
+},{}],252:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -86697,14 +86849,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],252:[function(require,module,exports){
+},{}],253:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],253:[function(require,module,exports){
+},{}],254:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -87294,4 +87446,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":252,"_process":250,"inherits":251}]},{},[248]);
+},{"./support/isBuffer":253,"_process":251,"inherits":252}]},{},[249]);

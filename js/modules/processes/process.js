@@ -1,71 +1,85 @@
 var processes = (function(){
-  var mergeMeta = function(occurrences, datasets, callback){
+
+  function mergeMetadata(occurrences, datasets){
+
+    var processedAndValidated = new Array()
 
     //depends on having arrays for occurrences and metadata
-    for (var i=0; i < appData.occurrences.length; i++){
-      for (var j=0; j < appD.datasetMeta.length; j++){
-        occ = appData.occurrences[i];
-        dat = appData.datasetMeta[j];
-        datID = dat['DatasetID']
-        occID = occ['DatasetID']
-        if (datID == occID){
-          occ['DatasetMeta'] = dat
-          appData.occurrences[i] = occ
-          if (+dat.Site.Altitude > -1){
-            appData.occurrences[i].altitude = +dat.Site.Altitude
-          }else{
-            appData.occurrences[i].altitude = 0 //TODO: remove?
+    for (var i=0; i < occurrences.length; i++){
+      for (var j=0; j < datasets.length; j++){
+        occ = occurrences[i];
+        dat = datasets[j];
+        datID = dat.DatasetID
+        occID = occ.DatasetID
+        if (datID == occID){ //if the
+          var validatedOccurrence = processRow(occ, dat)
+          if (validatedOccurrence){
+            processedAndValidated.push(validatedOccurrence)
           }
         }
       }
     }
-    if (appData.occurrences.length != 0){
-        callback()
+    return processedAndValidated;
+  }; // end mergeMeta
+
+  function processRow(occurrence, dataset){
+    //add necessary metadata
+    //derive properties so they're easier to access later with underscore
+    occurrence.datasetMeta = dataset
+    occurrence.latitude = (occurrence.SiteLatitudeNorth + occurrence.SiteLatitudeSouth)/2
+    occurrence.longitude = (occurrence.SiteLongitudeWest + occurrence.SiteLongitudeEast)/2
+    occurrence.age = occurrence.SampleAge
+    occurrence.ageUncertainty = 0
+    if (occurrence.age == null){
+    occurrence.age = (occurrence.SampleAgeYounger + occurrence.SampleAgeOlder)/2
+    occurrence.ageUncertainty = (occurrence.SampleAgeOlder - occurrence.SampleAgeYounger) / 2
     }
-  };
 
-  //make sure that data from the neotoma server is in the right format
-  //derive properties so they're easier to access
-  //should be called after the metadata has been merged
-  function validateNeotomaData(){
-    internalID = 0
-    for (var i=0; i < appData.occurrences.length; i++){
-       lat = (appData.occurrences [i]['SiteLatitudeNorth'] + appData.occurrences [i]['SiteLatitudeSouth'])/2
-       lng = (appData.occurrences[i]['SiteLongitudeWest'] + appData.occurrences [i]['SiteLongitudeEast'])/2
-       appData.occurrences [i]['latitude'] = lat
-       appData.occurrences[i]['longitude'] = lng
-      appData.occurrences[i]['age'] = appData.occurrences[i]['SampleAge']
-       if (appData.occurrences[i]['age'] == null){
-         appData.occurrences[i]['age'] = (appData.occurrences[i]['SampleAgeYounger'] + appData.occurrences[i]['SampleAgeOlder'])/2
-       }
-       appData.occurrences[i]._id = internalID
-       appData.occurrences[i].siteid = appData.occurrences[i].DatasetMeta.Site.SiteID
+    if (occurrence.datasetMeta.DatasetPIs.length == 0){
+      occurrence.datasetMeta.DatasetPIs.push({ContactName: "None Listed"});
+    }
 
-       //check that the values can be included in crossfilter
-       if (appData.occurrences[i].altitude == null || appData.occurrences[i].altitude == undefined || +appData.occurrences[i].altitude == NaN ){
-         appData.altitude = -9999;
-       }
-       if (appData.occurrences[i].latitude == null || appData.occurrences[i].latitude == undefined || +appData.occurrences[i].latitude == NaN ){
-         appData.latitude = -9999;
-       }
-       if (appData.occurrences[i].longitude == null || appData.occurrences[i].longitude == undefined || +appData.occurrences[i].longitude == NaN ){
-         appData.longitude = -9999;
-       }
-       if (appData.occurrences[i].age == null || appData.occurrences[i].age == undefined || +appData.occurrences[i].age == NaN ){
-         appData.age = -9999;
-       }
-       internalID += 1
-     }
+    occurrence.siteid = occurrence.datasetMeta.Site.SiteID;
+
+    var _isValidRow = validateRow(occurrence)
+    if (_isValidRow){
+        return occurrence;
+    }
+    return false;
   }
+
+
+
+  function validateRow(row){
+    //check that the values can be included in crossfilter
+    var _valid = new Array();
+    _valid.push(validateField(row.altitude))
+    _valid.push(validateField(row.latitude))
+    _valid.push(validateField(row.longitude))
+    _valid.push(validateField(row.age))
+    if (_valid.indexOf(false) > 0){
+      return false
+    }
+    return true
+  }
+
+  function validateField(fieldValue){
+    if (fieldValue == null || fieldValue == undefined || +fieldValue == NaN ){
+      return false
+    }
+    return true
+  }
+
+
+
 
 
 
 
   return {
-    mergeMetadata: mergeMeta,
-    validateNeotomaData: validateNeotomaData
+    mergeMetadata: mergeMetadata
   }
-})
+})();
 
 
 module.exports = processes;

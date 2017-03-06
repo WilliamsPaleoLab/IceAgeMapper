@@ -26,13 +26,18 @@ var ui = require("./ui/ui.js");
 prototypes.enableAllPrototypes();
 
 //see if the user passed in a saved map token
-shareToken = utils.getParameterByName('shareToken');
-
+var shareToken = utils.getParameterByName('shareToken');
+var taxonName = utils.getParameterByName('taxonname');
+var taxonID = utils.getParameterByName('taxonid');
 
 $(document).ready(function(){
   if (utils.isValidToken(shareToken)){
-    ui.load(shareToken)
+    ui.loadFromToken(shareToken)
+  }else if(utils.isValidTaxonName(taxonName)){
+    ui.loadFromTaxonName(taxonName)
+  }else if (utils.isValidTaxonID(taxonID)){
+    ui.loadFromTaxonID(taxonID);
   }else{
-    ui.loadClean();
+    ui.create();
   }
 })

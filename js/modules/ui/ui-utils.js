@@ -112,7 +112,6 @@ var UIUtils = (function(){
    setTimeout(globals.elements.mapChart.doFilter, 1000)
   }
 
-
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,

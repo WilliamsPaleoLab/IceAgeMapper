@@ -12,6 +12,7 @@ var utils = (function(){
       return decodeURIComponent(results[2].replace(/\+/g, " "));
   }; //end get parameter by name function
 
+
   var lookupSite = function(siteID){
     //pick out the site meta from occurrences with a certain siteID
     site = _.find(appData.occurrences, function(d){return d.siteid == siteID})
@@ -38,6 +39,34 @@ var utils = (function(){
     }
     return false
   };
+
+  function isValidTaxonName(taxonname){
+    if (taxonname === ""){
+      return false
+    }
+    if (taxonname === null){
+      return false
+    }
+    if (taxonname === undefined){
+      return false
+    }
+    return true;
+  }
+  function isValidTaxonID(taxonid){
+    if (taxonid === ""){
+      return false
+    }
+    if (taxonid === null){
+      return false
+    }
+    if (taxonid === undefined){
+      return false
+    }
+    if (+taxonid === NaN){
+      return false
+    }
+    return true;
+  }
 
 
 
@@ -112,7 +141,9 @@ var utils = (function(){
     createShareLink: createShareLink,
     validateShareMapMetadata: validateShareMapMetadata,
     getShareMapMetadata: getShareMapMetadata,
-    isValidToken: isValidToken
+    isValidToken: isValidToken,
+    isValidTaxonName: isValidTaxonName,
+    isValidTaxonID: isValidTaxonID
   }
 
 })();//end utils module
