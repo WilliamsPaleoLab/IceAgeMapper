@@ -14,10 +14,9 @@
     "url": "git+https://github.com/scottsfarley93/IceAgeMapper.git"
   },
   "dependencies": {
-    "d3": "3",
+    "d3": "~3",
     "jquery": "3",
     "bootstrap": "~3.3",
-    "d3": "~3",
     "jquery-ui": "latest",
     "jquery-ui-bundle": "latest",
     "underscore": "latest",
@@ -38,6 +37,10 @@
   "homepage": "https://github.com/scottsfarley93/IceAgeMapper#readme",
   "devDependencies": {
     "browserify": "^14.1.0",
-    "browserify-shim": "^3.8.13"
+    "browserify-shim": "^3.8.13",
+    "grunt-browserify": "^5.0.0",
+    "grunt-karma": "^2.0.0",
+    "karma-bro": "^0.11.1",
+    "karma-phantomjs-launcher": "^1.0.2"
   }
 }
