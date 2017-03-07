@@ -46,24 +46,26 @@ var io = (function(){
   };//end of getConfiguration
 
   //get a list of taxa from Neotomadb
-  var loadTaxa = function(callback){
+  var getTaxa = function(config, callback){
     //loads the taxa file specified in the configuration object
     //runs the callback specified in the arguments
+    console.log(config.dataSources.taxa)
     $.getJSON(config.dataSources.taxa, function(data){
-      callback(data)
+      console.log(data)
+      callback(data, config)
     })
   }; //end of loadTaxa
 
   //get a list of ecological groups from Neotomadb
-  var loadEcolGroups = function(callback){
+  var getEcolGroups = function(config, callback, extraArgs){
     //load the ecological groups from the file specified in the configuration object
     $.getJSON(config.dataSources.ecolGroups, function(data){
-      callback(data )
+      callback(data, extraArgs)
     })
   }; //end of loadEcolGroups
 
   //get IceSheet geojson for overlay
- var loadIceSheets =function(callback){
+ var getIceSheets =function(callback){
     $.ajax(config.dataSources.icesheets, {
       success: function(d){
         callback(data)
@@ -231,9 +233,9 @@ var io = (function(){
   return {
     getOccurrenceData: getOccurrenceData,
     getTaxonInfo: getTaxonInfo,
-    loadTaxa: loadTaxa,
-    loadEcolGroups: loadEcolGroups,
-    loadIceSheets: loadIceSheets,
+    getTaxa: getTaxa,
+    getEcolGroups: getEcolGroups,
+    getIceSheets: getIceSheets,
     getConfiguration: getConfiguration,
     getDatasets: getDatasets,
     getTemperatureData: getTemperatureData,

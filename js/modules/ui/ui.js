@@ -66,6 +66,8 @@ var ui = (function(){
 
   //initialize a new UI session using the configuration either default or remote
   var  initialize = function(config, state){
+    window.config = config;
+    window.state = state;
 
     //create UI components
     layout = layoutModule.create(config, state);
@@ -75,6 +77,9 @@ var ui = (function(){
     //create the bottom temperature distribution
     temperatureChart = temperatureChartModule.create(config);
 
+    //load some extra components
+    UIUtils.createLoadDataWindowComponents(config);
+    console.log(IO)
 
     //get the data from neotoma
     if (state.doSearch){
@@ -89,7 +94,6 @@ var ui = (function(){
     }
     processedData = process.mergeMetadata(occurrences, datasets);
     crossfilteredData = process.crossfilterIt(processedData)
-    console.log(crossfilteredData)
     analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
     mapChart.dimension(crossfilteredData.dimensions.geoDimension, crossfilteredData.dimensions.geoGroup)
     render();

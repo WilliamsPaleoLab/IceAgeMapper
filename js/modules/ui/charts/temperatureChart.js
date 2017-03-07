@@ -50,7 +50,7 @@ var tempChart = (function(){
             .x(d3.scale.linear().domain(xDomain))
             .margins(margins)
             .y(d3.scale.linear().domain(yDomain))
-            .brushOn(false)
+            .brushOn(true)
             .yAxisLabel(yLab, 25)
             .xAxisLabel(xLab)
             .on('renderlet', function(chart) {

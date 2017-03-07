@@ -16,14 +16,23 @@ window.mapboxToken = "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ
 // var config = require("./config/config.js");
 // var state = require("./config/state.js");
 var prototypes = require("./config/prototypes.js");
+var UIEvents = require("./ui/events.js");
+var appData = require("./config/data.js");
 // var utils = require("./processes/utils.js");
 
 
 //holds UI elements
 var ui = require("./ui/ui.js");
 
+
 // custom methods on javascript object primitives
 prototypes.enableAllPrototypes();
+
+//juqery events on the UI
+UIEvents.enableAll();
+
+//attach datasets to the window so we can use them on events
+window.appData = appData.create();
 
 $(document).ready(function(){
   ui.create();

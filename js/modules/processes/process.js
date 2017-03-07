@@ -109,7 +109,7 @@ var processes = (function(){
       }).reduceCount()
 
     groups.ageGroup = dimensions.ageDimension.group(function(d){
-      return Math.round(d/1)*1
+      return Math.round(d/1000)*1000
     }).reduceCount()
 
     groups.latitudeGroup = dimensions.latitudeDimension.group(function(d){

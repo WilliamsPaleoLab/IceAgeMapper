@@ -1,8 +1,12 @@
 var toastr = require('toastr');
-
+var _ = require("underscore");
+var $ = require("jquery");
+var Awesomplete = require("Awesomplete");
+var IO;
 
 var UIUtils = (function(){
   //UI utility method called when metadata for a shared map is not valid
+
   function failShareValidation(validationResponse){
     for (var i=0; i < validationResponse.failed.length; i++){
       failed = validationResponse.failed[i];
@@ -25,27 +29,50 @@ var UIUtils = (function(){
     }
   };
 
+  function createLoadDataWindowComponents(config){
+    IO = require("./../processes/io.js"); //this is weird, it fails if we load at beginning of script TODO: fix
+    IO.getTaxa(config, onTaxaReceipt);
+  }
+
+
+  function onTaxaReceipt(data, config){
+      createTaxaAutocomplete(data);
+      window.appData.taxa = data
+      //also load the dropdown menus
+      IO.getEcolGroups(config, onEcolGroupsReceipt); //pass through the taxa data
+  }
+
+  function onEcolGroupsReceipt(data){
+    if (data['success']){
+      populateEcolGroupDropdown(data['data'], window.appData.taxa);
+      window.appData.ecolGroups = data;
+    }else{
+      displayError("Failed to load remote data source.");
+      throw "Failed to load ecological groups";
+    }
+  }
+
   //populate the ecological group menu with data
   //used as a callback from the getEcolGroups function
-  var populateEcolGroupDropdown = function(data){
+  var populateEcolGroupDropdown = function(data, taxa){
     //populate the ecological groups dropdown menu
     //add a new <option> for each group in the response
-    appData.ecolGroups = data
     $("#ecolGroupSelect").empty() //clear the list
-    for (var i = 0; i < appData.ecolGroups.length; i++){
-      grp = appData.ecolGroups[i]
+    for (var i = 0; i < data.length; i++){
+      grp = data[i]
       html = "<option value='" + grp['EcolGroupID'] + "'>" + grp['EcolGroup'] + "</option>"
       $("#ecolGroupSelect").append(html)
     }
 
     //set the attached taxa menu to be a smart default
-    filterAndPopulateTaxaDropdown(appData.ecolGroups[0])
+    filterAndPopulateTaxaDropdown(data[0], taxa)
   }
 
-  var filterAndPopulateTaxaDropdown = function(selectedGroup){
+  var filterAndPopulateTaxaDropdown = function(selectedGroup, taxa){
+    console.log(taxa)
     //filter the taxa list to the selected ecological group
     //put the filtered list into the taxa dropdown
-    filteredTaxa = _.filter(appData.taxa, function(d){
+    filteredTaxa = _.filter(taxa, function(d){
       return ((d.EcolGroups.indexOf(selectedGroup) > -1))
     })
     //add an <option> to the dropdown for each of the filtered taxa
@@ -62,10 +89,10 @@ var UIUtils = (function(){
   };
 
 
-  var createTaxaAutocomplete = function(){
+  var createTaxaAutocomplete = function(data){
     //populate the search bar, and make it so it autocompletes when a user starts typing
     //add taxa to the data list first
-    taxaNames = _.pluck(appData.taxa, "TaxonName")
+    taxaNames = _.pluck(data, "TaxonName")
     input = document.getElementById("taxaAutocomplete")
     taxaAutocomplete = new Awesomplete(input, {
       list: taxaNames,
@@ -120,7 +147,8 @@ var UIUtils = (function(){
     createTaxaAutocomplete: createTaxaAutocomplete,
     displayError:displayError,
     displayInfo: displayInfo,
-    displaySuccess: displaySuccess
+    displaySuccess: displaySuccess,
+    createLoadDataWindowComponents: createLoadDataWindowComponents
   }
 })();
 

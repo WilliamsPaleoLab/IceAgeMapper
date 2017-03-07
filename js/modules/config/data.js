@@ -1,6 +1,7 @@
 //this is where the data from remote sources laoded via ajax is stored
 var appData = (function(){
-  return {
+
+  var blank = {
     taxa: [],
     ecolGroups: [],
     occurrences: [],
@@ -9,4 +10,14 @@ var appData = (function(){
     icesheets: [],
     tempDat: []
   }
+
+  function create(){
+    return blank
+  }
+
+  return {
+    create: create
+  }
 })();
+
+module.exports = appData;
