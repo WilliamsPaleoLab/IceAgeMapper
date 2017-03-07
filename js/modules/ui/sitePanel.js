@@ -1,3 +1,8 @@
+var mapboxgl = require('mapbox-gl');
+var utils = require('./../processes/utils.js');
+var _ = require("underscore");
+
+
 var sitePanel = (function(){
 
   var addSiteMetadata = function(activeSite){
@@ -26,8 +31,8 @@ var sitePanel = (function(){
     //all sites only have one dataset (in this model)
     //but some datasets have multiple listed PIs (some have none)
     piTable = ""
-    for (var i = 0; i < theseSamples[0].DatasetMeta.DatasetPIs.length; i++){
-        thisSitePI = theseSamples[0].DatasetMeta.DatasetPIs[i]
+    for (var i = 0; i < theseSamples[0].datasetMeta.DatasetPIs.length; i++){
+        thisSitePI = theseSamples[0].datasetMeta.DatasetPIs[i]
         piTable += "<tr><td>Dataset Investigator: </td><td>" + thisSitePI.ContactName + "</td><tr>"
     }
     if (piTable == ""){
@@ -37,7 +42,7 @@ var sitePanel = (function(){
   }
 
   function getTheseSamples(siteID){
-    theseSamples = lookupSamples(siteID)
+    theseSamples = utils.lookupSamples(siteID)
     theseSamples = _.sortBy(theseSamples, function(d){return d.age})
     return theseSamples
   }
@@ -52,7 +57,7 @@ var sitePanel = (function(){
     state.openSite = true; //programmatically open the map if the map is shared while the site window is open
 
     //do the actual panel open
-    layout.open("west") //open the panel
+    window.layout.open("west") //open the panel
 
     theseSamples = getTheseSamples(siteID)
 
@@ -66,32 +71,47 @@ var sitePanel = (function(){
 
   }
 
+
+
   //trigger a popup on the open site
-  function triggerPopup(activeSite){
-
-    //where does it go?
-      lng = (activeSite.LongitudeWest + activeSite.LongitudeEast) / 2
-      lat = (activeSite.LatitudeNorth + activeSite.LatitudeSouth) / 2
-
+  function triggerPopup(lat, lng){
+    //returns true if we need to return  the
       coords = new mapboxgl.LngLat(lng, lat)
-      pt = ui.map.project(coords)
+      pt = window.map.project(coords)
 
       //is there anything there?
-      var features = ui.map.queryRenderedFeatures(pt, { layers: ['points'] });
+      var features = window.map.queryRenderedFeatures(pt, { layers: ['points'] });
 
       if (!features.length) {
-          return;
+          return false;
       }
 
       var feature = features[0];
       //make sure the popup opens on the point of the symbol, not the point of the event
       coords = new mapboxgl.LngLat(feature.properties.longitude, feature.properties.latitude)
-
       var popup = new mapboxgl.Popup()
           .setLngLat(coords)
-          .setHTML(config.map.popupTextFunction(feature)) //custom popup function
-          .addTo(ui.map);
+          .setHTML(createPopupText(feature)) //custom popup function
+          .addTo(window.map);
+      var UIEvents = require("./events.js");
+      UIEvents.enableClickOnPopup();
+      return feature
   };
+
+  function createPopupText(feature){
+    dsMeta = JSON.parse(feature.properties.datasetMeta);
+    html = "<h4><a classs='popup-link' data-siteID=" + dsMeta.Site.SiteID + ">" + dsMeta.Site.SiteName + "</a></h4>"
+    return html
+  }
+
+
+  function triggerPopupOnSite(activeSite){
+    //where does it go?
+      lng = (activeSite.LongitudeWest + activeSite.LongitudeEast) / 2
+      lat = (activeSite.LatitudeNorth + activeSite.LatitudeSouth) / 2
+
+      triggerPopup(lat, lng)
+  }
 
   //this function gives ability to programmatically open panel and open the popup so it's just like a regular user event
   function triggerOpen(siteID){
@@ -105,7 +125,9 @@ var sitePanel = (function(){
 
   return {
     open: doOpen,
-    triggerOpen
+    triggerPopup: triggerPopup,
+    triggerPopupOnSite: triggerPopupOnSite,
+    triggerOpen: triggerOpen
   }
 })();
 

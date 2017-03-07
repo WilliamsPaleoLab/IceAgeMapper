@@ -1,10 +1,5 @@
-var mapUtils = require('./map.js');
-
-
 var layout = (function(){
   var create = function(config, state){
-    console.log(config)
-    console.log(state)
     this.layout = $('body').layout({
       south: {
         size: config.layout.southPanelSize,
@@ -12,14 +7,18 @@ var layout = (function(){
         initClosed: !state.layout.southPanelIsOpen,
         closable: config.layout.southPanelClosable,
         onresize: function(){
-          mapUtils.updateMapSize()
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
         },
         onclose: function(){
-          mapUtils.updateMapSize()
-          state.layout.southPanelIsOpen = false
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.southPanelIsOpen = false
         },
         onopen: function(){
-          state.layout.southPanelIsOpen = true
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.southPanelIsOpen = true
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,
@@ -32,15 +31,19 @@ var layout = (function(){
         initClosed: !state.layout.westPanelIsOpen,
         closable: config.layout.westPanelClosable,
         onresize: function(){
-          mapUtils.updateMapSize()
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
         },
         onclose: function(){
-          mapUtils.updateMapSize()
-          state.layout.westPanelIsOpen = false
-          state.openSite = false;
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.westPanelIsOpen = false
+          window.state.openSite = false;
         },
         onopen: function(){
-          state.layout.westPanelIsOpen = true
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.westPanelIsOpen = true
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,
@@ -53,14 +56,18 @@ var layout = (function(){
         initClosed: !state.layout.eastPanelIsOpen,
         closable: config.layout.eastPanelClosable,
         onresize: function(){
-          mapUtils.updateMapSize()
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
         },
         onclose: function(){
-          maputils.updateMapSize()
-          state.layout.eastPanelIsOpen = false
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize();
+          window.state.layout.eastPanelIsOpen = false
         },
         onopen: function(){
-          state.layout.eastPanelIsOpen = true
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize();
+          window.state.layout.eastPanelIsOpen = true
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,

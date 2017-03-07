@@ -1,3 +1,5 @@
+
+var _ = require("underscore");
 var utils = (function(){
   var getParameterByName = function(name, url) {
     //get the query parameter values from the URI
@@ -15,14 +17,15 @@ var utils = (function(){
 
   var lookupSite = function(siteID){
     //pick out the site meta from occurrences with a certain siteID
-    site = _.find(appData.occurrences, function(d){return d.siteid == siteID})
-    return site.DatasetMeta.Site
+    console.log(siteID)
+    site = _.find(window.appData.occurrences, function(d){return d.siteid == siteID})
+    return site.datasetMeta.Site
   }; //end lookup site
 
 
   function lookupSamples(siteID){
     //get the set of SampleData/occurrence objects that are associated with a particular siteID
-    samples =_.filter(globals.data.occurrences, {siteid : siteID})
+    samples =_.filter(window.appData.occurrences, {siteid : siteID})
     return samples
   }; //end lookupSamples
 

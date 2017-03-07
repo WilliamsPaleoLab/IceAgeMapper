@@ -18,6 +18,7 @@ window.mapboxToken = "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ
 var prototypes = require("./config/prototypes.js");
 var UIEvents = require("./ui/events.js");
 var appData = require("./config/data.js");
+
 // var utils = require("./processes/utils.js");
 
 

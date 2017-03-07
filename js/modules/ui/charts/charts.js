@@ -39,9 +39,17 @@ var analyticsCharts = (function(){
     }
     if (height === undefined){
       var height = $(el).height();
+      if (height == 0){
+        //create the charts even if the window is closed
+        height = 250
+      }
     }
     if(width === undefined){
       var width = $(el).width();
+      if (width == 0){
+        //create the charts even if the window is closed
+        width = 250
+      }
     }
     if(margins === undefined){
       var margins = {bottom: 30, top: 10, left: 30, right: 25}
@@ -84,9 +92,17 @@ var analyticsCharts = (function(){
     }
     if (height === undefined){
       var height = $(el).height();
+      if (height == 0){
+        //create the charts even if the window is closed
+        height = 250
+      }
     }
     if(width === undefined){
       var width = $(el).width();
+      if (width == 0){
+        //create the charts even if the window is closed
+        width = 250
+      }
     }
     if(margins === undefined){
       var margins = {bottom: 30, top: 10, left: 30, right: 25}

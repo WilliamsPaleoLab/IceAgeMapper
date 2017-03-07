@@ -7,6 +7,7 @@ var process = require("./../processes/process.js");
 var utils = require("./../processes/utils.js");
 var analytics = require("./charts/charts.js");
 var dc = require("dc");
+var UIEvents = require("./events.js")
 
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
@@ -70,21 +71,35 @@ var ui = (function(){
     window.state = state;
 
     //create UI components
-    layout = layoutModule.create(config, state);
+    //make the map and its dc container
     mapChart = mapModule.create();
     map = mapChart.map();
+    window.map = map; //this is lazy but I'm not sure of another way to enable events
+
+    //render the layout
+    layout = layoutModule.create(config, state);
 
     //create the bottom temperature distribution
     temperatureChart = temperatureChartModule.create(config);
 
     //load some extra components
     UIUtils.createLoadDataWindowComponents(config);
-    console.log(IO)
 
     //get the data from neotoma
     if (state.doSearch){
       IO.getNeotomaData(config, state, onNeotomDataReceipt)
     }
+    //make the state record map movements
+    UIEvents = require("./events.js");
+    UIEvents.enableMapViewLogging(map);
+    UIEvents.enableSiteDetailsOnMapClick(map);
+
+    //open the site panel if requested in the state
+    if (state.openSite){
+      sitePanel.triggerOpen(state.activeSiteID);
+    }
+
+    window.layout = layout;
   } // end initialize
 
   function onNeotomDataReceipt(error, occurrences, datasets){
@@ -97,6 +112,7 @@ var ui = (function(){
     analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
     mapChart.dimension(crossfilteredData.dimensions.geoDimension, crossfilteredData.dimensions.geoGroup)
     render();
+    window.appData.occurrences = processedData
   }
 
   function render(){

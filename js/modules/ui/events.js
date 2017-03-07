@@ -1,6 +1,7 @@
 var IO = require("./../processes/io.js");
 var ui = require("./ui.js");
 var UIUtils = require("./ui-utils.js");
+var sitePanel = require("./sitePanel.js");
 
 var UIEvents = (function(){
 
@@ -32,6 +33,53 @@ var UIEvents = (function(){
     })
   }
 
+  var updateMapSize = function(){
+    //re-render the map when panel size changes
+    var map = window.map;
+    if (map != undefined){
+      if (map.loaded()){
+          map.resize();
+      }else{
+        map.on('load', function(){
+          map.resize();
+        })
+      }
+    }else {
+      throw "Map not initialized"
+    }
+  }
+
+  var enableMapViewLogging = function(map){
+    map.on('moveend', function(){
+      ///update map component of state
+      var center = map.getCenter()
+      var zoom = map.getZoom()
+      var bearing = map.getBearing();
+      var pitch = map.getPitch();
+      map.center = center
+      map.zoom = zoom
+      map.bearing = bearing;
+    })
+  }
+
+  var enableClickOnPopup = function(){
+    var el = $(".mapboxgl-popup-content").find("a")[0]
+    var $el = $(el)
+    $el.on('click', function(e){
+      var sitePanel = require('./sitePanel.js');
+      siteID = $el.data('siteid')
+      sitePanel.open(siteID)
+    })
+  }
+
+  var enableSiteDetailsOnMapClick = function(map){
+    map.on('click', function(e){
+      lng = e.lngLat.lng
+      lat = e.lngLat.lat
+      sitePanel.triggerPopup(lat, lng)
+    })
+  }
+
   function enableAll(){
     onEcolGroupDropdownChange();
     onTaxaSearchChange();
@@ -40,7 +88,11 @@ var UIEvents = (function(){
   }
 
   return  {
-    enableAll: enableAll
+    enableAll: enableAll,
+    enableMapViewLogging: enableMapViewLogging,
+    updateMapSize: updateMapSize,
+    enableSiteDetailsOnMapClick: enableSiteDetailsOnMapClick,
+    enableClickOnPopup: enableClickOnPopup
   }
 })();
 

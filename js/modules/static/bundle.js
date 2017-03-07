@@ -432,7 +432,7 @@ var io = (function(){
 
 module.exports = io;
 
-},{"./../ui/ui-utils.js":14,"./utils.js":7,"d3":39,"d3-queue":38}],6:[function(require,module,exports){
+},{"./../ui/ui-utils.js":15,"./utils.js":7,"d3":40,"d3-queue":39}],6:[function(require,module,exports){
 var crossfilter = require("crossfilter");
 var mapboxgl = require('mapbox-gl')
 
@@ -574,7 +574,9 @@ var processes = (function(){
 
 module.exports = processes;
 
-},{"crossfilter":34,"mapbox-gl":124}],7:[function(require,module,exports){
+},{"crossfilter":35,"mapbox-gl":125}],7:[function(require,module,exports){
+
+var _ = require("underscore");
 var utils = (function(){
   var getParameterByName = function(name, url) {
     //get the query parameter values from the URI
@@ -592,14 +594,15 @@ var utils = (function(){
 
   var lookupSite = function(siteID){
     //pick out the site meta from occurrences with a certain siteID
-    site = _.find(appData.occurrences, function(d){return d.siteid == siteID})
-    return site.DatasetMeta.Site
+    console.log(siteID)
+    site = _.find(window.appData.occurrences, function(d){return d.siteid == siteID})
+    return site.datasetMeta.Site
   }; //end lookup site
 
 
   function lookupSamples(siteID){
     //get the set of SampleData/occurrence objects that are associated with a particular siteID
-    samples =_.filter(globals.data.occurrences, {siteid : siteID})
+    samples =_.filter(window.appData.occurrences, {siteid : siteID})
     return samples
   }; //end lookupSamples
 
@@ -711,7 +714,7 @@ var utils = (function(){
 
 module.exports = utils;
 
-},{}],8:[function(require,module,exports){
+},{"underscore":243}],8:[function(require,module,exports){
 var dc = require('dc');
 var d3 = require('d3');
 
@@ -753,9 +756,17 @@ var analyticsCharts = (function(){
     }
     if (height === undefined){
       var height = $(el).height();
+      if (height == 0){
+        //create the charts even if the window is closed
+        height = 250
+      }
     }
     if(width === undefined){
       var width = $(el).width();
+      if (width == 0){
+        //create the charts even if the window is closed
+        width = 250
+      }
     }
     if(margins === undefined){
       var margins = {bottom: 30, top: 10, left: 30, right: 25}
@@ -798,9 +809,17 @@ var analyticsCharts = (function(){
     }
     if (height === undefined){
       var height = $(el).height();
+      if (height == 0){
+        //create the charts even if the window is closed
+        height = 250
+      }
     }
     if(width === undefined){
       var width = $(el).width();
+      if (width == 0){
+        //create the charts even if the window is closed
+        width = 250
+      }
     }
     if(margins === undefined){
       var margins = {bottom: 30, top: 10, left: 30, right: 25}
@@ -854,7 +873,7 @@ var analyticsCharts = (function(){
 
 module.exports = analyticsCharts;
 
-},{"d3":39,"dc":40}],9:[function(require,module,exports){
+},{"d3":40,"dc":41}],9:[function(require,module,exports){
 var dc = require("dc");
 var IO = require("./../../processes/io.js");
 var d3 = require('d3');
@@ -1009,7 +1028,7 @@ var tempChart = (function(){
 
 module.exports = tempChart
 
-},{"./../../config/config.js":1,"./../../processes/io.js":5,"crossfilter":34,"d3":39,"dc":40}],10:[function(require,module,exports){
+},{"./../../config/config.js":1,"./../../processes/io.js":5,"crossfilter":35,"d3":40,"dc":41}],10:[function(require,module,exports){
 /*
 This is mapbox-dc.js
 
@@ -1455,10 +1474,11 @@ var mapboxgl = require('mapbox-gl');
 
 module.exports = dc_mapbox;
 
-},{"dc":40,"mapbox-gl":124}],11:[function(require,module,exports){
+},{"dc":41,"mapbox-gl":125}],11:[function(require,module,exports){
 var IO = require("./../processes/io.js");
 var ui = require("./ui.js");
 var UIUtils = require("./ui-utils.js");
+var sitePanel = require("./sitePanel.js");
 
 var UIEvents = (function(){
 
@@ -1490,6 +1510,53 @@ var UIEvents = (function(){
     })
   }
 
+  var updateMapSize = function(){
+    //re-render the map when panel size changes
+    var map = window.map;
+    if (map != undefined){
+      if (map.loaded()){
+          map.resize();
+      }else{
+        map.on('load', function(){
+          map.resize();
+        })
+      }
+    }else {
+      throw "Map not initialized"
+    }
+  }
+
+  var enableMapViewLogging = function(map){
+    map.on('moveend', function(){
+      ///update map component of state
+      var center = map.getCenter()
+      var zoom = map.getZoom()
+      var bearing = map.getBearing();
+      var pitch = map.getPitch();
+      map.center = center
+      map.zoom = zoom
+      map.bearing = bearing;
+    })
+  }
+
+  var enableClickOnPopup = function(){
+    var el = $(".mapboxgl-popup-content").find("a")[0]
+    var $el = $(el)
+    $el.on('click', function(e){
+      var sitePanel = require('./sitePanel.js');
+      siteID = $el.data('siteid')
+      sitePanel.open(siteID)
+    })
+  }
+
+  var enableSiteDetailsOnMapClick = function(map){
+    map.on('click', function(e){
+      lng = e.lngLat.lng
+      lat = e.lngLat.lat
+      sitePanel.triggerPopup(lat, lng)
+    })
+  }
+
   function enableAll(){
     onEcolGroupDropdownChange();
     onTaxaSearchChange();
@@ -1498,20 +1565,19 @@ var UIEvents = (function(){
   }
 
   return  {
-    enableAll: enableAll
+    enableAll: enableAll,
+    enableMapViewLogging: enableMapViewLogging,
+    updateMapSize: updateMapSize,
+    enableSiteDetailsOnMapClick: enableSiteDetailsOnMapClick,
+    enableClickOnPopup: enableClickOnPopup
   }
 })();
 
 module.exports = UIEvents
 
-},{"./../processes/io.js":5,"./ui-utils.js":14,"./ui.js":15}],12:[function(require,module,exports){
-var mapUtils = require('./map.js');
-
-
+},{"./../processes/io.js":5,"./sitePanel.js":14,"./ui-utils.js":15,"./ui.js":16}],12:[function(require,module,exports){
 var layout = (function(){
   var create = function(config, state){
-    console.log(config)
-    console.log(state)
     this.layout = $('body').layout({
       south: {
         size: config.layout.southPanelSize,
@@ -1519,14 +1585,18 @@ var layout = (function(){
         initClosed: !state.layout.southPanelIsOpen,
         closable: config.layout.southPanelClosable,
         onresize: function(){
-          mapUtils.updateMapSize()
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
         },
         onclose: function(){
-          mapUtils.updateMapSize()
-          state.layout.southPanelIsOpen = false
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.southPanelIsOpen = false
         },
         onopen: function(){
-          state.layout.southPanelIsOpen = true
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.southPanelIsOpen = true
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,
@@ -1539,15 +1609,19 @@ var layout = (function(){
         initClosed: !state.layout.westPanelIsOpen,
         closable: config.layout.westPanelClosable,
         onresize: function(){
-          mapUtils.updateMapSize()
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
         },
         onclose: function(){
-          mapUtils.updateMapSize()
-          state.layout.westPanelIsOpen = false
-          state.openSite = false;
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.westPanelIsOpen = false
+          window.state.openSite = false;
         },
         onopen: function(){
-          state.layout.westPanelIsOpen = true
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.westPanelIsOpen = true
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,
@@ -1560,14 +1634,18 @@ var layout = (function(){
         initClosed: !state.layout.eastPanelIsOpen,
         closable: config.layout.eastPanelClosable,
         onresize: function(){
-          mapUtils.updateMapSize()
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
         },
         onclose: function(){
-          maputils.updateMapSize()
-          state.layout.eastPanelIsOpen = false
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize();
+          window.state.layout.eastPanelIsOpen = false
         },
         onopen: function(){
-          state.layout.eastPanelIsOpen = true
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize();
+          window.state.layout.eastPanelIsOpen = true
         },
         togglerLength_open:    50,
         togglerLength_closed:  50,
@@ -1585,7 +1663,7 @@ var layout = (function(){
 
 module.exports = layout;
 
-},{"./map.js":13}],13:[function(require,module,exports){
+},{"./events.js":11}],13:[function(require,module,exports){
 var crossfilter = require("crossfilter");
 var dc = require('dc');
 var dc_mapbox = require("./dc-mapbox.js");
@@ -1598,10 +1676,10 @@ var map = (function(){
       container = "map"
     }
     if (config === undefined){
-      config = require('./../config/config.js');
+      config = window.config
     }
     if(state === undefined){
-      state = require('./../config/state.js');
+      state = window.state
     }
 
     var opts = {
@@ -1644,41 +1722,150 @@ var map = (function(){
 
   } //end create function
 
-  var updateSize = function(map){
-    //re-render the map when panel size changes
-    if (ui.map != undefined){
-      ui.map.resize();
-    }else{
-      ui.map.on('load', function(){
-      ui.map.resize();
-      })
-    }
-  };
-
-  var enableMapViewLogging = function(map){
-    globals.map.on('moveend', function(){
-      ///update map component of state
-      var center = ui.map.getCenter()
-      var zoom = ui.map.getZoom()
-      var bearing = ui.map.getBearing();
-      var pitch = ui.map.getPitch();
-      state.map.center = center
-      state.map.zoom = zoom
-      state.map.bearing = bearing;
-    })
-  }
-
   return {
-    create: create,
-    createOptions: createOptions,
-    updateSize: updateSize,
-    enableMapViewLogging: enableMapViewLogging
+    create: create
   }
 })();
 
 module.exports = map;
 
-},{"./../config/config.js":1,"./../config/state.js":4,"./dc-mapbox.js":10,"crossfilter":34,"dc":40}],14:[function(require,module,exports){
+},{"./dc-mapbox.js":10,"crossfilter":35,"dc":41}],14:[function(require,module,exports){
+var mapboxgl = require('mapbox-gl');
+var utils = require('./../processes/utils.js');
+var _ = require("underscore");
+
+
+var sitePanel = (function(){
+
+  var addSiteMetadata = function(activeSite){
+    //site level metadata
+    $("#siteName").text(activeSite.SiteName)
+    $("#siteAltitude").text(activeSite.Altitude + "m")
+    $("#siteDescription").text(activeSite.SiteDescription)
+    $("#siteNotes").text(activeSite.SiteNotes)
+  }
+
+  var addDataTable = function(theseSamples){
+    //build a data table
+    //list each sample's value and age
+    $("#sampleTable").empty();
+    table = "<thead><th>Age</th><th>Value</th><th>Units</th></thead>"
+
+    //add one row for each sample
+    for (var i=0; i < theseSamples.length; i++){
+      thisSample = theseSamples[i]
+      table +=  "<tr><td>" + thisSample.age + "</td><td>" + thisSample.Value + "</td><td>" + thisSample.VariableUnits + "</td></tr>"
+    }
+    $("#sampleTable").html(table)
+  }
+
+  function addPIInformation(theseSamples){
+    //all sites only have one dataset (in this model)
+    //but some datasets have multiple listed PIs (some have none)
+    piTable = ""
+    for (var i = 0; i < theseSamples[0].datasetMeta.DatasetPIs.length; i++){
+        thisSitePI = theseSamples[0].datasetMeta.DatasetPIs[i]
+        piTable += "<tr><td>Dataset Investigator: </td><td>" + thisSitePI.ContactName + "</td><tr>"
+    }
+    if (piTable == ""){
+      piTable = "<i>No Investigators Listed</i>"
+    }
+    $("#pi-table").html(piTable)
+  }
+
+  function getTheseSamples(siteID){
+    theseSamples = utils.lookupSamples(siteID)
+    theseSamples = _.sortBy(theseSamples, function(d){return d.age})
+    return theseSamples
+  }
+
+  var doOpen = function(siteID){
+    //open details about the clicked site
+    //called from the map popups
+
+    //reflect this event in the application state
+    state.activeSite = utils.lookupSite(siteID)
+    state.activeSiteID = siteID
+    state.openSite = true; //programmatically open the map if the map is shared while the site window is open
+
+    //do the actual panel open
+    window.layout.open("west") //open the panel
+
+    theseSamples = getTheseSamples(siteID)
+
+
+    //add the UI elements
+    addSiteMetadata(state.activeSite)
+
+    addDataTable(theseSamples);
+
+    addPIInformation(theseSamples)
+
+  }
+
+
+
+  //trigger a popup on the open site
+  function triggerPopup(lat, lng){
+    //returns true if we need to return  the
+      coords = new mapboxgl.LngLat(lng, lat)
+      pt = window.map.project(coords)
+
+      //is there anything there?
+      var features = window.map.queryRenderedFeatures(pt, { layers: ['points'] });
+
+      if (!features.length) {
+          return false;
+      }
+
+      var feature = features[0];
+      //make sure the popup opens on the point of the symbol, not the point of the event
+      coords = new mapboxgl.LngLat(feature.properties.longitude, feature.properties.latitude)
+      var popup = new mapboxgl.Popup()
+          .setLngLat(coords)
+          .setHTML(createPopupText(feature)) //custom popup function
+          .addTo(window.map);
+      var UIEvents = require("./events.js");
+      UIEvents.enableClickOnPopup();
+      return feature
+  };
+
+  function createPopupText(feature){
+    dsMeta = JSON.parse(feature.properties.datasetMeta);
+    html = "<h4><a classs='popup-link' data-siteID=" + dsMeta.Site.SiteID + ">" + dsMeta.Site.SiteName + "</a></h4>"
+    return html
+  }
+
+
+  function triggerPopupOnSite(activeSite){
+    //where does it go?
+      lng = (activeSite.LongitudeWest + activeSite.LongitudeEast) / 2
+      lat = (activeSite.LatitudeNorth + activeSite.LatitudeSouth) / 2
+
+      triggerPopup(lat, lng)
+  }
+
+  //this function gives ability to programmatically open panel and open the popup so it's just like a regular user event
+  function triggerOpen(siteID){
+      doOpen(siteID);
+      //wait for the map to stop doing stuff
+      activeSite = lookupSite(siteID);
+      setTimeout(function(d){
+        triggerPopup(activeSite)
+      }, 1000);
+  }
+
+  return {
+    open: doOpen,
+    triggerPopup: triggerPopup,
+    triggerPopupOnSite: triggerPopupOnSite,
+    triggerOpen: triggerOpen
+  }
+})();
+
+module.exports = sitePanel;
+
+},{"./../processes/utils.js":7,"./events.js":11,"mapbox-gl":125,"underscore":243}],15:[function(require,module,exports){
 var toastr = require('toastr');
 var _ = require("underscore");
 var $ = require("jquery");
@@ -1851,7 +2038,7 @@ var UIUtils = (function(){
 
 module.exports = UIUtils;
 
-},{"./../processes/io.js":5,"./../processes/utils.js":7,"Awesomplete":19,"jquery":57,"toastr":241,"underscore":242}],15:[function(require,module,exports){
+},{"./../processes/io.js":5,"./../processes/utils.js":7,"Awesomplete":20,"jquery":58,"toastr":242,"underscore":243}],16:[function(require,module,exports){
 var mapModule = require('./map.js');
 var layoutModule = require('./layout.js');
 var temperatureChartModule = require("./charts/temperatureChart.js");
@@ -1861,6 +2048,7 @@ var process = require("./../processes/process.js");
 var utils = require("./../processes/utils.js");
 var analytics = require("./charts/charts.js");
 var dc = require("dc");
+var UIEvents = require("./events.js")
 
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
@@ -1924,21 +2112,35 @@ var ui = (function(){
     window.state = state;
 
     //create UI components
-    layout = layoutModule.create(config, state);
+    //make the map and its dc container
     mapChart = mapModule.create();
     map = mapChart.map();
+    window.map = map; //this is lazy but I'm not sure of another way to enable events
+
+    //render the layout
+    layout = layoutModule.create(config, state);
 
     //create the bottom temperature distribution
     temperatureChart = temperatureChartModule.create(config);
 
     //load some extra components
     UIUtils.createLoadDataWindowComponents(config);
-    console.log(IO)
 
     //get the data from neotoma
     if (state.doSearch){
       IO.getNeotomaData(config, state, onNeotomDataReceipt)
     }
+    //make the state record map movements
+    UIEvents = require("./events.js");
+    UIEvents.enableMapViewLogging(map);
+    UIEvents.enableSiteDetailsOnMapClick(map);
+
+    //open the site panel if requested in the state
+    if (state.openSite){
+      sitePanel.triggerOpen(state.activeSiteID);
+    }
+
+    window.layout = layout;
   } // end initialize
 
   function onNeotomDataReceipt(error, occurrences, datasets){
@@ -1951,6 +2153,7 @@ var ui = (function(){
     analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
     mapChart.dimension(crossfilteredData.dimensions.geoDimension, crossfilteredData.dimensions.geoGroup)
     render();
+    window.appData.occurrences = processedData
   }
 
   function render(){
@@ -1970,7 +2173,7 @@ var ui = (function(){
 
 module.exports = ui;
 
-},{"./../config/config.js":1,"./../config/state.js":4,"./../processes/io.js":5,"./../processes/process.js":6,"./../processes/utils.js":7,"./charts/charts.js":8,"./charts/temperatureChart.js":9,"./layout.js":12,"./map.js":13,"./ui-utils.js":14,"dc":40}],16:[function(require,module,exports){
+},{"./../config/config.js":1,"./../config/state.js":4,"./../processes/io.js":5,"./../processes/process.js":6,"./../processes/utils.js":7,"./charts/charts.js":8,"./charts/temperatureChart.js":9,"./events.js":11,"./layout.js":12,"./map.js":13,"./ui-utils.js":15,"dc":41}],17:[function(require,module,exports){
 /**
  * @preserve
  * jquery.layout 1.4.4
@@ -8047,7 +8250,7 @@ if ($.effects) {
 
 })( jQuery );
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
@@ -8561,7 +8764,7 @@ return mapboxBuild;
 
 })));
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /*
  * Copyright (C) 2008 Apple Inc. All Rights Reserved.
  *
@@ -8668,7 +8871,7 @@ UnitBezier.prototype.solve = function(x, epsilon) {
     return this.sampleCurveY(this.solveCurveX(x, epsilon));
 };
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 /**
  * Simple, lightweight, usable local autocomplete library for modern browsers
  * Because there weren’t enough autocomplete scripts in the world? Because I’m completely insane and have NIH syndrome? Probably both. :P
@@ -9113,7 +9316,7 @@ return _;
 
 }());
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 // This file is autogenerated via the `commonjs` Grunt task. You can require() this file in a CommonJS environment.
 require('../../js/transition.js')
 require('../../js/alert.js')
@@ -9127,7 +9330,7 @@ require('../../js/popover.js')
 require('../../js/scrollspy.js')
 require('../../js/tab.js')
 require('../../js/affix.js')
-},{"../../js/affix.js":21,"../../js/alert.js":22,"../../js/button.js":23,"../../js/carousel.js":24,"../../js/collapse.js":25,"../../js/dropdown.js":26,"../../js/modal.js":27,"../../js/popover.js":28,"../../js/scrollspy.js":29,"../../js/tab.js":30,"../../js/tooltip.js":31,"../../js/transition.js":32}],21:[function(require,module,exports){
+},{"../../js/affix.js":22,"../../js/alert.js":23,"../../js/button.js":24,"../../js/carousel.js":25,"../../js/collapse.js":26,"../../js/dropdown.js":27,"../../js/modal.js":28,"../../js/popover.js":29,"../../js/scrollspy.js":30,"../../js/tab.js":31,"../../js/tooltip.js":32,"../../js/transition.js":33}],22:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: affix.js v3.3.7
  * http://getbootstrap.com/javascript/#affix
@@ -9291,7 +9494,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: alert.js v3.3.7
  * http://getbootstrap.com/javascript/#alerts
@@ -9387,7 +9590,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: button.js v3.3.7
  * http://getbootstrap.com/javascript/#buttons
@@ -9514,7 +9717,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: carousel.js v3.3.7
  * http://getbootstrap.com/javascript/#carousel
@@ -9753,7 +9956,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: collapse.js v3.3.7
  * http://getbootstrap.com/javascript/#collapse
@@ -9967,7 +10170,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: dropdown.js v3.3.7
  * http://getbootstrap.com/javascript/#dropdowns
@@ -10134,7 +10337,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: modal.js v3.3.7
  * http://getbootstrap.com/javascript/#modals
@@ -10475,7 +10678,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: popover.js v3.3.7
  * http://getbootstrap.com/javascript/#popovers
@@ -10585,7 +10788,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: scrollspy.js v3.3.7
  * http://getbootstrap.com/javascript/#scrollspy
@@ -10759,7 +10962,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: tab.js v3.3.7
  * http://getbootstrap.com/javascript/#tabs
@@ -10916,7 +11119,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: tooltip.js v3.3.7
  * http://getbootstrap.com/javascript/#tooltip
@@ -11438,7 +11641,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 /* ========================================================================
  * Bootstrap: transition.js v3.3.7
  * http://getbootstrap.com/javascript/#transitions
@@ -11499,7 +11702,7 @@ require('../../js/affix.js')
 
 }(jQuery);
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 (function(exports){
 crossfilter.version = "1.3.12";
 function crossfilter_identity(d) {
@@ -12902,10 +13105,10 @@ function crossfilter_capacity(w) {
 }
 })(typeof exports !== 'undefined' && exports || this);
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 module.exports = require("./crossfilter").crossfilter;
 
-},{"./crossfilter":33}],35:[function(require,module,exports){
+},{"./crossfilter":34}],36:[function(require,module,exports){
 (function(exports){
 crossfilter.version = "1.3.14";
 function crossfilter_identity(d) {
@@ -14308,9 +14511,9 @@ function crossfilter_capacity(w) {
 }
 })(typeof exports !== 'undefined' && exports || this);
 
-},{}],36:[function(require,module,exports){
-arguments[4][34][0].apply(exports,arguments)
-},{"./crossfilter":35,"dup":34}],37:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
+arguments[4][35][0].apply(exports,arguments)
+},{"./crossfilter":36,"dup":35}],38:[function(require,module,exports){
 // (c) Dean McNamee <dean@gmail.com>, 2012.
 //
 // https://github.com/deanm/css-color-parser-js
@@ -14513,7 +14716,7 @@ function parseCSSColor(css_str) {
 
 try { exports.parseCSSColor = parseCSSColor } catch(e) { }
 
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 // https://d3js.org/d3-queue/ Version 3.0.4. Copyright 2017 Mike Bostock.
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -14645,7 +14848,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 !function() {
   var d3 = {
     version: "3.5.17"
@@ -24200,7 +24403,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
   });
   if (typeof define === "function" && define.amd) this.d3 = d3, define(d3); else if (typeof module === "object" && module.exports) module.exports = d3; else this.d3 = d3;
 }();
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 /*!
  *  dc 2.1.3
  *  http://dc-js.github.io/dc.js/
@@ -35280,7 +35483,7 @@ return dc;}
 )();
 
 
-},{"crossfilter2":36,"d3":39}],41:[function(require,module,exports){
+},{"crossfilter2":37,"d3":40}],42:[function(require,module,exports){
 'use strict';
 
 module.exports = earcut;
@@ -35926,7 +36129,7 @@ earcut.flatten = function (data) {
     return result;
 };
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 var toString = {}.toString,
 	isArray = Array.isArray || function(obj){
 		return toString.call(obj) === "[object Array]";
@@ -36021,7 +36224,7 @@ function sss(val) {
 	}
 }
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 'use strict';
 
 module.exports = createFilter;
@@ -36105,7 +36308,7 @@ function compare(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
 }
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 var wgs84 = require('wgs84');
 
 module.exports.geometry = geometry;
@@ -36171,7 +36374,7 @@ function rad(_) {
     return _ * Math.PI / 180;
 }
 
-},{"wgs84":251}],45:[function(require,module,exports){
+},{"wgs84":252}],46:[function(require,module,exports){
 var geojsonArea = require('geojson-area');
 
 module.exports = rewind;
@@ -36222,7 +36425,7 @@ function cw(_) {
     return geojsonArea.ring(_) >= 0;
 }
 
-},{"geojson-area":44}],46:[function(require,module,exports){
+},{"geojson-area":45}],47:[function(require,module,exports){
 'use strict';
 
 module.exports = clip;
@@ -36373,7 +36576,7 @@ function newSlice(slices, slice, area, dist, outer) {
     return [];
 }
 
-},{"./feature":48}],47:[function(require,module,exports){
+},{"./feature":49}],48:[function(require,module,exports){
 'use strict';
 
 module.exports = convert;
@@ -36496,7 +36699,7 @@ function calcSize(points) {
     points.dist = dist;
 }
 
-},{"./feature":48,"./simplify":50}],48:[function(require,module,exports){
+},{"./feature":49,"./simplify":51}],49:[function(require,module,exports){
 'use strict';
 
 module.exports = createFeature;
@@ -36541,7 +36744,7 @@ function calcRingBBox(min, max, points) {
     }
 }
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 'use strict';
 
 module.exports = geojsonvt;
@@ -36785,7 +36988,7 @@ function isClippedSquare(tile, extent, buffer) {
     return true;
 }
 
-},{"./clip":46,"./convert":47,"./tile":51,"./transform":52,"./wrap":53}],50:[function(require,module,exports){
+},{"./clip":47,"./convert":48,"./tile":52,"./transform":53,"./wrap":54}],51:[function(require,module,exports){
 'use strict';
 
 module.exports = simplify;
@@ -36861,7 +37064,7 @@ function getSqSegDist(p, a, b) {
     return dx * dx + dy * dy;
 }
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 'use strict';
 
 module.exports = createTile;
@@ -36969,7 +37172,7 @@ function signedArea(ring) {
     return sum;
 }
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 'use strict';
 
 exports.tile = transformTile;
@@ -37012,7 +37215,7 @@ function transformPoint(p, extent, z2, tx, ty) {
     return [x, y];
 }
 
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 'use strict';
 
 var clip = require('./clip');
@@ -37070,7 +37273,7 @@ function shiftCoords(points, offset) {
     return newPoints;
 }
 
-},{"./clip":46,"./feature":48}],54:[function(require,module,exports){
+},{"./clip":47,"./feature":49}],55:[function(require,module,exports){
 'use strict';
 
 module.exports = GridIndex;
@@ -37232,7 +37435,7 @@ GridIndex.prototype.toArrayBuffer = function() {
     return array.buffer;
 };
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -37318,7 +37521,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 /*! jQuery UI - v1.11.4 - 2015-03-11
 * http://jqueryui.com
 * Includes: core.js, widget.js, mouse.js, position.js, accordion.js, autocomplete.js, button.js, datepicker.js, dialog.js, draggable.js, droppable.js, effect.js, effect-blind.js, effect-bounce.js, effect-clip.js, effect-drop.js, effect-explode.js, effect-fade.js, effect-fold.js, effect-highlight.js, effect-puff.js, effect-pulsate.js, effect-scale.js, effect-shake.js, effect-size.js, effect-slide.js, effect-transfer.js, menu.js, progressbar.js, resizable.js, selectable.js, selectmenu.js, slider.js, sortable.js, spinner.js, tabs.js, tooltip.js
@@ -53936,7 +54139,7 @@ var tooltip = $.widget( "ui.tooltip", {
 
 
 }));
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.1.1
  * https://jquery.com/
@@ -64158,7 +64361,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 'use strict';
 
 var sort = require('./sort');
@@ -64204,7 +64407,7 @@ KDBush.prototype = {
 function defaultGetX(p) { return p[0]; }
 function defaultGetY(p) { return p[1]; }
 
-},{"./range":59,"./sort":60,"./within":61}],59:[function(require,module,exports){
+},{"./range":60,"./sort":61,"./within":62}],60:[function(require,module,exports){
 'use strict';
 
 module.exports = range;
@@ -64252,7 +64455,7 @@ function range(ids, coords, minX, minY, maxX, maxY, nodeSize) {
     return result;
 }
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 'use strict';
 
 module.exports = sortKD;
@@ -64320,7 +64523,7 @@ function swap(arr, i, j) {
     arr[j] = tmp;
 }
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 'use strict';
 
 module.exports = within;
@@ -64372,7 +64575,7 @@ function sqDist(ax, ay, bx, by) {
     return dx * dx + dy * dy;
 }
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 /**
  * lodash 3.0.7 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -64716,7 +64919,7 @@ function isObject(value) {
 
 module.exports = baseIsEqual;
 
-},{"lodash.isarray":66,"lodash.istypedarray":68,"lodash.keys":69}],63:[function(require,module,exports){
+},{"lodash.isarray":67,"lodash.istypedarray":69,"lodash.keys":70}],64:[function(require,module,exports){
 /**
  * lodash 3.0.1 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -64783,7 +64986,7 @@ function identity(value) {
 
 module.exports = bindCallback;
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 /**
  * lodash 3.9.1 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -64922,7 +65125,7 @@ function isNative(value) {
 
 module.exports = getNative;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 /**
  * lodash (Custom Build) <https://lodash.com/>
  * Build: `lodash modularize exports="npm" -o ./`
@@ -65153,7 +65356,7 @@ function isObjectLike(value) {
 
 module.exports = isArguments;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 /**
  * lodash 3.0.4 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -65335,7 +65538,7 @@ function isNative(value) {
 
 module.exports = isArray;
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 /**
  * lodash 3.0.4 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -65399,7 +65602,7 @@ function isEqual(value, other, customizer, thisArg) {
 
 module.exports = isEqual;
 
-},{"lodash._baseisequal":62,"lodash._bindcallback":63}],68:[function(require,module,exports){
+},{"lodash._baseisequal":63,"lodash._bindcallback":64}],69:[function(require,module,exports){
 /**
  * lodash 3.0.6 (Custom Build) <https://lodash.com/>
  * Build: `lodash modularize exports="npm" -o ./`
@@ -65549,7 +65752,7 @@ function isTypedArray(value) {
 
 module.exports = isTypedArray;
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 /**
  * lodash 3.1.2 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -65787,7 +65990,7 @@ function keysIn(object) {
 
 module.exports = keys;
 
-},{"lodash._getnative":64,"lodash.isarguments":65,"lodash.isarray":66}],70:[function(require,module,exports){
+},{"lodash._getnative":65,"lodash.isarguments":66,"lodash.isarray":67}],71:[function(require,module,exports){
 // Constants
 var Kn = 18,
     Xn = 0.950470, // D65 standard referent
@@ -65887,7 +66090,7 @@ module.exports ={
   }
 };
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 'use strict';
 
 var colorSpaces = require('./color_spaces');
@@ -66096,7 +66299,7 @@ module.exports['piecewise-constant'] = function(parameters) {
     return createFunction(parameters, 'interval');
 };
 
-},{"./color_spaces":70}],72:[function(require,module,exports){
+},{"./color_spaces":71}],73:[function(require,module,exports){
 'use strict';
 
 var refProperties = require('./util/ref_properties');
@@ -66150,7 +66353,7 @@ function derefLayers(layers) {
     return layers;
 }
 
-},{"./util/ref_properties":78}],73:[function(require,module,exports){
+},{"./util/ref_properties":79}],74:[function(require,module,exports){
 'use strict';
 
 var isEqual = require('lodash.isequal');
@@ -66509,7 +66712,7 @@ function diffStyles(before, after) {
 module.exports = diffStyles;
 module.exports.operations = operations;
 
-},{"lodash.isequal":67}],74:[function(require,module,exports){
+},{"lodash.isequal":68}],75:[function(require,module,exports){
 'use strict';
 
 var format = require('util').format;
@@ -66527,7 +66730,7 @@ function ValidationError(key, value /*, message, ...*/) {
 
 module.exports = ValidationError;
 
-},{"util":258}],75:[function(require,module,exports){
+},{"util":259}],76:[function(require,module,exports){
 'use strict';
 
 var refProperties = require('./util/ref_properties');
@@ -66575,7 +66778,7 @@ function groupByLayout(layers) {
     return result;
 }
 
-},{"./util/ref_properties":78,"fast-stable-stringify":42}],76:[function(require,module,exports){
+},{"./util/ref_properties":79,"fast-stable-stringify":43}],77:[function(require,module,exports){
 'use strict';
 
 module.exports = function (output) {
@@ -66588,7 +66791,7 @@ module.exports = function (output) {
     return output;
 };
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 'use strict';
 
 module.exports = function getType(val) {
@@ -66607,12 +66810,12 @@ module.exports = function getType(val) {
     }
 };
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 'use strict';
 
 module.exports = ['type', 'source', 'source-layer', 'minzoom', 'maxzoom', 'filter', 'layout'];
 
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 'use strict';
 
 // Turn jsonlint-lines-primitives objects into primitive objects
@@ -66624,7 +66827,7 @@ module.exports = function unbundle(value) {
     }
 };
 
-},{}],80:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66692,7 +66895,7 @@ module.exports = function validate(options) {
     }
 };
 
-},{"../error/validation_error":74,"../util/extend":76,"../util/get_type":77,"./validate_array":81,"./validate_boolean":82,"./validate_color":83,"./validate_constants":84,"./validate_enum":85,"./validate_filter":86,"./validate_function":87,"./validate_layer":89,"./validate_light":91,"./validate_number":92,"./validate_object":93,"./validate_source":95,"./validate_string":96}],81:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/extend":77,"../util/get_type":78,"./validate_array":82,"./validate_boolean":83,"./validate_color":84,"./validate_constants":85,"./validate_enum":86,"./validate_filter":87,"./validate_function":88,"./validate_layer":90,"./validate_light":92,"./validate_number":93,"./validate_object":94,"./validate_source":96,"./validate_string":97}],82:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -66746,7 +66949,7 @@ module.exports = function validateArray(options) {
     return errors;
 };
 
-},{"../error/validation_error":74,"../util/get_type":77,"./validate":80}],82:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78,"./validate":81}],83:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -66764,7 +66967,7 @@ module.exports = function validateBoolean(options) {
     return [];
 };
 
-},{"../error/validation_error":74,"../util/get_type":77}],83:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78}],84:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66787,7 +66990,7 @@ module.exports = function validateColor(options) {
     return [];
 };
 
-},{"../error/validation_error":74,"../util/get_type":77,"csscolorparser":37}],84:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78,"csscolorparser":38}],85:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66821,7 +67024,7 @@ module.exports = function validateConstants(options) {
 
 };
 
-},{"../error/validation_error":74,"../util/get_type":77}],85:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78}],86:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66845,7 +67048,7 @@ module.exports = function validateEnum(options) {
     return errors;
 };
 
-},{"../error/validation_error":74,"../util/unbundle_jsonlint":79}],86:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/unbundle_jsonlint":80}],87:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -66950,7 +67153,7 @@ module.exports = function validateFilter(options) {
     return errors;
 };
 
-},{"../error/validation_error":74,"../util/get_type":77,"../util/unbundle_jsonlint":79,"./validate_enum":85}],87:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78,"../util/unbundle_jsonlint":80,"./validate_enum":86}],88:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67138,7 +67341,7 @@ module.exports = function validateFunction(options) {
 
 };
 
-},{"../error/validation_error":74,"../util/get_type":77,"../util/unbundle_jsonlint":79,"./validate":80,"./validate_array":81,"./validate_number":92,"./validate_object":93}],88:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78,"../util/unbundle_jsonlint":80,"./validate":81,"./validate_array":82,"./validate_number":93,"./validate_object":94}],89:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67162,7 +67365,7 @@ module.exports = function(options) {
     return errors;
 };
 
-},{"../error/validation_error":74,"./validate_string":96}],89:[function(require,module,exports){
+},{"../error/validation_error":75,"./validate_string":97}],90:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67278,7 +67481,7 @@ module.exports = function validateLayer(options) {
     return errors;
 };
 
-},{"../error/validation_error":74,"../util/extend":76,"../util/unbundle_jsonlint":79,"./validate_filter":86,"./validate_layout_property":90,"./validate_object":93,"./validate_paint_property":94}],90:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/extend":77,"../util/unbundle_jsonlint":80,"./validate_filter":87,"./validate_layout_property":91,"./validate_object":94,"./validate_paint_property":95}],91:[function(require,module,exports){
 'use strict';
 
 var validate = require('./validate');
@@ -67319,7 +67522,7 @@ module.exports = function validateLayoutProperty(options) {
 
 };
 
-},{"../error/validation_error":74,"./validate":80}],91:[function(require,module,exports){
+},{"../error/validation_error":75,"./validate":81}],92:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67369,7 +67572,7 @@ module.exports = function validateLight(options) {
     return errors;
 };
 
-},{"../error/validation_error":74,"../util/get_type":77,"./validate":80}],92:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78,"./validate":81}],93:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -67396,7 +67599,7 @@ module.exports = function validateNumber(options) {
     return [];
 };
 
-},{"../error/validation_error":74,"../util/get_type":77}],93:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78}],94:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67455,7 +67658,7 @@ module.exports = function validateObject(options) {
     return errors;
 };
 
-},{"../error/validation_error":74,"../util/get_type":77,"./validate":80}],94:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78,"./validate":81}],95:[function(require,module,exports){
 'use strict';
 
 var validate = require('./validate');
@@ -67497,7 +67700,7 @@ module.exports = function validatePaintProperty(options) {
 
 };
 
-},{"../error/validation_error":74,"./validate":80}],95:[function(require,module,exports){
+},{"../error/validation_error":75,"./validate":81}],96:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67583,7 +67786,7 @@ module.exports = function validateSource(options) {
     }
 };
 
-},{"../error/validation_error":74,"../util/unbundle_jsonlint":79,"./validate_enum":85,"./validate_object":93}],96:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/unbundle_jsonlint":80,"./validate_enum":86,"./validate_object":94}],97:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -67601,7 +67804,7 @@ module.exports = function validateString(options) {
     return [];
 };
 
-},{"../error/validation_error":74,"../util/get_type":77}],97:[function(require,module,exports){
+},{"../error/validation_error":75,"../util/get_type":78}],98:[function(require,module,exports){
 'use strict';
 
 var validateConstants = require('./validate/validate_constants');
@@ -67675,12 +67878,12 @@ function wrapCleanErrors(inner) {
 
 module.exports = validateStyleMin;
 
-},{"../reference/latest.min":98,"./validate/validate":80,"./validate/validate_constants":84,"./validate/validate_filter":86,"./validate/validate_glyphs_url":88,"./validate/validate_layer":89,"./validate/validate_layout_property":90,"./validate/validate_light":91,"./validate/validate_paint_property":94,"./validate/validate_source":95}],98:[function(require,module,exports){
+},{"../reference/latest.min":99,"./validate/validate":81,"./validate/validate_constants":85,"./validate/validate_filter":87,"./validate/validate_glyphs_url":89,"./validate/validate_layer":90,"./validate/validate_layout_property":91,"./validate/validate_light":92,"./validate/validate_paint_property":95,"./validate/validate_source":96}],99:[function(require,module,exports){
 module.exports = require('./v8.min.json');
 
-},{"./v8.min.json":99}],99:[function(require,module,exports){
+},{"./v8.min.json":100}],100:[function(require,module,exports){
 module.exports={"$version":8,"$root":{"version":{"required":true,"type":"enum","values":[8]},"name":{"type":"string"},"metadata":{"type":"*"},"center":{"type":"array","value":"number"},"zoom":{"type":"number"},"bearing":{"type":"number","default":0,"period":360,"units":"degrees"},"pitch":{"type":"number","default":0,"units":"degrees"},"light":{"type":"light"},"sources":{"required":true,"type":"sources"},"sprite":{"type":"string"},"glyphs":{"type":"string"},"transition":{"type":"transition"},"layers":{"required":true,"type":"array","value":"layer"}},"sources":{"*":{"type":"source"}},"source":["source_tile","source_geojson","source_video","source_image","source_canvas"],"source_tile":{"type":{"required":true,"type":"enum","values":{"vector":{},"raster":{}}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"tileSize":{"type":"number","default":512,"units":"pixels"},"*":{"type":"*"}},"source_geojson":{"type":{"required":true,"type":"enum","values":{"geojson":{}}},"data":{"type":"*"},"maxzoom":{"type":"number","default":18},"buffer":{"type":"number","default":128,"maximum":512,"minimum":0},"tolerance":{"type":"number","default":0.375},"cluster":{"type":"boolean","default":false},"clusterRadius":{"type":"number","default":50,"minimum":0},"clusterMaxZoom":{"type":"number"}},"source_video":{"type":{"required":true,"type":"enum","values":{"video":{}}},"urls":{"required":true,"type":"array","value":"string"},"coordinates":{"required":true,"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"source_image":{"type":{"required":true,"type":"enum","values":{"image":{}}},"url":{"required":true,"type":"string"},"coordinates":{"required":true,"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"source_canvas":{"type":{"required":true,"type":"enum","values":{"canvas":{}}},"coordinates":{"required":true,"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}},"animate":{"type":"boolean","default":"true"},"canvas":{"type":"string","required":true}},"layer":{"id":{"type":"string","required":true},"type":{"type":"enum","values":{"fill":{},"line":{},"symbol":{},"circle":{},"fill-extrusion":{},"raster":{},"background":{}}},"metadata":{"type":"*"},"ref":{"type":"string"},"source":{"type":"string"},"source-layer":{"type":"string"},"minzoom":{"type":"number","minimum":0,"maximum":24},"maxzoom":{"type":"number","minimum":0,"maximum":24},"filter":{"type":"filter"},"layout":{"type":"layout"},"paint":{"type":"paint"},"paint.*":{"type":"paint"}},"layout":["layout_fill","layout_line","layout_circle","layout_fill-extrusion","layout_symbol","layout_raster","layout_background"],"layout_background":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_fill":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_circle":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_fill-extrusion":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_line":{"line-cap":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"butt":{},"round":{},"square":{}},"default":"butt"},"line-join":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"bevel":{},"round":{},"miter":{}},"default":"miter"},"line-miter-limit":{"type":"number","default":2,"function":"interpolated","zoom-function":true,"requires":[{"line-join":"miter"}]},"line-round-limit":{"type":"number","default":1.05,"function":"interpolated","zoom-function":true,"requires":[{"line-join":"round"}]},"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_symbol":{"symbol-placement":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"point":{},"line":{}},"default":"point"},"symbol-spacing":{"type":"number","default":250,"minimum":1,"function":"interpolated","zoom-function":true,"units":"pixels","requires":[{"symbol-placement":"line"}]},"symbol-avoid-edges":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false},"icon-allow-overlap":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image"]},"icon-ignore-placement":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image"]},"icon-optional":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image","text-field"]},"icon-rotation-alignment":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{},"auto":{}},"default":"auto","requires":["icon-image"]},"icon-size":{"type":"number","default":1,"minimum":0,"function":"interpolated","zoom-function":true,"requires":["icon-image"]},"icon-text-fit":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"none":{},"width":{},"height":{},"both":{}},"default":"none","requires":["icon-image","text-field"]},"icon-text-fit-padding":{"type":"array","value":"number","length":4,"default":[0,0,0,0],"units":"pixels","function":"interpolated","zoom-function":true,"requires":["icon-image","text-field",{"icon-text-fit":["both","width","height"]}]},"icon-image":{"type":"string","function":"piecewise-constant","zoom-function":true,"tokens":true},"icon-rotate":{"type":"number","default":0,"period":360,"function":"interpolated","zoom-function":true,"property-function":true,"units":"degrees","requires":["icon-image"]},"icon-padding":{"type":"number","default":2,"minimum":0,"function":"interpolated","zoom-function":true,"units":"pixels","requires":["icon-image"]},"icon-keep-upright":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image",{"icon-rotation-alignment":"map"},{"symbol-placement":"line"}]},"icon-offset":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"property-function":true,"requires":["icon-image"]},"text-pitch-alignment":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{},"auto":{}},"default":"auto","requires":["text-field"]},"text-rotation-alignment":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{},"auto":{}},"default":"auto","requires":["text-field"]},"text-field":{"type":"string","function":"piecewise-constant","zoom-function":true,"default":"","tokens":true},"text-font":{"type":"array","value":"string","function":"piecewise-constant","zoom-function":true,"default":["Open Sans Regular","Arial Unicode MS Regular"],"requires":["text-field"]},"text-size":{"type":"number","default":16,"minimum":0,"units":"pixels","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-max-width":{"type":"number","default":10,"minimum":0,"units":"ems","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-line-height":{"type":"number","default":1.2,"units":"ems","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-letter-spacing":{"type":"number","default":0,"units":"ems","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-justify":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"left":{},"center":{},"right":{}},"default":"center","requires":["text-field"]},"text-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"center":{},"left":{},"right":{},"top":{},"bottom":{},"top-left":{},"top-right":{},"bottom-left":{},"bottom-right":{}},"default":"center","requires":["text-field"]},"text-max-angle":{"type":"number","default":45,"units":"degrees","function":"interpolated","zoom-function":true,"requires":["text-field",{"symbol-placement":"line"}]},"text-rotate":{"type":"number","default":0,"period":360,"units":"degrees","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-padding":{"type":"number","default":2,"minimum":0,"units":"pixels","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-keep-upright":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":true,"requires":["text-field",{"text-rotation-alignment":"map"},{"symbol-placement":"line"}]},"text-transform":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"none":{},"uppercase":{},"lowercase":{}},"default":"none","requires":["text-field"]},"text-offset":{"type":"array","value":"number","units":"ems","function":"interpolated","zoom-function":true,"length":2,"default":[0,0],"requires":["text-field"]},"text-allow-overlap":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["text-field"]},"text-ignore-placement":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["text-field"]},"text-optional":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["text-field","icon-image"]},"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_raster":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"filter":{"type":"array","value":"*"},"filter_operator":{"type":"enum","values":{"==":{},"!=":{},">":{},">=":{},"<":{},"<=":{},"in":{},"!in":{},"all":{},"any":{},"none":{},"has":{},"!has":{}}},"geometry_type":{"type":"enum","values":{"Point":{},"LineString":{},"Polygon":{}}},"function":{"stops":{"type":"array","value":"function_stop"},"base":{"type":"number","default":1,"minimum":0},"property":{"type":"string","default":"$zoom"},"type":{"type":"enum","values":{"identity":{},"exponential":{},"interval":{},"categorical":{}},"default":"exponential"},"colorSpace":{"type":"enum","values":{"rgb":{},"lab":{},"hcl":{}},"default":"rgb"}},"function_stop":{"type":"array","minimum":0,"maximum":22,"value":["number","color"],"length":2},"light":{"anchor":{"type":"enum","default":"viewport","values":{"map":{},"viewport":{}},"transition":false},"position":{"type":"array","default":[1.15,210,30],"length":3,"value":"number","transition":true,"function":"interpolated","zoom-function":true,"property-function":false},"color":{"type":"color","default":"#ffffff","function":"interpolated","zoom-function":true,"property-function":false,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"property-function":false,"transition":true}},"paint":["paint_fill","paint_line","paint_circle","paint_fill-extrusion","paint_symbol","paint_raster","paint_background"],"paint_fill":{"fill-antialias":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":true},"fill-opacity":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":1,"minimum":0,"maximum":1,"transition":true},"fill-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"fill-pattern"}]},"fill-outline-color":{"type":"color","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"fill-pattern"},{"fill-antialias":true}]},"fill-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"fill-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["fill-translate"]},"fill-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true}},"paint_fill-extrusion":{"fill-extrusion-opacity":{"type":"number","function":"interpolated","zoom-function":true,"property-function":false,"default":1,"minimum":0,"maximum":1,"transition":true},"fill-extrusion-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"fill-extrusion-pattern"}]},"fill-extrusion-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"fill-extrusion-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["fill-extrusion-translate"]},"fill-extrusion-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true},"fill-extrusion-height":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":0,"minimum":0,"units":"meters","transition":true},"fill-extrusion-base":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":0,"minimum":0,"units":"meters","transition":true,"requires":["fill-extrusion-height"]}},"paint_line":{"line-opacity":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":1,"minimum":0,"maximum":1,"transition":true},"line-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"line-pattern"}]},"line-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"line-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["line-translate"]},"line-width":{"type":"number","default":1,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"line-gap-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"line-offset":{"type":"number","default":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"line-blur":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"line-dasharray":{"type":"array","value":"number","function":"piecewise-constant","zoom-function":true,"minimum":0,"transition":true,"units":"line widths","requires":[{"!":"line-pattern"}]},"line-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true}},"paint_circle":{"circle-radius":{"type":"number","default":5,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"circle-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-blur":{"type":"number","default":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"circle-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["circle-translate"]},"circle-pitch-scale":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map"},"circle-stroke-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"circle-stroke-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-stroke-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true}},"paint_symbol":{"icon-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true,"requires":["icon-image"]},"icon-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"transition":true,"requires":["icon-image"]},"icon-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","function":"interpolated","zoom-function":true,"transition":true,"requires":["icon-image"]},"icon-halo-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["icon-image"]},"icon-halo-blur":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["icon-image"]},"icon-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["icon-image"]},"icon-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["icon-image","icon-translate"]},"text-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true,"requires":["text-field"]},"text-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"transition":true,"requires":["text-field"]},"text-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","function":"interpolated","zoom-function":true,"transition":true,"requires":["text-field"]},"text-halo-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["text-field"]},"text-halo-blur":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["text-field"]},"text-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["text-field"]},"text-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["text-field","text-translate"]}},"paint_raster":{"raster-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true},"raster-hue-rotate":{"type":"number","default":0,"period":360,"function":"interpolated","zoom-function":true,"transition":true,"units":"degrees"},"raster-brightness-min":{"type":"number","function":"interpolated","zoom-function":true,"default":0,"minimum":0,"maximum":1,"transition":true},"raster-brightness-max":{"type":"number","function":"interpolated","zoom-function":true,"default":1,"minimum":0,"maximum":1,"transition":true},"raster-saturation":{"type":"number","default":0,"minimum":-1,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true},"raster-contrast":{"type":"number","default":0,"minimum":-1,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true},"raster-fade-duration":{"type":"number","default":300,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"milliseconds"}},"paint_background":{"background-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"transition":true,"requires":[{"!":"background-pattern"}]},"background-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true},"background-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true}},"transition":{"duration":{"type":"number","default":300,"minimum":0,"units":"milliseconds"},"delay":{"type":"number","default":0,"minimum":0,"units":"milliseconds"}}}
-},{}],100:[function(require,module,exports){
+},{}],101:[function(require,module,exports){
 'use strict';
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -67811,7 +68014,7 @@ function isWebGLSupported(failIfMajorPerformanceCaveat) {
     }
 }
 
-},{}],101:[function(require,module,exports){
+},{}],102:[function(require,module,exports){
 'use strict';
 var ProgramConfiguration = require('./program_configuration');
 var Segment = function Segment(vertexOffset, primitiveOffset) {
@@ -67899,7 +68102,7 @@ function serializePaintVertexArrays(layerData, transferables) {
 }
 ArrayGroup.MAX_VERTEX_ARRAY_LENGTH = Math.pow(2, 16) - 1;
 module.exports = ArrayGroup;
-},{"./program_configuration":115}],102:[function(require,module,exports){
+},{"./program_configuration":116}],103:[function(require,module,exports){
 'use strict';
 var ArrayGroup = require('./array_group');
 var BufferGroup = require('./buffer_group');
@@ -67964,7 +68167,7 @@ Bucket.deserialize = function (input, style) {
     }
     return output;
 };
-},{"../util/util":229,"./array_group":101,"./buffer_group":109}],103:[function(require,module,exports){
+},{"../util/util":230,"./array_group":102,"./buffer_group":110}],104:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -68052,7 +68255,7 @@ var CircleBucket = function (Bucket) {
     return CircleBucket;
 }(Bucket);
 module.exports = CircleBucket;
-},{"../bucket":102,"../element_array_type":110,"../extent":111,"../load_geometry":113,"../vertex_array_type":117}],104:[function(require,module,exports){
+},{"../bucket":103,"../element_array_type":111,"../extent":112,"../load_geometry":114,"../vertex_array_type":118}],105:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -68141,7 +68344,7 @@ var FillBucket = function (Bucket) {
     return FillBucket;
 }(Bucket);
 module.exports = FillBucket;
-},{"../../util/classify_rings":213,"../bucket":102,"../element_array_type":110,"../load_geometry":113,"../vertex_array_type":117,"earcut":41}],105:[function(require,module,exports){
+},{"../../util/classify_rings":214,"../bucket":103,"../element_array_type":111,"../load_geometry":114,"../vertex_array_type":118,"earcut":42}],106:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -68257,7 +68460,7 @@ module.exports = FillExtrusionBucket;
 function isBoundaryEdge(p1, p2) {
     return p1.x === p2.x && (p1.x < 0 || p1.x > EXTENT) || p1.y === p2.y && (p1.y < 0 || p1.y > EXTENT);
 }
-},{"../../util/classify_rings":213,"../bucket":102,"../element_array_type":110,"../extent":111,"../load_geometry":113,"../vertex_array_type":117,"earcut":41}],106:[function(require,module,exports){
+},{"../../util/classify_rings":214,"../bucket":103,"../element_array_type":111,"../extent":112,"../load_geometry":114,"../vertex_array_type":118,"earcut":42}],107:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -68542,7 +68745,7 @@ var LineBucket = function (Bucket) {
     return LineBucket;
 }(Bucket);
 module.exports = LineBucket;
-},{"../bucket":102,"../element_array_type":110,"../extent":111,"../load_geometry":113,"../vertex_array_type":117}],107:[function(require,module,exports){
+},{"../bucket":103,"../element_array_type":111,"../extent":112,"../load_geometry":114,"../vertex_array_type":118}],108:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var ArrayGroup = require('../array_group');
@@ -69070,7 +69273,7 @@ SymbolBucket.prototype.addSymbolQuad = function addSymbolQuad(symbolQuad) {
 };
 SymbolBucket.MAX_QUADS = 65535;
 module.exports = SymbolBucket;
-},{"../../source/rtl_text_plugin":149,"../../symbol/anchor":175,"../../symbol/clip_line":177,"../../symbol/collision_feature":179,"../../symbol/get_anchors":181,"../../symbol/mergelines":184,"../../symbol/quads":185,"../../symbol/resolve_text":186,"../../symbol/shaping":187,"../../util/classify_rings":213,"../../util/find_pole_of_inaccessibility":219,"../../util/script_detection":226,"../../util/token":228,"../../util/util":229,"../array_group":101,"../buffer_group":109,"../element_array_type":110,"../extent":111,"../load_geometry":113,"../vertex_array_type":117,"point-geometry":236,"vector-tile":243}],108:[function(require,module,exports){
+},{"../../source/rtl_text_plugin":150,"../../symbol/anchor":176,"../../symbol/clip_line":178,"../../symbol/collision_feature":180,"../../symbol/get_anchors":182,"../../symbol/mergelines":185,"../../symbol/quads":186,"../../symbol/resolve_text":187,"../../symbol/shaping":188,"../../util/classify_rings":214,"../../util/find_pole_of_inaccessibility":220,"../../util/script_detection":227,"../../util/token":229,"../../util/util":230,"../array_group":102,"../buffer_group":110,"../element_array_type":111,"../extent":112,"../load_geometry":114,"../vertex_array_type":118,"point-geometry":237,"vector-tile":244}],109:[function(require,module,exports){
 'use strict';
 var AttributeType = {
     Int8: 'BYTE',
@@ -69121,7 +69324,7 @@ Buffer.BufferType = {
     ELEMENT: 'ELEMENT_ARRAY_BUFFER'
 };
 module.exports = Buffer;
-},{}],109:[function(require,module,exports){
+},{}],110:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var Buffer = require('./buffer');
@@ -69191,7 +69394,7 @@ BufferGroup.prototype.destroy = function destroy() {
     }
 };
 module.exports = BufferGroup;
-},{"../render/vertex_array_object":139,"../util/util":229,"./buffer":108,"./program_configuration":115}],110:[function(require,module,exports){
+},{"../render/vertex_array_object":140,"../util/util":230,"./buffer":109,"./program_configuration":116}],111:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 module.exports = createElementArrayType;
@@ -69204,10 +69407,10 @@ function createElementArrayType(components) {
             }]
     });
 }
-},{"../util/struct_array":227}],111:[function(require,module,exports){
+},{"../util/struct_array":228}],112:[function(require,module,exports){
 'use strict';
 module.exports = 8192;
-},{}],112:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var loadGeometry = require('./load_geometry');
@@ -69465,7 +69668,7 @@ function offsetLine(rings, offset) {
     }
     return newRings;
 }
-},{"../util/dictionary_coder":215,"../util/intersection_tests":222,"../util/struct_array":227,"../util/util":229,"../util/vectortile_to_geojson":230,"./extent":111,"./load_geometry":113,"feature-filter":43,"grid-index":54,"pbf":235,"point-geometry":236,"vector-tile":243}],113:[function(require,module,exports){
+},{"../util/dictionary_coder":216,"../util/intersection_tests":223,"../util/struct_array":228,"../util/util":230,"../util/vectortile_to_geojson":231,"./extent":112,"./load_geometry":114,"feature-filter":44,"grid-index":55,"pbf":236,"point-geometry":237,"vector-tile":244}],114:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var EXTENT = require('./extent');
@@ -69496,7 +69699,7 @@ module.exports = function loadGeometry(feature, bits) {
     }
     return geometry;
 };
-},{"../util/util":229,"./extent":111}],114:[function(require,module,exports){
+},{"../util/util":230,"./extent":112}],115:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var PosArray = createStructArrayType({
@@ -69507,7 +69710,7 @@ var PosArray = createStructArrayType({
         }]
 });
 module.exports = PosArray;
-},{"../util/struct_array":227}],115:[function(require,module,exports){
+},{"../util/struct_array":228}],116:[function(require,module,exports){
 'use strict';
 var createVertexArrayType = require('./vertex_array_type');
 var util = require('../util/util');
@@ -69682,7 +69885,7 @@ function normalizePaintAttribute(attribute, layer) {
     }, attribute);
 }
 module.exports = ProgramConfiguration;
-},{"../util/util":229,"./vertex_array_type":117}],116:[function(require,module,exports){
+},{"../util/util":230,"./vertex_array_type":118}],117:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var RasterBoundsArray = createStructArrayType({
@@ -69700,7 +69903,7 @@ var RasterBoundsArray = createStructArrayType({
     ]
 });
 module.exports = RasterBoundsArray;
-},{"../util/struct_array":227}],117:[function(require,module,exports){
+},{"../util/struct_array":228}],118:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 module.exports = createVertexArrayType;
@@ -69710,7 +69913,7 @@ function createVertexArrayType(members) {
         alignment: 4
     });
 }
-},{"../util/struct_array":227}],118:[function(require,module,exports){
+},{"../util/struct_array":228}],119:[function(require,module,exports){
 'use strict';
 var Coordinate = function Coordinate(column, row, zoom) {
     this.column = column;
@@ -69740,7 +69943,7 @@ Coordinate.prototype._sub = function _sub(c) {
     return this;
 };
 module.exports = Coordinate;
-},{}],119:[function(require,module,exports){
+},{}],120:[function(require,module,exports){
 'use strict';
 var wrap = require('../util/util').wrap;
 var LngLat = function LngLat(lng, lat) {
@@ -69777,7 +69980,7 @@ LngLat.convert = function (input) {
     }
 };
 module.exports = LngLat;
-},{"../util/util":229}],120:[function(require,module,exports){
+},{"../util/util":230}],121:[function(require,module,exports){
 'use strict';
 var LngLat = require('./lng_lat');
 var LngLatBounds = function LngLatBounds(sw, ne) {
@@ -69879,7 +70082,7 @@ LngLatBounds.convert = function (input) {
     return new LngLatBounds(input);
 };
 module.exports = LngLatBounds;
-},{"./lng_lat":119}],121:[function(require,module,exports){
+},{"./lng_lat":120}],122:[function(require,module,exports){
 'use strict';
 var LngLat = require('./lng_lat'), Point = require('point-geometry'), Coordinate = require('./coordinate'), util = require('../util/util'), interp = require('../util/interpolate'), TileCoord = require('../source/tile_coord'), EXTENT = require('../data/extent'), glmatrix = require('@mapbox/gl-matrix');
 var vec4 = glmatrix.vec4, mat4 = glmatrix.mat4, mat2 = glmatrix.mat2;
@@ -70248,7 +70451,7 @@ Transform.prototype._calcMatrices = function _calcMatrices() {
 };
 Object.defineProperties(Transform.prototype, prototypeAccessors);
 module.exports = Transform;
-},{"../data/extent":111,"../source/tile_coord":153,"../util/interpolate":221,"../util/util":229,"./coordinate":118,"./lng_lat":119,"@mapbox/gl-matrix":17,"point-geometry":236}],122:[function(require,module,exports){
+},{"../data/extent":112,"../source/tile_coord":154,"../util/interpolate":222,"../util/util":230,"./coordinate":119,"./lng_lat":120,"@mapbox/gl-matrix":18,"point-geometry":237}],123:[function(require,module,exports){
 'use strict';
 var WorkerPool = require('./util/worker_pool');
 var globalWorkerPool;
@@ -70258,7 +70461,7 @@ module.exports = function getGlobalWorkerPool() {
     }
     return globalWorkerPool;
 };
-},{"./util/worker_pool":232}],123:[function(require,module,exports){
+},{"./util/worker_pool":233}],124:[function(require,module,exports){
 'use strict';
 var simplexFont = {
     ' ': [
@@ -73152,7 +73355,7 @@ module.exports = function textVertices(text, left, baseline, scale) {
     }
     return strokes;
 };
-},{}],124:[function(require,module,exports){
+},{}],125:[function(require,module,exports){
 'use strict';
 var browser = require('./util/browser');
 var mapboxgl = module.exports = {};
@@ -73187,7 +73390,7 @@ Object.defineProperty(mapboxgl, 'accessToken', {
         config.ACCESS_TOKEN = token;
     }
 });
-},{"../package.json":233,"./geo/lng_lat":119,"./geo/lng_lat_bounds":120,"./source/rtl_text_plugin":149,"./style/style":163,"./ui/control/attribution_control":193,"./ui/control/geolocate_control":194,"./ui/control/navigation_control":195,"./ui/control/scale_control":196,"./ui/map":205,"./ui/marker":206,"./ui/popup":207,"./util/ajax":209,"./util/browser":210,"./util/config":214,"./util/evented":218,"./util/util":229,"point-geometry":236}],125:[function(require,module,exports){
+},{"../package.json":234,"./geo/lng_lat":120,"./geo/lng_lat_bounds":121,"./source/rtl_text_plugin":150,"./style/style":164,"./ui/control/attribution_control":194,"./ui/control/geolocate_control":195,"./ui/control/navigation_control":196,"./ui/control/scale_control":197,"./ui/map":206,"./ui/marker":207,"./ui/popup":208,"./util/ajax":210,"./util/browser":211,"./util/config":215,"./util/evented":219,"./util/util":230,"point-geometry":237}],126:[function(require,module,exports){
 'use strict';
 var pattern = require('./pattern');
 module.exports = drawBackground;
@@ -73227,7 +73430,7 @@ function drawBackground(painter, sourceCache, layer) {
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, painter.tileExtentBuffer.length);
     }
 }
-},{"./pattern":137}],126:[function(require,module,exports){
+},{"./pattern":138}],127:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 module.exports = drawCircles;
@@ -73265,7 +73468,7 @@ function drawCircles(painter, sourceCache, layer, coords) {
         }
     }
 }
-},{"../util/browser":210}],127:[function(require,module,exports){
+},{"../util/browser":211}],128:[function(require,module,exports){
 'use strict';
 module.exports = drawCollisionDebug;
 function drawCollisionDebug(painter, sourceCache, layer, coords) {
@@ -73294,7 +73497,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords) {
         }
     }
 }
-},{}],128:[function(require,module,exports){
+},{}],129:[function(require,module,exports){
 'use strict';
 var textVertices = require('../lib/debugtext');
 var browser = require('../util/browser');
@@ -73361,7 +73564,7 @@ function drawDebugTile(painter, sourceCache, coord) {
     gl.uniformMatrix4fv(program.u_matrix, false, posMatrix);
     gl.drawArrays(gl.LINES, 0, debugTextBuffer.length);
 }
-},{"../data/buffer":108,"../data/extent":111,"../data/pos_array":114,"../lib/debugtext":123,"../util/browser":210,"./vertex_array_object":139,"@mapbox/gl-matrix":17}],129:[function(require,module,exports){
+},{"../data/buffer":109,"../data/extent":112,"../data/pos_array":115,"../lib/debugtext":124,"../util/browser":211,"./vertex_array_object":140,"@mapbox/gl-matrix":18}],130:[function(require,module,exports){
 'use strict';
 var pattern = require('./pattern');
 module.exports = drawFill;
@@ -73434,7 +73637,7 @@ function setFillProgram(programId, usePattern, painter, layerData, layer, tile, 
     painter.gl.uniformMatrix4fv(program.u_matrix, false, painter.translatePosMatrix(coord.posMatrix, tile, layer.paint['fill-translate'], layer.paint['fill-translate-anchor']));
     return program;
 }
-},{"./pattern":137}],130:[function(require,module,exports){
+},{"./pattern":138}],131:[function(require,module,exports){
 'use strict';
 var glMatrix = require('@mapbox/gl-matrix');
 var Buffer = require('../data/buffer');
@@ -73584,7 +73787,7 @@ function setLight(program, painter) {
     gl.uniform1f(program.u_lightintensity, light.calculated.intensity);
     gl.uniform3fv(program.u_lightcolor, light.calculated.color.slice(0, 3));
 }
-},{"../data/buffer":108,"../data/pos_array":114,"./pattern":137,"./vertex_array_object":139,"@mapbox/gl-matrix":17}],131:[function(require,module,exports){
+},{"../data/buffer":109,"../data/pos_array":115,"./pattern":138,"./vertex_array_object":140,"@mapbox/gl-matrix":18}],132:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 var pixelsToTileUnits = require('../source/pixels_to_tile_units');
@@ -73674,7 +73877,7 @@ function drawLineTile(program, painter, tile, buffers, layer, coord, layerData, 
         gl.drawElements(gl.TRIANGLES, segment.primitiveLength * 3, gl.UNSIGNED_SHORT, segment.primitiveOffset * 3 * 2);
     }
 }
-},{"../source/pixels_to_tile_units":146,"../util/browser":210}],132:[function(require,module,exports){
+},{"../source/pixels_to_tile_units":147,"../util/browser":211}],133:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 module.exports = drawRaster;
@@ -73783,7 +73986,7 @@ function getFadeValues(tile, parentTile, layer, transform) {
         };
     }
 }
-},{"../util/util":229}],133:[function(require,module,exports){
+},{"../util/util":230}],134:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 var drawCollisionDebug = require('./draw_collision_debug');
@@ -73908,7 +74111,7 @@ function drawSymbolElements(buffers, layer, gl, program) {
         gl.drawElements(gl.TRIANGLES, segment.primitiveLength * 3, gl.UNSIGNED_SHORT, segment.primitiveOffset * 3 * 2);
     }
 }
-},{"../source/pixels_to_tile_units":146,"../util/browser":210,"./draw_collision_debug":127}],134:[function(require,module,exports){
+},{"../source/pixels_to_tile_units":147,"../util/browser":211,"./draw_collision_debug":128}],135:[function(require,module,exports){
 'use strict';
 var FrameHistory = function FrameHistory() {
     this.changeTimes = new Float64Array(256);
@@ -73967,7 +74170,7 @@ FrameHistory.prototype.bind = function bind(gl) {
     }
 };
 module.exports = FrameHistory;
-},{}],135:[function(require,module,exports){
+},{}],136:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var LineAtlas = function LineAtlas(width, height) {
@@ -74065,7 +74268,7 @@ LineAtlas.prototype.bind = function bind(gl) {
     }
 };
 module.exports = LineAtlas;
-},{"../util/util":229}],136:[function(require,module,exports){
+},{"../util/util":230}],137:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 var mat4 = require('@mapbox/gl-matrix').mat4;
@@ -74395,7 +74598,7 @@ Painter.prototype.useProgram = function useProgram(name, programConfiguration) {
     return nextProgram;
 };
 module.exports = Painter;
-},{"../data/buffer":108,"../data/extent":111,"../data/pos_array":114,"../data/program_configuration":115,"../data/raster_bounds_array":116,"../source/pixels_to_tile_units":146,"../source/source_cache":151,"../util/browser":210,"../util/util":229,"./draw_background":125,"./draw_circle":126,"./draw_debug":128,"./draw_fill":129,"./draw_fill_extrusion":130,"./draw_line":131,"./draw_raster":132,"./draw_symbol":133,"./frame_history":134,"./shaders":138,"./vertex_array_object":139,"@mapbox/gl-matrix":17}],137:[function(require,module,exports){
+},{"../data/buffer":109,"../data/extent":112,"../data/pos_array":115,"../data/program_configuration":116,"../data/raster_bounds_array":117,"../source/pixels_to_tile_units":147,"../source/source_cache":152,"../util/browser":211,"../util/util":230,"./draw_background":126,"./draw_circle":127,"./draw_debug":129,"./draw_fill":130,"./draw_fill_extrusion":131,"./draw_line":132,"./draw_raster":133,"./draw_symbol":134,"./frame_history":135,"./shaders":139,"./vertex_array_object":140,"@mapbox/gl-matrix":18}],138:[function(require,module,exports){
 'use strict';
 var pixelsToTileUnits = require('../source/pixels_to_tile_units');
 exports.prepare = function (image, painter, program) {
@@ -74427,7 +74630,7 @@ exports.setTile = function (tile, painter, program) {
     gl.uniform2f(program.u_pixel_coord_upper, pixelX >> 16, pixelY >> 16);
     gl.uniform2f(program.u_pixel_coord_lower, pixelX & 65535, pixelY & 65535);
 };
-},{"../source/pixels_to_tile_units":146}],138:[function(require,module,exports){
+},{"../source/pixels_to_tile_units":147}],139:[function(require,module,exports){
 'use strict';
 
 var path = require('path');
@@ -74501,7 +74704,7 @@ module.exports = {
         vertexSource: "const float PI = 3.141592653589793;\n\nattribute vec2 a_pos;\nattribute vec2 a_offset;\nattribute vec2 a_texture_pos;\nattribute vec4 a_data;\n\n\n// matrix is for the vertex position.\nuniform mat4 u_matrix;\n\nuniform mediump float u_zoom;\nuniform bool u_rotate_with_map;\nuniform bool u_pitch_with_map;\nuniform mediump float u_pitch;\nuniform mediump float u_bearing;\nuniform mediump float u_aspect_ratio;\nuniform vec2 u_extrude_scale;\n\nuniform vec2 u_texsize;\n\nvarying vec2 v_tex;\nvarying vec2 v_fade_tex;\nvarying float v_gamma_scale;\n\nvoid main() {\n    vec2 a_tex = a_texture_pos.xy;\n    mediump float a_labelminzoom = a_data[0];\n    mediump vec2 a_zoom = a_data.pq;\n    mediump float a_minzoom = a_zoom[0];\n    mediump float a_maxzoom = a_zoom[1];\n\n    // u_zoom is the current zoom level adjusted for the change in font size\n    mediump float z = 2.0 - step(a_minzoom, u_zoom) - (1.0 - step(a_maxzoom, u_zoom));\n\n    // pitch-alignment: map\n    // rotation-alignment: map | viewport\n    if (u_pitch_with_map) {\n        lowp float angle = u_rotate_with_map ? (a_data[1] / 256.0 * 2.0 * PI) : u_bearing;\n        lowp float asin = sin(angle);\n        lowp float acos = cos(angle);\n        mat2 RotationMatrix = mat2(acos, asin, -1.0 * asin, acos);\n        vec2 offset = RotationMatrix * a_offset;\n        vec2 extrude = u_extrude_scale * (offset / 64.0);\n        gl_Position = u_matrix * vec4(a_pos + extrude, 0, 1);\n        gl_Position.z += z * gl_Position.w;\n    // pitch-alignment: viewport\n    // rotation-alignment: map\n    } else if (u_rotate_with_map) {\n        // foreshortening factor to apply on pitched maps\n        // as a label goes from horizontal <=> vertical in angle\n        // it goes from 0% foreshortening to up to around 70% foreshortening\n        lowp float pitchfactor = 1.0 - cos(u_pitch * sin(u_pitch * 0.75));\n\n        lowp float lineangle = a_data[1] / 256.0 * 2.0 * PI;\n\n        // use the lineangle to position points a,b along the line\n        // project the points and calculate the label angle in projected space\n        // this calculation allows labels to be rendered unskewed on pitched maps\n        vec4 a = u_matrix * vec4(a_pos, 0, 1);\n        vec4 b = u_matrix * vec4(a_pos + vec2(cos(lineangle),sin(lineangle)), 0, 1);\n        lowp float angle = atan((b[1]/b[3] - a[1]/a[3])/u_aspect_ratio, b[0]/b[3] - a[0]/a[3]);\n        lowp float asin = sin(angle);\n        lowp float acos = cos(angle);\n        mat2 RotationMatrix = mat2(acos, -1.0 * asin, asin, acos);\n\n        vec2 offset = RotationMatrix * (vec2((1.0-pitchfactor)+(pitchfactor*cos(angle*2.0)), 1.0) * a_offset);\n        vec2 extrude = u_extrude_scale * (offset / 64.0);\n        gl_Position = u_matrix * vec4(a_pos, 0, 1) + vec4(extrude, 0, 0);\n        gl_Position.z += z * gl_Position.w;\n    // pitch-alignment: viewport\n    // rotation-alignment: viewport\n    } else {\n        vec2 extrude = u_extrude_scale * (a_offset / 64.0);\n        gl_Position = u_matrix * vec4(a_pos, 0, 1) + vec4(extrude, 0, 0);\n    }\n\n    v_gamma_scale = gl_Position.w;\n\n    v_tex = a_tex / u_texsize;\n    v_fade_tex = vec2(a_labelminzoom / 255.0, 0.0);\n}\n"
     }
 };
-},{"path":254}],139:[function(require,module,exports){
+},{"path":255}],140:[function(require,module,exports){
 'use strict';
 var VertexArrayObject = function VertexArrayObject() {
     this.boundProgram = null;
@@ -74564,7 +74767,7 @@ VertexArrayObject.prototype.destroy = function destroy() {
     }
 };
 module.exports = VertexArrayObject;
-},{}],140:[function(require,module,exports){
+},{}],141:[function(require,module,exports){
 'use strict';
 var ImageSource = require('./image_source');
 var window = require('../util/window');
@@ -74645,7 +74848,7 @@ var CanvasSource = function (ImageSource) {
     return CanvasSource;
 }(ImageSource);
 module.exports = CanvasSource;
-},{"../util/window":212,"./image_source":144}],141:[function(require,module,exports){
+},{"../util/window":213,"./image_source":145}],142:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var util = require('../util/util');
@@ -74797,7 +75000,7 @@ function resolveURL(url) {
     return a.href;
 }
 module.exports = GeoJSONSource;
-},{"../data/extent":111,"../util/evented":218,"../util/util":229,"../util/window":212}],142:[function(require,module,exports){
+},{"../data/extent":112,"../util/evented":219,"../util/util":230,"../util/window":213}],143:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var rewind = require('geojson-rewind');
@@ -74887,7 +75090,7 @@ var GeoJSONWorkerSource = function (VectorTileWorkerSource) {
     return GeoJSONWorkerSource;
 }(VectorTileWorkerSource);
 module.exports = GeoJSONWorkerSource;
-},{"../util/ajax":209,"./geojson_wrapper":143,"./vector_tile_worker_source":155,"geojson-rewind":45,"geojson-vt":49,"supercluster":239,"vt-pbf":247}],143:[function(require,module,exports){
+},{"../util/ajax":210,"./geojson_wrapper":144,"./vector_tile_worker_source":156,"geojson-rewind":46,"geojson-vt":50,"supercluster":240,"vt-pbf":248}],144:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var VectorTileFeature = require('vector-tile').VectorTileFeature;
@@ -74953,7 +75156,7 @@ GeoJSONWrapper.prototype.feature = function feature(i) {
     return new FeatureWrapper(this.features[i]);
 };
 module.exports = GeoJSONWrapper;
-},{"../data/extent":111,"point-geometry":236,"vector-tile":243}],144:[function(require,module,exports){
+},{"../data/extent":112,"point-geometry":237,"vector-tile":244}],145:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var window = require('../util/window');
@@ -75078,7 +75281,7 @@ var ImageSource = function (Evented) {
     return ImageSource;
 }(Evented);
 module.exports = ImageSource;
-},{"../data/buffer":108,"../data/extent":111,"../data/raster_bounds_array":116,"../geo/lng_lat":119,"../render/vertex_array_object":139,"../util/ajax":209,"../util/evented":218,"../util/util":229,"../util/window":212,"./tile_coord":153,"point-geometry":236}],145:[function(require,module,exports){
+},{"../data/buffer":109,"../data/extent":112,"../data/raster_bounds_array":117,"../geo/lng_lat":120,"../render/vertex_array_object":140,"../util/ajax":210,"../util/evented":219,"../util/util":230,"../util/window":213,"./tile_coord":154,"point-geometry":237}],146:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var ajax = require('../util/ajax');
@@ -75109,13 +75312,13 @@ module.exports = function (options, callback) {
         browser.frame(loaded.bind(null, null, options));
     }
 };
-},{"../util/ajax":209,"../util/browser":210,"../util/mapbox":225,"../util/util":229}],146:[function(require,module,exports){
+},{"../util/ajax":210,"../util/browser":211,"../util/mapbox":226,"../util/util":230}],147:[function(require,module,exports){
 'use strict';
 var EXTENT = require('../data/extent');
 module.exports = function (tile, pixelValue, z) {
     return pixelValue * (EXTENT / (tile.tileSize * Math.pow(2, z - tile.coord.z)));
 };
-},{"../data/extent":111}],147:[function(require,module,exports){
+},{"../data/extent":112}],148:[function(require,module,exports){
 'use strict';
 var TileCoord = require('./tile_coord');
 exports.rendered = function (sourceCache, styleLayers, queryGeometry, params, zoom, bearing) {
@@ -75175,7 +75378,7 @@ function mergeRenderedFeatureLayers(tiles) {
     }
     return result;
 }
-},{"./tile_coord":153}],148:[function(require,module,exports){
+},{"./tile_coord":154}],149:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var ajax = require('../util/ajax');
@@ -75279,7 +75482,7 @@ var RasterTileSource = function (Evented) {
     return RasterTileSource;
 }(Evented);
 module.exports = RasterTileSource;
-},{"../util/ajax":209,"../util/evented":218,"../util/mapbox":225,"../util/util":229,"./load_tilejson":145}],149:[function(require,module,exports){
+},{"../util/ajax":210,"../util/evented":219,"../util/mapbox":226,"../util/util":230,"./load_tilejson":146}],150:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var window = require('../util/window');
@@ -75312,7 +75515,7 @@ module.exports.setRTLTextPlugin = function (pluginURL, callback) {
         }
     });
 };
-},{"../util/ajax":209,"../util/window":212}],150:[function(require,module,exports){
+},{"../util/ajax":210,"../util/window":213}],151:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var sourceTypes = {
@@ -75343,7 +75546,7 @@ exports.getType = function (name) {
 exports.setType = function (name, type) {
     sourceTypes[name] = type;
 };
-},{"../source/canvas_source":140,"../source/geojson_source":141,"../source/image_source":144,"../source/raster_tile_source":148,"../source/vector_tile_source":154,"../source/video_source":156,"../util/util":229}],151:[function(require,module,exports){
+},{"../source/canvas_source":141,"../source/geojson_source":142,"../source/image_source":145,"../source/raster_tile_source":149,"../source/vector_tile_source":155,"../source/video_source":157,"../util/util":230}],152:[function(require,module,exports){
 'use strict';
 var Source = require('./source');
 var Tile = require('./tile');
@@ -75770,7 +75973,7 @@ function isRasterType(type) {
     return type === 'raster' || type === 'image' || type === 'video';
 }
 module.exports = SourceCache;
-},{"../data/extent":111,"../geo/coordinate":118,"../util/evented":218,"../util/lru_cache":224,"../util/util":229,"./source":150,"./tile":152,"./tile_coord":153}],152:[function(require,module,exports){
+},{"../data/extent":112,"../geo/coordinate":119,"../util/evented":219,"../util/lru_cache":225,"../util/util":230,"./source":151,"./tile":153,"./tile_coord":154}],153:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var Bucket = require('../data/bucket');
@@ -75931,7 +76134,7 @@ Tile.prototype.getExpiry = function getExpiry() {
     }
 };
 module.exports = Tile;
-},{"../data/bucket":102,"../data/feature_index":112,"../symbol/collision_box":178,"../symbol/collision_tile":180,"../symbol/symbol_instances":189,"../symbol/symbol_quads":190,"../util/util":229,"../util/vectortile_to_geojson":230,"feature-filter":43,"pbf":235,"vector-tile":243}],153:[function(require,module,exports){
+},{"../data/bucket":103,"../data/feature_index":113,"../symbol/collision_box":179,"../symbol/collision_tile":181,"../symbol/symbol_instances":190,"../symbol/symbol_quads":191,"../util/util":230,"../util/vectortile_to_geojson":231,"feature-filter":44,"pbf":236,"vector-tile":244}],154:[function(require,module,exports){
 'use strict';
 var WhooTS = require('whoots-js');
 var Coordinate = require('../geo/coordinate');
@@ -76089,7 +76292,7 @@ function getQuadkey(z, x, y) {
     return quadkey;
 }
 module.exports = TileCoord;
-},{"../geo/coordinate":118,"whoots-js":252}],154:[function(require,module,exports){
+},{"../geo/coordinate":119,"whoots-js":253}],155:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var util = require('../util/util');
@@ -76201,7 +76404,7 @@ var VectorTileSource = function (Evented) {
     return VectorTileSource;
 }(Evented);
 module.exports = VectorTileSource;
-},{"../util/evented":218,"../util/mapbox":225,"../util/util":229,"./load_tilejson":145}],155:[function(require,module,exports){
+},{"../util/evented":219,"../util/mapbox":226,"../util/util":230,"./load_tilejson":146}],156:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var vt = require('vector-tile');
@@ -76305,7 +76508,7 @@ VectorTileWorkerSource.prototype.redoPlacement = function redoPlacement(params, 
     }
 };
 module.exports = VectorTileWorkerSource;
-},{"../util/ajax":209,"../util/util":229,"./worker_tile":158,"pbf":235,"vector-tile":243}],156:[function(require,module,exports){
+},{"../util/ajax":210,"../util/util":230,"./worker_tile":159,"pbf":236,"vector-tile":244}],157:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var ImageSource = require('./image_source');
@@ -76371,7 +76574,7 @@ var VideoSource = function (ImageSource) {
     return VideoSource;
 }(ImageSource);
 module.exports = VideoSource;
-},{"../util/ajax":209,"./image_source":144}],157:[function(require,module,exports){
+},{"../util/ajax":210,"./image_source":145}],158:[function(require,module,exports){
 'use strict';
 var Actor = require('../util/actor');
 var StyleLayerIndex = require('../style/style_layer_index');
@@ -76470,7 +76673,7 @@ Worker.prototype.getWorkerSource = function getWorkerSource(mapId, type) {
 module.exports = function createWorker(self) {
     return new Worker(self);
 };
-},{"../style/style_layer_index":171,"../util/actor":208,"./geojson_worker_source":142,"./rtl_text_plugin":149,"./vector_tile_worker_source":155}],158:[function(require,module,exports){
+},{"../style/style_layer_index":172,"../util/actor":209,"./geojson_worker_source":143,"./rtl_text_plugin":150,"./vector_tile_worker_source":156}],159:[function(require,module,exports){
 'use strict';
 var FeatureIndex = require('../data/feature_index');
 var CollisionTile = require('../symbol/collision_tile');
@@ -76654,7 +76857,7 @@ function serializeBuckets(buckets, transferables) {
     });
 }
 module.exports = WorkerTile;
-},{"../data/feature_index":112,"../symbol/collision_box":178,"../symbol/collision_tile":180,"../symbol/symbol_instances":189,"../symbol/symbol_quads":190,"../util/dictionary_coder":215,"../util/util":229}],159:[function(require,module,exports){
+},{"../data/feature_index":113,"../symbol/collision_box":179,"../symbol/collision_tile":181,"../symbol/symbol_instances":190,"../symbol/symbol_quads":191,"../util/dictionary_coder":216,"../util/util":230}],160:[function(require,module,exports){
 'use strict';
 var AnimationLoop = function AnimationLoop() {
     this.n = 0;
@@ -76679,7 +76882,7 @@ AnimationLoop.prototype.cancel = function cancel(n) {
     });
 };
 module.exports = AnimationLoop;
-},{}],160:[function(require,module,exports){
+},{}],161:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var ajax = require('../util/ajax');
@@ -76760,7 +76963,7 @@ var ImageSprite = function (Evented) {
     return ImageSprite;
 }(Evented);
 module.exports = ImageSprite;
-},{"../util/ajax":209,"../util/browser":210,"../util/evented":218,"../util/mapbox":225}],161:[function(require,module,exports){
+},{"../util/ajax":210,"../util/browser":211,"../util/evented":219,"../util/mapbox":226}],162:[function(require,module,exports){
 'use strict';
 var styleSpec = require('./style_spec');
 var util = require('../util/util');
@@ -76892,7 +77095,7 @@ var Light = function (Evented) {
     return Light;
 }(Evented);
 module.exports = Light;
-},{"../util/evented":218,"../util/util":229,"./style_declaration":164,"./style_spec":172,"./style_transition":173,"./validate_style":174}],162:[function(require,module,exports){
+},{"../util/evented":219,"../util/util":230,"./style_declaration":165,"./style_spec":173,"./style_transition":174,"./validate_style":175}],163:[function(require,module,exports){
 'use strict';
 var parseColorString = require('csscolorparser').parseCSSColor;
 var util = require('../util/util');
@@ -76931,7 +77134,7 @@ module.exports = function parseColor(input) {
         throw new Error('Invalid color ' + input);
     }
 };
-},{"../util/util":229,"csscolorparser":37,"mapbox-gl-function":71}],163:[function(require,module,exports){
+},{"../util/util":230,"csscolorparser":38,"mapbox-gl-function":72}],164:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var StyleLayer = require('./style_layer');
@@ -77606,7 +77809,7 @@ var Style = function (Evented) {
     return Style;
 }(Evented);
 module.exports = Style;
-},{"../global_worker_pool":122,"../render/line_atlas":135,"../source/query_features":147,"../source/rtl_text_plugin":149,"../source/source":150,"../source/source_cache":151,"../symbol/glyph_source":183,"../symbol/sprite_atlas":188,"../util/ajax":209,"../util/browser":210,"../util/dispatcher":216,"../util/evented":218,"../util/mapbox":225,"../util/util":229,"./animation_loop":159,"./image_sprite":160,"./light":161,"./style_layer":165,"./style_spec":172,"./validate_style":174,"mapbox-gl-function":71,"mapbox-gl-style-spec/lib/deref":72,"mapbox-gl-style-spec/lib/diff":73}],164:[function(require,module,exports){
+},{"../global_worker_pool":123,"../render/line_atlas":136,"../source/query_features":148,"../source/rtl_text_plugin":150,"../source/source":151,"../source/source_cache":152,"../symbol/glyph_source":184,"../symbol/sprite_atlas":189,"../util/ajax":210,"../util/browser":211,"../util/dispatcher":217,"../util/evented":219,"../util/mapbox":226,"../util/util":230,"./animation_loop":160,"./image_sprite":161,"./light":162,"./style_layer":166,"./style_spec":173,"./validate_style":175,"mapbox-gl-function":72,"mapbox-gl-style-spec/lib/deref":73,"mapbox-gl-style-spec/lib/diff":74}],165:[function(require,module,exports){
 'use strict';
 var MapboxGLFunction = require('mapbox-gl-function');
 var parseColor = require('./parse_color');
@@ -77660,7 +77863,7 @@ StyleDeclaration.prototype.calculateInterpolationT = function calculateInterpola
     return this.functionInterpolationT(globalProperties && globalProperties.zoom, featureProperties || {});
 };
 module.exports = StyleDeclaration;
-},{"../util/util":229,"./parse_color":162,"mapbox-gl-function":71}],165:[function(require,module,exports){
+},{"../util/util":230,"./parse_color":163,"mapbox-gl-function":72}],166:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var StyleTransition = require('./style_transition');
@@ -77947,7 +78150,7 @@ StyleLayer.create = function (layer) {
 function getDeclarationValue(declaration) {
     return declaration.value;
 }
-},{"../util/evented":218,"../util/util":229,"./parse_color":162,"./style_declaration":164,"./style_layer/circle_style_layer":166,"./style_layer/fill_extrusion_style_layer":167,"./style_layer/fill_style_layer":168,"./style_layer/line_style_layer":169,"./style_layer/symbol_style_layer":170,"./style_spec":172,"./style_transition":173,"./validate_style":174}],166:[function(require,module,exports){
+},{"../util/evented":219,"../util/util":230,"./parse_color":163,"./style_declaration":165,"./style_layer/circle_style_layer":167,"./style_layer/fill_extrusion_style_layer":168,"./style_layer/fill_style_layer":169,"./style_layer/line_style_layer":170,"./style_layer/symbol_style_layer":171,"./style_spec":173,"./style_transition":174,"./validate_style":175}],167:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var CircleBucket = require('../../data/bucket/circle_bucket');
@@ -77965,7 +78168,7 @@ var CircleStyleLayer = function (StyleLayer) {
     return CircleStyleLayer;
 }(StyleLayer);
 module.exports = CircleStyleLayer;
-},{"../../data/bucket/circle_bucket":103,"../style_layer":165}],167:[function(require,module,exports){
+},{"../../data/bucket/circle_bucket":104,"../style_layer":166}],168:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var FillExtrusionBucket = require('../../data/bucket/fill_extrusion_bucket');
@@ -77990,7 +78193,7 @@ var FillExtrusionStyleLayer = function (StyleLayer) {
     return FillExtrusionStyleLayer;
 }(StyleLayer);
 module.exports = FillExtrusionStyleLayer;
-},{"../../data/bucket/fill_extrusion_bucket":105,"../style_layer":165}],168:[function(require,module,exports){
+},{"../../data/bucket/fill_extrusion_bucket":106,"../style_layer":166}],169:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var FillBucket = require('../../data/bucket/fill_bucket');
@@ -78053,7 +78256,7 @@ var FillStyleLayer = function (StyleLayer) {
     return FillStyleLayer;
 }(StyleLayer);
 module.exports = FillStyleLayer;
-},{"../../data/bucket/fill_bucket":104,"../style_layer":165}],169:[function(require,module,exports){
+},{"../../data/bucket/fill_bucket":105,"../style_layer":166}],170:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var LineBucket = require('../../data/bucket/line_bucket');
@@ -78081,7 +78284,7 @@ var LineStyleLayer = function (StyleLayer) {
     return LineStyleLayer;
 }(StyleLayer);
 module.exports = LineStyleLayer;
-},{"../../data/bucket/line_bucket":106,"../../util/util":229,"../style_layer":165}],170:[function(require,module,exports){
+},{"../../data/bucket/line_bucket":107,"../../util/util":230,"../style_layer":166}],171:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var SymbolBucket = require('../../data/bucket/symbol_bucket');
@@ -78114,7 +78317,7 @@ var SymbolStyleLayer = function (StyleLayer) {
     return SymbolStyleLayer;
 }(StyleLayer);
 module.exports = SymbolStyleLayer;
-},{"../../data/bucket/symbol_bucket":107,"../style_layer":165}],171:[function(require,module,exports){
+},{"../../data/bucket/symbol_bucket":108,"../style_layer":166}],172:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('./style_layer');
 var util = require('../util/util');
@@ -78180,10 +78383,10 @@ StyleLayerIndex.prototype.update = function update(layerConfigs, removedIds, sym
     }
 };
 module.exports = StyleLayerIndex;
-},{"../util/util":229,"./style_layer":165,"feature-filter":43,"mapbox-gl-style-spec/lib/group_by_layout":75}],172:[function(require,module,exports){
+},{"../util/util":230,"./style_layer":166,"feature-filter":44,"mapbox-gl-style-spec/lib/group_by_layout":76}],173:[function(require,module,exports){
 'use strict';
 module.exports = require('mapbox-gl-style-spec/reference/latest.min');
-},{"mapbox-gl-style-spec/reference/latest.min":98}],173:[function(require,module,exports){
+},{"mapbox-gl-style-spec/reference/latest.min":99}],174:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var interpolate = require('../util/interpolate');
@@ -78255,7 +78458,7 @@ function interpZoomTransitioned(from, to, t) {
         t: t
     };
 }
-},{"../util/interpolate":221,"../util/util":229}],174:[function(require,module,exports){
+},{"../util/interpolate":222,"../util/util":230}],175:[function(require,module,exports){
 'use strict';
 module.exports = require('mapbox-gl-style-spec/lib/validate_style.min');
 module.exports.emitErrors = function (emitter, errors) {
@@ -78268,7 +78471,7 @@ module.exports.emitErrors = function (emitter, errors) {
         return false;
     }
 };
-},{"mapbox-gl-style-spec/lib/validate_style.min":97}],175:[function(require,module,exports){
+},{"mapbox-gl-style-spec/lib/validate_style.min":98}],176:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var Anchor = function (Point) {
@@ -78289,7 +78492,7 @@ var Anchor = function (Point) {
     return Anchor;
 }(Point);
 module.exports = Anchor;
-},{"point-geometry":236}],176:[function(require,module,exports){
+},{"point-geometry":237}],177:[function(require,module,exports){
 'use strict';
 module.exports = checkMaxAngle;
 function checkMaxAngle(line, anchor, labelLength, windowSize, maxAngle) {
@@ -78332,7 +78535,7 @@ function checkMaxAngle(line, anchor, labelLength, windowSize, maxAngle) {
     }
     return true;
 }
-},{}],177:[function(require,module,exports){
+},{}],178:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 module.exports = clipLine;
@@ -78381,7 +78584,7 @@ function clipLine(lines, x1, y1, x2, y2) {
     }
     return clippedLines;
 }
-},{"point-geometry":236}],178:[function(require,module,exports){
+},{"point-geometry":237}],179:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var Point = require('point-geometry');
@@ -78455,7 +78658,7 @@ Object.defineProperty(CollisionBoxArray.prototype.StructType.prototype, 'anchorP
     }
 });
 module.exports = CollisionBoxArray;
-},{"../util/struct_array":227,"point-geometry":236}],179:[function(require,module,exports){
+},{"../util/struct_array":228,"point-geometry":237}],180:[function(require,module,exports){
 'use strict';
 var CollisionFeature = function CollisionFeature(collisionBoxArray, line, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaped, boxScale, padding, alignLine, straight) {
     var y1 = shaped.top * boxScale - padding;
@@ -78520,7 +78723,7 @@ CollisionFeature.prototype._addLineCollisionBoxes = function _addLineCollisionBo
     return bboxes;
 };
 module.exports = CollisionFeature;
-},{}],180:[function(require,module,exports){
+},{}],181:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var EXTENT = require('../data/extent');
@@ -78746,7 +78949,7 @@ CollisionTile.prototype.insertCollisionFeature = function insertCollisionFeature
     }
 };
 module.exports = CollisionTile;
-},{"../data/extent":111,"../util/intersection_tests":222,"grid-index":54,"point-geometry":236}],181:[function(require,module,exports){
+},{"../data/extent":112,"../util/intersection_tests":223,"grid-index":55,"point-geometry":237}],182:[function(require,module,exports){
 'use strict';
 var interpolate = require('../util/interpolate');
 var Anchor = require('../symbol/anchor');
@@ -78791,7 +78994,7 @@ function resample(line, offset, spacing, angleWindowSize, maxAngle, labelLength,
     }
     return anchors;
 }
-},{"../symbol/anchor":175,"../util/interpolate":221,"./check_max_angle":176}],182:[function(require,module,exports){
+},{"../symbol/anchor":176,"../util/interpolate":222,"./check_max_angle":177}],183:[function(require,module,exports){
 'use strict';
 var ShelfPack = require('shelf-pack');
 var util = require('../util/util');
@@ -78922,7 +79125,7 @@ GlyphAtlas.prototype.updateTexture = function updateTexture(gl) {
     }
 };
 module.exports = GlyphAtlas;
-},{"../util/util":229,"shelf-pack":238}],183:[function(require,module,exports){
+},{"../util/util":230,"shelf-pack":239}],184:[function(require,module,exports){
 'use strict';
 var normalizeURL = require('../util/mapbox').normalizeGlyphsURL;
 var ajax = require('../util/ajax');
@@ -79031,7 +79234,7 @@ function glyphUrl(fontstack, range, url, subdomains) {
     return url.replace('{s}', subdomains[fontstack.length % subdomains.length]).replace('{fontstack}', fontstack).replace('{range}', range);
 }
 module.exports = GlyphSource;
-},{"../symbol/glyph_atlas":182,"../util/ajax":209,"../util/glyphs":220,"../util/mapbox":225,"../util/verticalize_punctuation":231,"pbf":235}],184:[function(require,module,exports){
+},{"../symbol/glyph_atlas":183,"../util/ajax":210,"../util/glyphs":221,"../util/mapbox":226,"../util/verticalize_punctuation":232,"pbf":236}],185:[function(require,module,exports){
 'use strict';
 module.exports = function (features) {
     var leftIndex = {};
@@ -79092,7 +79295,7 @@ module.exports = function (features) {
         return f.geometry;
     });
 };
-},{}],185:[function(require,module,exports){
+},{}],186:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 module.exports = {
@@ -79268,7 +79471,7 @@ function getSegmentGlyphs(glyphs, anchor, offset, line, segment, forward) {
     }
     return placementScale;
 }
-},{"point-geometry":236}],186:[function(require,module,exports){
+},{"point-geometry":237}],187:[function(require,module,exports){
 'use strict';
 var resolveTokens = require('../util/token');
 module.exports = function resolveText(feature, layout) {
@@ -79285,7 +79488,7 @@ module.exports = function resolveText(feature, layout) {
     }
     return text;
 };
-},{"../util/token":228}],187:[function(require,module,exports){
+},{"../util/token":229}],188:[function(require,module,exports){
 'use strict';
 var scriptDetection = require('../util/script_detection');
 var verticalizePunctuation = require('../util/verticalize_punctuation');
@@ -79524,7 +79727,7 @@ function PositionedIcon(image, top, bottom, left, right) {
     this.left = left;
     this.right = right;
 }
-},{"../source/rtl_text_plugin":149,"../util/script_detection":226,"../util/verticalize_punctuation":231}],188:[function(require,module,exports){
+},{"../source/rtl_text_plugin":150,"../util/script_detection":227,"../util/verticalize_punctuation":232}],189:[function(require,module,exports){
 'use strict';
 var ShelfPack = require('shelf-pack');
 var browser = require('../util/browser');
@@ -79689,7 +79892,7 @@ function copyBitmap(src, srcStride, srcX, srcY, dst, dstStride, dstX, dstY, widt
         }
     }
 }
-},{"../util/browser":210,"../util/util":229,"shelf-pack":238}],189:[function(require,module,exports){
+},{"../util/browser":211,"../util/util":230,"shelf-pack":239}],190:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var Point = require('point-geometry');
@@ -79751,7 +79954,7 @@ Object.defineProperty(SymbolInstancesArray.prototype.StructType.prototype, 'anch
     }
 });
 module.exports = SymbolInstancesArray;
-},{"../util/struct_array":227,"point-geometry":236}],190:[function(require,module,exports){
+},{"../util/struct_array":228,"point-geometry":237}],191:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var Point = require('point-geometry');
@@ -79854,7 +80057,7 @@ Object.defineProperty(SymbolQuadsArray.prototype.StructType.prototype, 'SymbolQu
     }
 });
 module.exports = SymbolQuadsArray;
-},{"../util/struct_array":227,"./quads":185,"point-geometry":236}],191:[function(require,module,exports){
+},{"../util/struct_array":228,"./quads":186,"point-geometry":237}],192:[function(require,module,exports){
 'use strict';
 var DOM = require('../util/dom');
 var Point = require('point-geometry');
@@ -79988,7 +80191,7 @@ module.exports = function bindHandlers(map, options) {
         });
     }
 };
-},{"../util/dom":217,"./handler/box_zoom":197,"./handler/dblclick_zoom":198,"./handler/drag_pan":199,"./handler/drag_rotate":200,"./handler/keyboard":201,"./handler/scroll_zoom":202,"./handler/touch_zoom_rotate":203,"point-geometry":236}],192:[function(require,module,exports){
+},{"../util/dom":218,"./handler/box_zoom":198,"./handler/dblclick_zoom":199,"./handler/drag_pan":200,"./handler/drag_rotate":201,"./handler/keyboard":202,"./handler/scroll_zoom":203,"./handler/touch_zoom_rotate":204,"point-geometry":237}],193:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var interpolate = require('../util/interpolate');
@@ -80354,7 +80557,7 @@ var Camera = function (Evented) {
     return Camera;
 }(Evented);
 module.exports = Camera;
-},{"../geo/lng_lat":119,"../geo/lng_lat_bounds":120,"../util/browser":210,"../util/evented":218,"../util/interpolate":221,"../util/util":229,"point-geometry":236}],193:[function(require,module,exports){
+},{"../geo/lng_lat":120,"../geo/lng_lat_bounds":121,"../util/browser":211,"../util/evented":219,"../util/interpolate":222,"../util/util":230,"point-geometry":237}],194:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -80437,7 +80640,7 @@ AttributionControl.prototype._updateCompact = function _updateCompact() {
     this._container.classList[compact ? 'add' : 'remove']('compact');
 };
 module.exports = AttributionControl;
-},{"../../util/dom":217,"../../util/util":229}],194:[function(require,module,exports){
+},{"../../util/dom":218,"../../util/util":230}],195:[function(require,module,exports){
 'use strict';
 var Evented = require('../../util/evented');
 var DOM = require('../../util/dom');
@@ -80544,7 +80747,7 @@ var GeolocateControl = function (Evented) {
     return GeolocateControl;
 }(Evented);
 module.exports = GeolocateControl;
-},{"../../util/dom":217,"../../util/evented":218,"../../util/util":229,"../../util/window":212}],195:[function(require,module,exports){
+},{"../../util/dom":218,"../../util/evented":219,"../../util/util":230,"../../util/window":213}],196:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var window = require('../../util/window');
@@ -80634,7 +80837,7 @@ function copyMouseEvent(e) {
         metaKey: e.metaKey
     });
 }
-},{"../../util/dom":217,"../../util/util":229,"../../util/window":212}],196:[function(require,module,exports){
+},{"../../util/dom":218,"../../util/util":230,"../../util/window":213}],197:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -80705,7 +80908,7 @@ function getRoundNum(num) {
     d = d >= 10 ? 10 : d >= 5 ? 5 : d >= 3 ? 3 : d >= 2 ? 2 : 1;
     return pow10 * d;
 }
-},{"../../util/dom":217,"../../util/util":229}],197:[function(require,module,exports){
+},{"../../util/dom":218,"../../util/util":230}],198:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var LngLatBounds = require('../../geo/lng_lat_bounds');
@@ -80798,7 +81001,7 @@ BoxZoomHandler.prototype._fireEvent = function _fireEvent(type, e) {
     return this._map.fire(type, { originalEvent: e });
 };
 module.exports = BoxZoomHandler;
-},{"../../geo/lng_lat_bounds":120,"../../util/dom":217,"../../util/util":229,"../../util/window":212}],198:[function(require,module,exports){
+},{"../../geo/lng_lat_bounds":121,"../../util/dom":218,"../../util/util":230,"../../util/window":213}],199:[function(require,module,exports){
 'use strict';
 var DoubleClickZoomHandler = function DoubleClickZoomHandler(map) {
     this._map = map;
@@ -80823,7 +81026,7 @@ DoubleClickZoomHandler.prototype._onDblClick = function _onDblClick(e) {
     this._map.zoomTo(this._map.getZoom() + (e.originalEvent.shiftKey ? -1 : 1), { around: e.lngLat }, e);
 };
 module.exports = DoubleClickZoomHandler;
-},{}],199:[function(require,module,exports){
+},{}],200:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -80971,7 +81174,7 @@ DragPanHandler.prototype._drainInertiaBuffer = function _drainInertiaBuffer() {
         inertia.shift();
 };
 module.exports = DragPanHandler;
-},{"../../util/dom":217,"../../util/util":229,"../../util/window":212}],200:[function(require,module,exports){
+},{"../../util/dom":218,"../../util/util":230,"../../util/window":213}],201:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -81116,7 +81319,7 @@ DragRotateHandler.prototype._drainInertiaBuffer = function _drainInertiaBuffer()
         inertia.shift();
 };
 module.exports = DragRotateHandler;
-},{"../../util/dom":217,"../../util/util":229,"../../util/window":212}],201:[function(require,module,exports){
+},{"../../util/dom":218,"../../util/util":230,"../../util/window":213}],202:[function(require,module,exports){
 'use strict';
 var panStep = 100, bearingStep = 15, pitchStep = 10;
 var KeyboardHandler = function KeyboardHandler(map) {
@@ -81213,7 +81416,7 @@ function easeOut(t) {
     return t * (2 - t);
 }
 module.exports = KeyboardHandler;
-},{}],202:[function(require,module,exports){
+},{}],203:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -81304,7 +81507,7 @@ ScrollZoomHandler.prototype._zoom = function _zoom(delta, e) {
     }, { originalEvent: e });
 };
 module.exports = ScrollZoomHandler;
-},{"../../util/browser":210,"../../util/dom":217,"../../util/util":229,"../../util/window":212}],203:[function(require,module,exports){
+},{"../../util/browser":211,"../../util/dom":218,"../../util/util":230,"../../util/window":213}],204:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -81431,7 +81634,7 @@ TouchZoomRotateHandler.prototype._drainInertiaBuffer = function _drainInertiaBuf
         inertia.shift();
 };
 module.exports = TouchZoomRotateHandler;
-},{"../../util/dom":217,"../../util/util":229,"../../util/window":212}],204:[function(require,module,exports){
+},{"../../util/dom":218,"../../util/util":230,"../../util/window":213}],205:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var window = require('../util/window');
@@ -81479,7 +81682,7 @@ Hash.prototype._updateHash = function _updateHash() {
     window.history.replaceState('', '', hash);
 };
 module.exports = Hash;
-},{"../util/util":229,"../util/window":212}],205:[function(require,module,exports){
+},{"../util/util":230,"../util/window":213}],206:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var browser = require('../util/browser');
@@ -82127,7 +82330,7 @@ function removeNode(node) {
         node.parentNode.removeChild(node);
     }
 }
-},{"../geo/lng_lat":119,"../geo/lng_lat_bounds":120,"../geo/transform":121,"../render/painter":136,"../style/animation_loop":159,"../style/style":163,"../util/browser":210,"../util/dom":217,"../util/util":229,"../util/window":212,"./bind_handlers":191,"./camera":192,"./control/attribution_control":193,"./hash":204,"mapbox-gl-supported":100,"point-geometry":236}],206:[function(require,module,exports){
+},{"../geo/lng_lat":120,"../geo/lng_lat_bounds":121,"../geo/transform":122,"../render/painter":137,"../style/animation_loop":160,"../style/style":164,"../util/browser":211,"../util/dom":218,"../util/util":230,"../util/window":213,"./bind_handlers":192,"./camera":193,"./control/attribution_control":194,"./hash":205,"mapbox-gl-supported":101,"point-geometry":237}],207:[function(require,module,exports){
 'use strict';
 var DOM = require('../util/dom');
 var LngLat = require('../geo/lng_lat');
@@ -82219,7 +82422,7 @@ Marker.prototype._update = function _update(e) {
     DOM.setTransform(this._element, 'translate(' + pos.x + 'px, ' + pos.y + 'px)');
 };
 module.exports = Marker;
-},{"../geo/lng_lat":119,"../util/dom":217,"point-geometry":236}],207:[function(require,module,exports){
+},{"../geo/lng_lat":120,"../util/dom":218,"point-geometry":237}],208:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var Evented = require('../util/evented');
@@ -82437,7 +82640,7 @@ function isPointLike(input) {
     return input instanceof Point || Array.isArray(input);
 }
 module.exports = Popup;
-},{"../geo/lng_lat":119,"../util/dom":217,"../util/evented":218,"../util/util":229,"../util/window":212,"point-geometry":236}],208:[function(require,module,exports){
+},{"../geo/lng_lat":120,"../util/dom":218,"../util/evented":219,"../util/util":230,"../util/window":213,"point-geometry":237}],209:[function(require,module,exports){
 'use strict';
 var Actor = function Actor(target, parent, mapId) {
     this.target = target;
@@ -82494,7 +82697,7 @@ Actor.prototype.remove = function remove() {
     this.target.removeEventListener('message', this.receive, false);
 };
 module.exports = Actor;
-},{}],209:[function(require,module,exports){
+},{}],210:[function(require,module,exports){
 'use strict';
 var window = require('./window');
 exports.getJSON = function (url, callback) {
@@ -82581,7 +82784,7 @@ exports.getVideo = function (urls, callback) {
     }
     return video;
 };
-},{"./window":212}],210:[function(require,module,exports){
+},{"./window":213}],211:[function(require,module,exports){
 'use strict';
 var window = require('./window');
 module.exports.now = function () {
@@ -82643,7 +82846,7 @@ webpImgTest.onload = function () {
     exports.supportsWebp = true;
 };
 webpImgTest.src = 'data:image/webp;base64,UklGRh4AAABXRUJQVlA4TBEAAAAvAQAAAAfQ//73v/+BiOh/AAA=';
-},{"./window":212,"mapbox-gl-supported":100}],211:[function(require,module,exports){
+},{"./window":213,"mapbox-gl-supported":101}],212:[function(require,module,exports){
 'use strict';
 var WebWorkify = require('webworkify');
 var window = require('../window');
@@ -82651,10 +82854,10 @@ var workerURL = window.URL.createObjectURL(new WebWorkify(require('../../source/
 module.exports = function () {
     return new window.Worker(workerURL);
 };
-},{"../../source/worker":157,"../window":212,"webworkify":250}],212:[function(require,module,exports){
+},{"../../source/worker":158,"../window":213,"webworkify":251}],213:[function(require,module,exports){
 'use strict';
 module.exports = self;
-},{}],213:[function(require,module,exports){
+},{}],214:[function(require,module,exports){
 'use strict';
 var quickselect = require('quickselect');
 var calculateSignedArea = require('./util').calculateSignedArea;
@@ -82694,7 +82897,7 @@ module.exports = function classifyRings(rings, maxRings) {
 function compareAreas(a, b) {
     return b.area - a.area;
 }
-},{"./util":229,"quickselect":237}],214:[function(require,module,exports){
+},{"./util":230,"quickselect":238}],215:[function(require,module,exports){
 'use strict';
 var config = {
     API_URL: 'https://api.mapbox.com',
@@ -82702,7 +82905,7 @@ var config = {
     ACCESS_TOKEN: null
 };
 module.exports = config;
-},{}],215:[function(require,module,exports){
+},{}],216:[function(require,module,exports){
 'use strict';
 var DictionaryCoder = function DictionaryCoder(strings) {
     var this$1 = this;
@@ -82721,7 +82924,7 @@ DictionaryCoder.prototype.decode = function decode(n) {
     return this._numberToString[n];
 };
 module.exports = DictionaryCoder;
-},{}],216:[function(require,module,exports){
+},{}],217:[function(require,module,exports){
 'use strict';
 var util = require('./util');
 var Actor = require('./actor');
@@ -82761,7 +82964,7 @@ Dispatcher.prototype.remove = function remove() {
     this.workerPool.release(this.id);
 };
 module.exports = Dispatcher;
-},{"./actor":208,"./util":229}],217:[function(require,module,exports){
+},{"./actor":209,"./util":230}],218:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var window = require('./window');
@@ -82836,7 +83039,7 @@ exports.remove = function (node) {
         node.parentNode.removeChild(node);
     }
 };
-},{"./window":212,"point-geometry":236}],218:[function(require,module,exports){
+},{"./window":213,"point-geometry":237}],219:[function(require,module,exports){
 'use strict';
 var util = require('./util');
 var Evented = function Evented() {
@@ -82893,7 +83096,7 @@ Evented.prototype.setEventedParent = function setEventedParent(parent, data) {
     return this;
 };
 module.exports = Evented;
-},{"./util":229}],219:[function(require,module,exports){
+},{"./util":230}],220:[function(require,module,exports){
 'use strict';
 var Queue = require('tinyqueue');
 var Point = require('point-geometry');
@@ -82986,7 +83189,7 @@ function getCentroidCell(polygon) {
     }
     return new Cell(x / area, y / area, 0, polygon);
 }
-},{"./intersection_tests":222,"point-geometry":236,"tinyqueue":240}],220:[function(require,module,exports){
+},{"./intersection_tests":223,"point-geometry":237,"tinyqueue":241}],221:[function(require,module,exports){
 'use strict';
 module.exports = Glyphs;
 function Glyphs(pbf, end) {
@@ -83024,7 +83227,7 @@ function readGlyph(tag, glyph, pbf) {
     else if (tag === 7)
         glyph.advance = pbf.readVarint();
 }
-},{}],221:[function(require,module,exports){
+},{}],222:[function(require,module,exports){
 'use strict';
 module.exports = interpolate;
 function interpolate(a, b, t) {
@@ -83050,7 +83253,7 @@ interpolate.array = function (from, to, t) {
         return interpolate(d, to[i], t);
     });
 };
-},{}],222:[function(require,module,exports){
+},{}],223:[function(require,module,exports){
 'use strict';
 var isCounterClockwise = require('./util').isCounterClockwise;
 module.exports = {
@@ -83210,7 +83413,7 @@ function polygonContainsPoint(ring, p) {
     }
     return c;
 }
-},{"./util":229}],223:[function(require,module,exports){
+},{"./util":230}],224:[function(require,module,exports){
 'use strict';
 var unicodeBlockLookup = {
     'Latin-1 Supplement': function (char) {
@@ -83341,7 +83544,7 @@ var unicodeBlockLookup = {
     }
 };
 module.exports = unicodeBlockLookup;
-},{}],224:[function(require,module,exports){
+},{}],225:[function(require,module,exports){
 'use strict';
 var LRUCache = function LRUCache(max, onRemove) {
     this.max = max;
@@ -83409,7 +83612,7 @@ LRUCache.prototype.setMaxSize = function setMaxSize(max) {
     return this;
 };
 module.exports = LRUCache;
-},{}],225:[function(require,module,exports){
+},{}],226:[function(require,module,exports){
 'use strict';
 var config = require('./config');
 var browser = require('./browser');
@@ -83498,7 +83701,7 @@ function formatUrl(obj) {
     var params = obj.params.length ? '?' + obj.params.join('&') : '';
     return obj.protocol + '://' + obj.authority + obj.path + params;
 }
-},{"./browser":210,"./config":214}],226:[function(require,module,exports){
+},{"./browser":211,"./config":215}],227:[function(require,module,exports){
 'use strict';
 var isChar = require('./is_char_in_unicode_block');
 module.exports.allowsIdeographicBreaking = function (chars) {
@@ -83703,7 +83906,7 @@ exports.charHasNeutralVerticalOrientation = function (char) {
 exports.charHasRotatedVerticalOrientation = function (char) {
     return !(exports.charHasUprightVerticalOrientation(char) || exports.charHasNeutralVerticalOrientation(char));
 };
-},{"./is_char_in_unicode_block":223}],227:[function(require,module,exports){
+},{"./is_char_in_unicode_block":224}],228:[function(require,module,exports){
 'use strict';
 module.exports = createStructArrayType;
 var viewTypes = {
@@ -83901,7 +84104,7 @@ function createGetter(member, c) {
 function createSetter(member, c) {
     return new Function('x', createMemberComponentString(member, c) + ' = x;');
 }
-},{}],228:[function(require,module,exports){
+},{}],229:[function(require,module,exports){
 'use strict';
 module.exports = resolveTokens;
 function resolveTokens(properties, text) {
@@ -83909,7 +84112,7 @@ function resolveTokens(properties, text) {
         return key in properties ? properties[key] : '';
     });
 }
-},{}],229:[function(require,module,exports){
+},{}],230:[function(require,module,exports){
 'use strict';
 var UnitBezier = require('@mapbox/unitbezier');
 var Coordinate = require('../geo/coordinate');
@@ -84138,7 +84341,7 @@ exports.parseCacheControl = function (cacheControl) {
     }
     return header;
 };
-},{"../geo/coordinate":118,"@mapbox/unitbezier":18,"point-geometry":236}],230:[function(require,module,exports){
+},{"../geo/coordinate":119,"@mapbox/unitbezier":19,"point-geometry":237}],231:[function(require,module,exports){
 'use strict';
 var Feature = function Feature(vectorTileFeature, z, x, y) {
     this.type = 'Feature';
@@ -84173,7 +84376,7 @@ Feature.prototype.toJSON = function toJSON() {
 };
 Object.defineProperties(Feature.prototype, prototypeAccessors);
 module.exports = Feature;
-},{}],231:[function(require,module,exports){
+},{}],232:[function(require,module,exports){
 'use strict';
 var scriptDetection = require('./script_detection');
 module.exports = function verticalizePunctuation(input) {
@@ -84275,7 +84478,7 @@ module.exports.lookup = {
     '\uFF62': '\uFE41',
     '\uFF63': '\uFE42'
 };
-},{"./script_detection":226}],232:[function(require,module,exports){
+},{"./script_detection":227}],233:[function(require,module,exports){
 'use strict';
 var WebWorker = require('./web_worker');
 var WorkerPool = function WorkerPool() {
@@ -84303,11 +84506,11 @@ WorkerPool.prototype.release = function release(mapId) {
     }
 };
 module.exports = WorkerPool;
-},{"../mapbox-gl":124,"./web_worker":211}],233:[function(require,module,exports){
+},{"../mapbox-gl":125,"./web_worker":212}],234:[function(require,module,exports){
 module.exports={
   "version": "0.32.1"
 }
-},{}],234:[function(require,module,exports){
+},{}],235:[function(require,module,exports){
 'use strict';
 
 // lightweight Buffer shim for pbf browser build
@@ -84468,7 +84671,7 @@ function encodeString(str) {
     return bytes;
 }
 
-},{"ieee754":55}],235:[function(require,module,exports){
+},{"ieee754":56}],236:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -84894,7 +85097,7 @@ function writePackedFixed64(arr, pbf)  { for (var i = 0; i < arr.length; i++) pb
 function writePackedSFixed64(arr, pbf) { for (var i = 0; i < arr.length; i++) pbf.writeSFixed64(arr[i]); }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./buffer":234}],236:[function(require,module,exports){
+},{"./buffer":235}],237:[function(require,module,exports){
 'use strict';
 
 module.exports = Point;
@@ -85027,7 +85230,7 @@ Point.convert = function (a) {
     return a;
 };
 
-},{}],237:[function(require,module,exports){
+},{}],238:[function(require,module,exports){
 'use strict';
 
 module.exports = partialSort;
@@ -85089,7 +85292,7 @@ function defaultCompare(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
 }
 
-},{}],238:[function(require,module,exports){
+},{}],239:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
@@ -85344,7 +85547,7 @@ Shelf.prototype.resize = function(w) {
 return ShelfPack;
 
 }));
-},{}],239:[function(require,module,exports){
+},{}],240:[function(require,module,exports){
 'use strict';
 
 var kdbush = require('kdbush');
@@ -85678,7 +85881,7 @@ function getY(p) {
     return p.y;
 }
 
-},{"kdbush":58}],240:[function(require,module,exports){
+},{"kdbush":59}],241:[function(require,module,exports){
 'use strict';
 
 module.exports = TinyQueue;
@@ -85759,7 +85962,7 @@ function swap(data, i, j) {
     data[j] = tmp;
 }
 
-},{}],241:[function(require,module,exports){
+},{}],242:[function(require,module,exports){
 /*
  * Toastr
  * Copyright 2012-2015
@@ -86196,7 +86399,7 @@ function swap(data, i, j) {
     }
 }));
 
-},{"jquery":57}],242:[function(require,module,exports){
+},{"jquery":58}],243:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -87746,12 +87949,12 @@ function swap(data, i, j) {
   }
 }.call(this));
 
-},{}],243:[function(require,module,exports){
+},{}],244:[function(require,module,exports){
 module.exports.VectorTile = require('./lib/vectortile.js');
 module.exports.VectorTileFeature = require('./lib/vectortilefeature.js');
 module.exports.VectorTileLayer = require('./lib/vectortilelayer.js');
 
-},{"./lib/vectortile.js":244,"./lib/vectortilefeature.js":245,"./lib/vectortilelayer.js":246}],244:[function(require,module,exports){
+},{"./lib/vectortile.js":245,"./lib/vectortilefeature.js":246,"./lib/vectortilelayer.js":247}],245:[function(require,module,exports){
 'use strict';
 
 var VectorTileLayer = require('./vectortilelayer');
@@ -87770,7 +87973,7 @@ function readTile(tag, layers, pbf) {
 }
 
 
-},{"./vectortilelayer":246}],245:[function(require,module,exports){
+},{"./vectortilelayer":247}],246:[function(require,module,exports){
 'use strict';
 
 var Point = require('point-geometry');
@@ -88005,7 +88208,7 @@ function signedArea(ring) {
     return sum;
 }
 
-},{"point-geometry":236}],246:[function(require,module,exports){
+},{"point-geometry":237}],247:[function(require,module,exports){
 'use strict';
 
 var VectorTileFeature = require('./vectortilefeature.js');
@@ -88068,7 +88271,7 @@ VectorTileLayer.prototype.feature = function(i) {
     return new VectorTileFeature(this._pbf, end, this.extent, this._keys, this._values);
 };
 
-},{"./vectortilefeature.js":245}],247:[function(require,module,exports){
+},{"./vectortilefeature.js":246}],248:[function(require,module,exports){
 var Pbf = require('pbf')
 var vtpb = require('./vector-tile-pb')
 var GeoJSONWrapper = require('./lib/geojson_wrapper')
@@ -88224,7 +88427,7 @@ function wrapValue (value) {
   return result
 }
 
-},{"./lib/geojson_wrapper":248,"./vector-tile-pb":249,"pbf":235}],248:[function(require,module,exports){
+},{"./lib/geojson_wrapper":249,"./vector-tile-pb":250,"pbf":236}],249:[function(require,module,exports){
 'use strict'
 
 var Point = require('point-geometry')
@@ -88292,7 +88495,7 @@ FeatureWrapper.prototype.bbox = function () {
 
 FeatureWrapper.prototype.toGeoJSON = VectorTileFeature.prototype.toGeoJSON
 
-},{"point-geometry":236,"vector-tile":243}],249:[function(require,module,exports){
+},{"point-geometry":237,"vector-tile":244}],250:[function(require,module,exports){
 'use strict';
 
 // tile ========================================
@@ -88398,7 +88601,7 @@ function writeLayer(layer, pbf) {
     if (layer.extent !== undefined) pbf.writeVarintField(5, layer.extent);
 }
 
-},{}],250:[function(require,module,exports){
+},{}],251:[function(require,module,exports){
 var bundleFn = arguments[3];
 var sources = arguments[4];
 var cache = arguments[5];
@@ -88481,12 +88684,12 @@ module.exports = function (fn, options) {
     return worker;
 };
 
-},{}],251:[function(require,module,exports){
+},{}],252:[function(require,module,exports){
 module.exports.RADIUS = 6378137;
 module.exports.FLATTENING = 1/298.257223563;
 module.exports.POLAR_RADIUS = 6356752.3142;
 
-},{}],252:[function(require,module,exports){
+},{}],253:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -88576,7 +88779,7 @@ exports.getMercCoords = getMercCoords;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 }));
-},{}],253:[function(require,module,exports){
+},{}],254:[function(require,module,exports){
 (function (global){
 //This is Ice Age Mapper Version 2.1
 
@@ -88598,6 +88801,7 @@ window.mapboxToken = "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ
 var prototypes = require("./config/prototypes.js");
 var UIEvents = require("./ui/events.js");
 var appData = require("./config/data.js");
+
 // var utils = require("./processes/utils.js");
 
 
@@ -88619,7 +88823,7 @@ $(document).ready(function(){
 })
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./../../lib/layout.js":16,"./config/data.js":2,"./config/prototypes.js":3,"./ui/events.js":11,"./ui/ui.js":15,"bootstrap":20,"jquery":57,"jquery-ui-bundle":56}],254:[function(require,module,exports){
+},{"./../../lib/layout.js":17,"./config/data.js":2,"./config/prototypes.js":3,"./ui/events.js":11,"./ui/ui.js":16,"bootstrap":21,"jquery":58,"jquery-ui-bundle":57}],255:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -88847,7 +89051,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,require('_process'))
-},{"_process":255}],255:[function(require,module,exports){
+},{"_process":256}],256:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -89029,7 +89233,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],256:[function(require,module,exports){
+},{}],257:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -89054,14 +89258,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],257:[function(require,module,exports){
+},{}],258:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],258:[function(require,module,exports){
+},{}],259:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -89651,4 +89855,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":257,"_process":255,"inherits":256}]},{},[253]);
+},{"./support/isBuffer":258,"_process":256,"inherits":257}]},{},[254]);
