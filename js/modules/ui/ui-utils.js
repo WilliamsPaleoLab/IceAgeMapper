@@ -112,33 +112,6 @@ var UIUtils = (function(){
     toastr.success(message, title)
   }
 
-  var addData = function(){
-    crossFilterData() //prepare data for filtering and plotting with crossfilter library
-
-    //callbacks to be completed once data has been processed
-   createAnalyticsCharts() //setup visual analytics charts on the righthand panel
-
-    datafyAnalyticsCharts() //update charts with data
-
-
-   dc.renderAll(); //render the charts
-   dc.redrawAll();
-
-
-   //apply filters, if they're in the configuration object
-   applyFilters()
-
-   globals.state.doSearch = true //data is on the map, reflect in state so it will be automatically loaded if the configuration is shared
-
-   //open the site panel if required by config
-   doOpenSitePanel()
-
-
-   //this is hacky
-   //TODO: I don't think there's another event that makes this better
-   setTimeout(globals.elements.mapChart.doFilter, 1000)
-  }
-
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,

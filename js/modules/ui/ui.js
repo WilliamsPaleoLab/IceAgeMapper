@@ -109,7 +109,8 @@ var ui = (function(){
     layout: layout,
     mapChart: mapChart,
     map: map,
-    temperatureChart: temperatureChart
+    temperatureChart: temperatureChart,
+    onNeotomDataReceipt: onNeotomDataReceipt
   }
 })();
 

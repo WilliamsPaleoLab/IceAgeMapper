@@ -145,7 +145,7 @@ var io = (function(){
     if (state.searchSwitch == "browse"){
       //this is browse mode
       //the user was using the browse dropdowns
-      query = "?taxonids=" + globals.state.taxonid
+      query = "?taxonids=" + state.taxonid
     }else if(state.searchSwitch == "search"){
       //this is search mode
       //the user was using the search text entry

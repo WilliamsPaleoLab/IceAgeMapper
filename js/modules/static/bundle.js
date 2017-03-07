@@ -336,7 +336,7 @@ var io = (function(){
     if (state.searchSwitch == "browse"){
       //this is browse mode
       //the user was using the browse dropdowns
-      query = "?taxonids=" + globals.state.taxonid
+      query = "?taxonids=" + state.taxonid
     }else if(state.searchSwitch == "search"){
       //this is search mode
       //the user was using the search text entry
@@ -1477,6 +1477,8 @@ var mapboxgl = require('mapbox-gl');
 module.exports = dc_mapbox;
 
 },{"dc":40,"mapbox-gl":124}],11:[function(require,module,exports){
+var IO = require("./../processes/io.js");
+var ui = require("./ui.js");
 var UIUtils = require("./ui-utils.js");
 
 var UIEvents = (function(){
@@ -1484,7 +1486,22 @@ var UIEvents = (function(){
   var onEcolGroupDropdownChange = function(){
     $("#ecolGroupSelect").change(function(){
       selectedGrp = $("#ecolGroupSelect :selected").val()
-      UIUtils.filterAndPopulateTaxaDropdown(selectedGrp, window.appData.taxa)
+      UIUtils.filterAndPopulateTaxaDropdown(selectedGrp, window.appData.taxa);
+      window.state.searchSwitch = "browse";
+    })
+  }
+
+  var onTaxaSearchChange = function(){
+    $("#taxaAutocomplete").change(function(){
+      window.state.searchSwitch = "search";
+    })
+  }
+
+  var onSearchButtonClick = function(){
+    $("#searchButton").click(function(){
+      window.state.taxonname = $("#taxaAutocomplete").val()
+      window.state.taxonid = $("#taxonSelect :selected").val()
+      IO.getNeotomaData(window.config, window.state, ui.onNeotomDataReceipt)
     })
   }
 
@@ -1494,6 +1511,8 @@ var UIEvents = (function(){
 
   function enableAll(){
     onEcolGroupDropdownChange();
+    onTaxaSearchChange();
+    onSearchButtonClick();
   }
 
   return  {
@@ -1503,7 +1522,7 @@ var UIEvents = (function(){
 
 module.exports = UIEvents
 
-},{"./ui-utils.js":14}],12:[function(require,module,exports){
+},{"./../processes/io.js":5,"./ui-utils.js":14,"./ui.js":15}],12:[function(require,module,exports){
 var mapUtils = require('./map.js');
 
 
@@ -1792,33 +1811,6 @@ var UIUtils = (function(){
     toastr.success(message, title)
   }
 
-  var addData = function(){
-    crossFilterData() //prepare data for filtering and plotting with crossfilter library
-
-    //callbacks to be completed once data has been processed
-   createAnalyticsCharts() //setup visual analytics charts on the righthand panel
-
-    datafyAnalyticsCharts() //update charts with data
-
-
-   dc.renderAll(); //render the charts
-   dc.redrawAll();
-
-
-   //apply filters, if they're in the configuration object
-   applyFilters()
-
-   globals.state.doSearch = true //data is on the map, reflect in state so it will be automatically loaded if the configuration is shared
-
-   //open the site panel if required by config
-   doOpenSitePanel()
-
-
-   //this is hacky
-   //TODO: I don't think there's another event that makes this better
-   setTimeout(globals.elements.mapChart.doFilter, 1000)
-  }
-
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,
@@ -1946,7 +1938,8 @@ var ui = (function(){
     layout: layout,
     mapChart: mapChart,
     map: map,
-    temperatureChart: temperatureChart
+    temperatureChart: temperatureChart,
+    onNeotomDataReceipt: onNeotomDataReceipt
   }
 })();
 
