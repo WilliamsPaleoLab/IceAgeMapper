@@ -2,6 +2,7 @@
 var d3 = require('d3');
 var queue = require('d3-queue');
 var UIUtils = require('./../ui/ui-utils.js');
+var utils = require('./utils.js');
 
 var io = (function(){
 
@@ -189,29 +190,23 @@ var io = (function(){
   };
 
   //serialize the state and send it to the server
-  function sendShareRequest(callback){
+  function sendShareRequest(metadata, callback){
     //post the share request to the server
     //return the shareid
 
     //this is the map configuration
     //as an ajax payload
     dat = {
-      config: config,
-      state: state
-    }
-    datString = JSON.stringify(dat)
-
-    //get the metadata and validate it from the form
-    metadata = utils.getShareMapMetadata();
-    isValid = utils.validateShareMapMetadata(metadata);
-
-    if (!isValid){
-      UIUtils.failShareValidation();
-      return;
+      config: window.config,
+      state: window.state
     }
 
-    uri = createShareLink(metadata)
+    uri = utils.createShareLink(metadata, dat.config.dataSources.configStore)
 
+    datString = JSON.stringify(dat);
+
+    console.log(datString);
+    console.log(uri)
     //send the request
     $.ajax(uri, {
       beforeSend: function(){
@@ -239,7 +234,8 @@ var io = (function(){
     getConfiguration: getConfiguration,
     getDatasets: getDatasets,
     getTemperatureData: getTemperatureData,
-    getNeotomaData: getNeotomaData
+    getNeotomaData: getNeotomaData,
+    sendShareRequest: sendShareRequest
   }
 })(); //end io module
 

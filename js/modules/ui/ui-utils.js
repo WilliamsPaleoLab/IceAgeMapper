@@ -3,6 +3,7 @@ var _ = require("underscore");
 var $ = require("jquery");
 var Awesomplete = require("Awesomplete");
 var IO;
+var utils = require('./../processes/utils.js');
 
 var UIUtils = (function(){
   //UI utility method called when metadata for a shared map is not valid
@@ -89,6 +90,23 @@ var UIUtils = (function(){
   };
 
 
+  //get details about the person sharing the map
+  function getShareMapMetadata(){
+    //get metadata
+    author = $("#authorName").val();
+    org = $("#authorOrg").val();
+    mapTitle = $("#mapTitle").val();
+    mapDesc = $("#mapDescription").val();
+
+    return {
+      author: author,
+      organization: org,
+      mapTitle: mapTitle,
+      mapDescription: mapDesc
+    }
+  };
+
+
   var createTaxaAutocomplete = function(data){
     //populate the search bar, and make it so it autocompletes when a user starts typing
     //add taxa to the data list first
@@ -112,6 +130,30 @@ var UIUtils = (function(){
     toastr.success(message, title)
   }
 
+  var handleShareRequestEvent = function(){
+    metadata = getShareMapMetadata();
+    isValid = utils.validateShareMapMetadata(metadata);
+    if (isValid.valid){
+      IO.sendShareRequest(metadata, onShareRequestSuccess)
+    }else{
+      for (var i =0; i < isValid.failed.length; i++){
+        displayError("You must enter a " + isValid.failed[i] + " to your map!");
+      }
+    }
+  }
+
+  var onShareRequestSuccess = function(data){
+      if (data.success){
+        displaySuccess("Configuration Storage Complete!")
+        hash = data['configHash']
+        urlString = window.config.baseURL +"?shareToken="+ hash
+        window.state.shareToken = hash
+        $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
+      }else{
+        displayError("Failed to share map.")
+      }
+  }
+
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,
@@ -121,7 +163,8 @@ var UIUtils = (function(){
     displayError:displayError,
     displayInfo: displayInfo,
     displaySuccess: displaySuccess,
-    createLoadDataWindowComponents: createLoadDataWindowComponents
+    createLoadDataWindowComponents: createLoadDataWindowComponents,
+    handleShareRequestEvent: handleShareRequestEvent
   }
 })();
 

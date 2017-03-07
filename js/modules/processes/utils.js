@@ -70,22 +70,6 @@ var utils = (function(){
 
 
 
-  //get details about the person sharing the map
-  function getShareMapMetadata(){
-    //get metadata
-    author = $("#authorName").val();
-    org = $("#authorOrg").val();
-    mapTitle = $("#mapTitle").val();
-    mapDesc = $("#mapDescription").val();
-
-    return {
-      author: author,
-      organization: org,
-      mapTitle: mapTitle,
-      mapDescription: mapDesc
-    }
-  };
-
   //validate the map metaddata to ensure it's got the required elements
   function validateShareMapMetadata(metadata){
     response = {
@@ -113,14 +97,14 @@ var utils = (function(){
       }
     };
     if (response.failed.length == 0){
-      response.valid = 0
+      response.valid = true
     }
     return response
   }
 
 
   //generate the GET request URL for the shared map
-  function createShareLink(metadata, host){
+  var createShareLink = function(metadata, host){
     if (host === undefined){
       host = config.dataSources.configStore;
     }
@@ -138,12 +122,11 @@ var utils = (function(){
     getParameterByName: getParameterByName,
     lookupSamples:lookupSamples,
     lookupSite: lookupSite,
-    createShareLink: createShareLink,
     validateShareMapMetadata: validateShareMapMetadata,
-    getShareMapMetadata: getShareMapMetadata,
     isValidToken: isValidToken,
     isValidTaxonName: isValidTaxonName,
-    isValidTaxonID: isValidTaxonID
+    isValidTaxonID: isValidTaxonID,
+    createShareLink : createShareLink
   }
 
 })();//end utils module

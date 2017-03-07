@@ -26,14 +26,17 @@ var UIEvents = (function(){
     })
   }
 
-  // var onSearchButtonClick = function(){
-  //   $("#")
-  // }
+  var onSendShareRequestButtonClick = function(){
+    $("#sendShareRequest").click(function(){
+      UIUtils.handleShareRequestEvent();
+    })
+  }
 
   function enableAll(){
     onEcolGroupDropdownChange();
     onTaxaSearchChange();
     onSearchButtonClick();
+    onSendShareRequestButtonClick();
   }
 
   return  {

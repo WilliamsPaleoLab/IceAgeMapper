@@ -193,6 +193,7 @@ module.exports = state;
 var d3 = require('d3');
 var queue = require('d3-queue');
 var UIUtils = require('./../ui/ui-utils.js');
+var utils = require('./utils.js');
 
 var io = (function(){
 
@@ -380,29 +381,23 @@ var io = (function(){
   };
 
   //serialize the state and send it to the server
-  function sendShareRequest(callback){
+  function sendShareRequest(metadata, callback){
     //post the share request to the server
     //return the shareid
 
     //this is the map configuration
     //as an ajax payload
     dat = {
-      config: config,
-      state: state
-    }
-    datString = JSON.stringify(dat)
-
-    //get the metadata and validate it from the form
-    metadata = utils.getShareMapMetadata();
-    isValid = utils.validateShareMapMetadata(metadata);
-
-    if (!isValid){
-      UIUtils.failShareValidation();
-      return;
+      config: window.config,
+      state: window.state
     }
 
-    uri = createShareLink(metadata)
+    uri = utils.createShareLink(metadata, dat.config.dataSources.configStore)
 
+    datString = JSON.stringify(dat);
+
+    console.log(datString);
+    console.log(uri)
     //send the request
     $.ajax(uri, {
       beforeSend: function(){
@@ -430,13 +425,14 @@ var io = (function(){
     getConfiguration: getConfiguration,
     getDatasets: getDatasets,
     getTemperatureData: getTemperatureData,
-    getNeotomaData: getNeotomaData
+    getNeotomaData: getNeotomaData,
+    sendShareRequest: sendShareRequest
   }
 })(); //end io module
 
 module.exports = io;
 
-},{"./../ui/ui-utils.js":14,"d3":39,"d3-queue":38}],6:[function(require,module,exports){
+},{"./../ui/ui-utils.js":14,"./utils.js":7,"d3":39,"d3-queue":38}],6:[function(require,module,exports){
 var crossfilter = require("crossfilter");
 var mapboxgl = require('mapbox-gl')
 
@@ -651,22 +647,6 @@ var utils = (function(){
 
 
 
-  //get details about the person sharing the map
-  function getShareMapMetadata(){
-    //get metadata
-    author = $("#authorName").val();
-    org = $("#authorOrg").val();
-    mapTitle = $("#mapTitle").val();
-    mapDesc = $("#mapDescription").val();
-
-    return {
-      author: author,
-      organization: org,
-      mapTitle: mapTitle,
-      mapDescription: mapDesc
-    }
-  };
-
   //validate the map metaddata to ensure it's got the required elements
   function validateShareMapMetadata(metadata){
     response = {
@@ -694,14 +674,14 @@ var utils = (function(){
       }
     };
     if (response.failed.length == 0){
-      response.valid = 0
+      response.valid = true
     }
     return response
   }
 
 
   //generate the GET request URL for the shared map
-  function createShareLink(metadata, host){
+  var createShareLink = function(metadata, host){
     if (host === undefined){
       host = config.dataSources.configStore;
     }
@@ -719,12 +699,11 @@ var utils = (function(){
     getParameterByName: getParameterByName,
     lookupSamples:lookupSamples,
     lookupSite: lookupSite,
-    createShareLink: createShareLink,
     validateShareMapMetadata: validateShareMapMetadata,
-    getShareMapMetadata: getShareMapMetadata,
     isValidToken: isValidToken,
     isValidTaxonName: isValidTaxonName,
-    isValidTaxonID: isValidTaxonID
+    isValidTaxonID: isValidTaxonID,
+    createShareLink : createShareLink
   }
 
 })();//end utils module
@@ -1505,14 +1484,17 @@ var UIEvents = (function(){
     })
   }
 
-  // var onSearchButtonClick = function(){
-  //   $("#")
-  // }
+  var onSendShareRequestButtonClick = function(){
+    $("#sendShareRequest").click(function(){
+      UIUtils.handleShareRequestEvent();
+    })
+  }
 
   function enableAll(){
     onEcolGroupDropdownChange();
     onTaxaSearchChange();
     onSearchButtonClick();
+    onSendShareRequestButtonClick();
   }
 
   return  {
@@ -1702,6 +1684,7 @@ var _ = require("underscore");
 var $ = require("jquery");
 var Awesomplete = require("Awesomplete");
 var IO;
+var utils = require('./../processes/utils.js');
 
 var UIUtils = (function(){
   //UI utility method called when metadata for a shared map is not valid
@@ -1788,6 +1771,23 @@ var UIUtils = (function(){
   };
 
 
+  //get details about the person sharing the map
+  function getShareMapMetadata(){
+    //get metadata
+    author = $("#authorName").val();
+    org = $("#authorOrg").val();
+    mapTitle = $("#mapTitle").val();
+    mapDesc = $("#mapDescription").val();
+
+    return {
+      author: author,
+      organization: org,
+      mapTitle: mapTitle,
+      mapDescription: mapDesc
+    }
+  };
+
+
   var createTaxaAutocomplete = function(data){
     //populate the search bar, and make it so it autocompletes when a user starts typing
     //add taxa to the data list first
@@ -1811,6 +1811,30 @@ var UIUtils = (function(){
     toastr.success(message, title)
   }
 
+  var handleShareRequestEvent = function(){
+    metadata = getShareMapMetadata();
+    isValid = utils.validateShareMapMetadata(metadata);
+    if (isValid.valid){
+      IO.sendShareRequest(metadata, onShareRequestSuccess)
+    }else{
+      for (var i =0; i < isValid.failed.length; i++){
+        displayError("You must enter a " + isValid.failed[i] + " to your map!");
+      }
+    }
+  }
+
+  var onShareRequestSuccess = function(data){
+      if (data.success){
+        displaySuccess("Configuration Storage Complete!")
+        hash = data['configHash']
+        urlString = window.config.baseURL +"?shareToken="+ hash
+        window.state.shareToken = hash
+        $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
+      }else{
+        displayError("Failed to share map.")
+      }
+  }
+
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,
@@ -1820,13 +1844,14 @@ var UIUtils = (function(){
     displayError:displayError,
     displayInfo: displayInfo,
     displaySuccess: displaySuccess,
-    createLoadDataWindowComponents: createLoadDataWindowComponents
+    createLoadDataWindowComponents: createLoadDataWindowComponents,
+    handleShareRequestEvent: handleShareRequestEvent
   }
 })();
 
 module.exports = UIUtils;
 
-},{"./../processes/io.js":5,"Awesomplete":19,"jquery":57,"toastr":241,"underscore":242}],15:[function(require,module,exports){
+},{"./../processes/io.js":5,"./../processes/utils.js":7,"Awesomplete":19,"jquery":57,"toastr":241,"underscore":242}],15:[function(require,module,exports){
 var mapModule = require('./map.js');
 var layoutModule = require('./layout.js');
 var temperatureChartModule = require("./charts/temperatureChart.js");
