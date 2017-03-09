@@ -65,36 +65,49 @@ var utils = (function(){
     if (taxonid === undefined){
       return false
     }
-    if (+taxonid === NaN){
+    if (isNaN(+taxonid)){
       return false
+    }
+    if (+taxonid < 0){
+      return false;
     }
     return true;
   }
 
-
-
   //validate the map metaddata to ensure it's got the required elements
-  function validateShareMapMetadata(metadata){
+  function validateShareMapMetadata(metadata, config){
+    if (config){
+      var authorRequired = config.validationRules.authorRequired;
+      var organizationRequired = config.validationRules.organizationRequired;
+      var titleRequired = config.validationRules.titleRequired;
+      var descriptionRequired = config.validationRules.descriptionRequired;
+    }else{
+      var authorRequired = true;
+      var organizationRequired = true;
+      var titleRequired = true;
+      var descriptionRequired = true;
+    }
+
     response = {
       valid: false,
       failed: []
     }
-    if (config.validationRules.authorRequired){
+    if (authorRequired){
       if ((metadata.author === undefined) || (metadata.author == "") || (metadata.author == null)){
         response.failed.push("Author")
       }
     };
-    if (config.validationRules.organizationRequired){
+    if (organizationRequired){
       if ((metadata.organization === undefined) || (metadata.organization == "") || (metadata.organization == null)){
         response.failed.push("Organization")
       }
     };
-    if (config.validationRules.titleRequired){
+    if (titleRequired){
       if ((metadata.mapTitle === undefined) || (metadata.mapTitle == "") || (metadata.mapTitle == null)){
         response.failed.push("Title")
       }
     };
-    if (config.validationRules.descriptionRequired){
+    if (descriptionRequired){
       if ((metadata.mapDescription === undefined) || (metadata.mapDescription == "") || (metadata.mapDescription == null)){
         response.failed.push("Description")
       }
@@ -107,7 +120,10 @@ var utils = (function(){
 
 
   //generate the GET request URL for the shared map
-  var createShareLink = function(metadata, host){
+  var createShareLink = function(metadata, host, config){
+    if (config == undefined){
+      config = window.config
+    }
     if (host === undefined){
       host = config.dataSources.configStore;
     }

@@ -8,6 +8,7 @@ var utils = require("./../processes/utils.js");
 var analytics = require("./charts/charts.js");
 var dc = require("dc");
 var UIEvents = require("./events.js")
+var dataTable = require("./dataTable.js");
 
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
@@ -99,6 +100,8 @@ var ui = (function(){
       sitePanel.triggerOpen(state.activeSiteID);
     }
 
+
+
     window.layout = layout;
   } // end initialize
 
@@ -110,7 +113,11 @@ var ui = (function(){
     processedData = process.mergeMetadata(occurrences, datasets);
     crossfilteredData = process.crossfilterIt(processedData)
     analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
-    mapChart.dimension(crossfilteredData.dimensions.geoDimension, crossfilteredData.dimensions.geoGroup)
+    mapChart.dimension(crossfilteredData.dimensions.geoDimension, crossfilteredData.groups.geoGroup)
+    //generate the data table
+
+    var dt = dataTable.create(crossfilteredData.groups.taxaGroup);
+
     render();
     window.appData.occurrences = processedData
   }
