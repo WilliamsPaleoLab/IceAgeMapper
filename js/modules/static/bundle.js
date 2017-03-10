@@ -252,6 +252,7 @@ var io = (function(){
         type:"GET",
         success: function(data){
           //make sure data came back successfully from neotoma
+          console.log(data)
           if ((data['success']) && data['data'].length > 0){
             //this is the configuration that was returned
             var remoteConfig = data['data'][0]['configdata']
@@ -269,7 +270,7 @@ var io = (function(){
             config.config.dataSources.NHTemp = "data/greenlandT.csv";
 
           }else{
-            config = defaultConfiguration
+            config = require('./../config/config.js');
           }
           callback(config.config, config.state) //done with function --> null is passed to a queue awaiting completion
         },
@@ -476,7 +477,7 @@ var io = (function(){
 
 module.exports = io;
 
-},{"./../ui/ui-utils.js":17,"./utils.js":8,"d3":42,"d3-queue":41}],7:[function(require,module,exports){
+},{"./../config/config.js":1,"./../ui/ui-utils.js":17,"./utils.js":8,"d3":42,"d3-queue":41}],7:[function(require,module,exports){
 var crossfilter = require("crossfilter");
 var mapboxgl = require('mapbox-gl')
 
@@ -571,8 +572,8 @@ var processes = (function(){
   function createCrossfilterDimensions(cf){
     var dimensions = {}
     dimensions.valueDimension = cf.dimension(function(d){return d.Value});
-    dimensions.ageDimension = cf.dimension(function(d){return d.age});
-    dimensions.latitudeDimension = cf.dimension(function(d){return d.latitude});
+    dimensions.ageDimension = cf.dimension(function(d){return Math.round(d.age/1000)*1000});
+    dimensions.latitudeDimension = cf.dimension(function(d){return Math.round(d.latitude/0.5)*0.5});
     dimensions.piDimension = cf.dimension(function(d){return d.piName});
     dimensions.geoDimension = cf.dimension(function(d){return new mapboxgl.LngLat(d.longitude, d.latitude)});
     dimensions.recordTypeDimension = cf.dimension(function(d){return d.recordType});
@@ -639,6 +640,7 @@ var utils = (function(){
   var lookupSite = function(siteID){
     //pick out the site meta from occurrences with a certain siteID
     console.log(siteID)
+    console.log(window.appData.occurrences)
     site = _.find(window.appData.occurrences, function(d){return d.siteid == siteID})
     return site.datasetMeta.Site
   }; //end lookup site
@@ -851,9 +853,7 @@ var analyticsCharts = (function(){
       .group(group)
       .x(xScale);
 
-    if (xUnits === undefined){
       this._chart.xUnits(function(start, end, xDomain) { return (end - start) / xUnits; })
-    }
 
     if (filterEvent != undefined){
       _chart.on('filtered', filterEvent)
@@ -909,9 +909,9 @@ var analyticsCharts = (function(){
   var create = function(dimensions, groups){
     console.log(dimensions)
     console.log(groups)
-    this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency", dimensions.latitudeDimension, groups.latitudeGroup, "latitude");
+    this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency", dimensions.latitudeDimension, groups.latitudeGroup, "latitude", 0.5);
     this.ageChart = new analyticsBarChart("#ageChart", "Age (kya)", "Frequency", dimensions.ageDimension, groups.ageGroup, "age", 1000);
-    this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency", dimensions.valueDimension, groups.valueGroup, "Value");
+    this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency", dimensions.valueDimension, groups.valueGroup, "Value", 1);
     this.PIChart = new analyticsPieChart("#PIChart", dimensions.piDimension, groups.piGroup);
     this.recordTypeChart = new analyticsPieChart("#recordTypeChart", dimensions.recordTypeDimension, groups.recordTypeGroup)
     return this
@@ -1611,6 +1611,7 @@ var UIEvents = (function(){
     $("#searchButton").click(function(){
       window.state.taxonname = $("#taxaAutocomplete").val()
       window.state.taxonid = $("#taxonSelect :selected").val()
+      window.state.doSearch = true;
       IO.getNeotomaData(window.config, window.state, ui.onNeotomDataReceipt)
     })
   }
@@ -1960,10 +1961,11 @@ var sitePanel = (function(){
   function triggerOpen(siteID){
       doOpen(siteID);
       //wait for the map to stop doing stuff
-      activeSite = lookupSite(siteID);
+      activeSite = utils.lookupSite(siteID);
+      console.log(activeSite);
       setTimeout(function(d){
-        triggerPopup(activeSite)
-      }, 1000);
+        triggerPopupOnSite(activeSite)
+      }, 500);
   }
 
   return {
@@ -2161,6 +2163,7 @@ var analytics = require("./charts/charts.js");
 var dc = require("dc");
 var UIEvents = require("./events.js")
 var dataTable = require("./dataTable.js");
+var sitePanel = require("./sitePanel.js");
 
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
@@ -2247,12 +2250,6 @@ var ui = (function(){
     UIEvents.enableMapViewLogging(map);
     UIEvents.enableSiteDetailsOnMapClick(map);
 
-    //open the site panel if requested in the state
-    if (state.openSite){
-      sitePanel.triggerOpen(state.activeSiteID);
-    }
-
-
 
     window.layout = layout;
   } // end initialize
@@ -2272,6 +2269,11 @@ var ui = (function(){
 
     render();
     window.appData.occurrences = processedData
+
+    //open the site panel if requested in the state
+    if (state.openSite){
+      sitePanel.triggerOpen(state.activeSiteID);
+    }
   }
 
   function render(){
@@ -2291,7 +2293,7 @@ var ui = (function(){
 
 module.exports = ui;
 
-},{"./../config/config.js":1,"./../config/state.js":4,"./../processes/io.js":6,"./../processes/process.js":7,"./../processes/utils.js":8,"./charts/charts.js":9,"./charts/temperatureChart.js":10,"./dataTable.js":11,"./events.js":13,"./layout.js":14,"./map.js":15,"./ui-utils.js":17,"dc":43}],19:[function(require,module,exports){
+},{"./../config/config.js":1,"./../config/state.js":4,"./../processes/io.js":6,"./../processes/process.js":7,"./../processes/utils.js":8,"./charts/charts.js":9,"./charts/temperatureChart.js":10,"./dataTable.js":11,"./events.js":13,"./layout.js":14,"./map.js":15,"./sitePanel.js":16,"./ui-utils.js":17,"dc":43}],19:[function(require,module,exports){
 /**
  * @preserve
  * jquery.layout 1.4.4

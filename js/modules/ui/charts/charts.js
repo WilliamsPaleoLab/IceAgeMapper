@@ -74,9 +74,7 @@ var analyticsCharts = (function(){
       .group(group)
       .x(xScale);
 
-    if (xUnits === undefined){
       this._chart.xUnits(function(start, end, xDomain) { return (end - start) / xUnits; })
-    }
 
     if (filterEvent != undefined){
       _chart.on('filtered', filterEvent)
@@ -132,9 +130,9 @@ var analyticsCharts = (function(){
   var create = function(dimensions, groups){
     console.log(dimensions)
     console.log(groups)
-    this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency", dimensions.latitudeDimension, groups.latitudeGroup, "latitude");
+    this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency", dimensions.latitudeDimension, groups.latitudeGroup, "latitude", 0.5);
     this.ageChart = new analyticsBarChart("#ageChart", "Age (kya)", "Frequency", dimensions.ageDimension, groups.ageGroup, "age", 1000);
-    this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency", dimensions.valueDimension, groups.valueGroup, "Value");
+    this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency", dimensions.valueDimension, groups.valueGroup, "Value", 1);
     this.PIChart = new analyticsPieChart("#PIChart", dimensions.piDimension, groups.piGroup);
     this.recordTypeChart = new analyticsPieChart("#recordTypeChart", dimensions.recordTypeDimension, groups.recordTypeGroup)
     return this

@@ -23,6 +23,7 @@ var UIEvents = (function(){
     $("#searchButton").click(function(){
       window.state.taxonname = $("#taxaAutocomplete").val()
       window.state.taxonid = $("#taxonSelect :selected").val()
+      window.state.doSearch = true;
       IO.getNeotomaData(window.config, window.state, ui.onNeotomDataReceipt)
     })
   }

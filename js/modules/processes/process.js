@@ -92,8 +92,8 @@ var processes = (function(){
   function createCrossfilterDimensions(cf){
     var dimensions = {}
     dimensions.valueDimension = cf.dimension(function(d){return d.Value});
-    dimensions.ageDimension = cf.dimension(function(d){return d.age});
-    dimensions.latitudeDimension = cf.dimension(function(d){return d.latitude});
+    dimensions.ageDimension = cf.dimension(function(d){return Math.round(d.age/1000)*1000});
+    dimensions.latitudeDimension = cf.dimension(function(d){return Math.round(d.latitude/0.5)*0.5});
     dimensions.piDimension = cf.dimension(function(d){return d.piName});
     dimensions.geoDimension = cf.dimension(function(d){return new mapboxgl.LngLat(d.longitude, d.latitude)});
     dimensions.recordTypeDimension = cf.dimension(function(d){return d.recordType});

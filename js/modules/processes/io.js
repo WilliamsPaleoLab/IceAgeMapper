@@ -17,6 +17,7 @@ var io = (function(){
         type:"GET",
         success: function(data){
           //make sure data came back successfully from neotoma
+          console.log(data)
           if ((data['success']) && data['data'].length > 0){
             //this is the configuration that was returned
             var remoteConfig = data['data'][0]['configdata']
@@ -34,7 +35,7 @@ var io = (function(){
             config.config.dataSources.NHTemp = "data/greenlandT.csv";
 
           }else{
-            config = defaultConfiguration
+            config = require('./../config/config.js');
           }
           callback(config.config, config.state) //done with function --> null is passed to a queue awaiting completion
         },

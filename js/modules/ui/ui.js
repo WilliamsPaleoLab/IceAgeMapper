@@ -9,6 +9,7 @@ var analytics = require("./charts/charts.js");
 var dc = require("dc");
 var UIEvents = require("./events.js")
 var dataTable = require("./dataTable.js");
+var sitePanel = require("./sitePanel.js");
 
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
@@ -95,12 +96,6 @@ var ui = (function(){
     UIEvents.enableMapViewLogging(map);
     UIEvents.enableSiteDetailsOnMapClick(map);
 
-    //open the site panel if requested in the state
-    if (state.openSite){
-      sitePanel.triggerOpen(state.activeSiteID);
-    }
-
-
 
     window.layout = layout;
   } // end initialize
@@ -120,6 +115,11 @@ var ui = (function(){
 
     render();
     window.appData.occurrences = processedData
+
+    //open the site panel if requested in the state
+    if (state.openSite){
+      sitePanel.triggerOpen(state.activeSiteID);
+    }
   }
 
   function render(){

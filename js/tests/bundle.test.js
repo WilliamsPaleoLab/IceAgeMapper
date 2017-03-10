@@ -19,6 +19,7 @@ var utils = (function(){
   var lookupSite = function(siteID){
     //pick out the site meta from occurrences with a certain siteID
     console.log(siteID)
+    console.log(window.appData.occurrences)
     site = _.find(window.appData.occurrences, function(d){return d.siteid == siteID})
     return site.datasetMeta.Site
   }; //end lookup site

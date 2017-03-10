@@ -117,10 +117,11 @@ var sitePanel = (function(){
   function triggerOpen(siteID){
       doOpen(siteID);
       //wait for the map to stop doing stuff
-      activeSite = lookupSite(siteID);
+      activeSite = utils.lookupSite(siteID);
+      console.log(activeSite);
       setTimeout(function(d){
-        triggerPopup(activeSite)
-      }, 1000);
+        triggerPopupOnSite(activeSite)
+      }, 500);
   }
 
   return {
