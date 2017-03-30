@@ -1673,11 +1673,25 @@ var UIEvents = (function(){
     $(window).on('resize', updateMapSize);
   }
 
+  var onResetAllButtonClick = function(){
+    $("#resetButton").click(function(){
+      var dc = require("dc");
+      dc.filterAll();
+      dc.renderAll();
+      console.log("Reseting all filters.")
+      setTimeout(function(){
+        window.mapChart.render();
+      }, 200)
+
+    })
+  }
+
   function enableAll(){
     onEcolGroupDropdownChange();
     onTaxaSearchChange();
     onSearchButtonClick();
     onSendShareRequestButtonClick();
+    onResetAllButtonClick();
   }
 
   return  {
@@ -1686,13 +1700,14 @@ var UIEvents = (function(){
     updateMapSize: updateMapSize,
     enableSiteDetailsOnMapClick: enableSiteDetailsOnMapClick,
     enableClickOnPopup: enableClickOnPopup,
-    enableMapSizeChangeOnWindowResize: enableMapSizeChangeOnWindowResize
+    enableMapSizeChangeOnWindowResize: enableMapSizeChangeOnWindowResize,
+    onResetAllButtonClick: onResetAllButtonClick
   }
 })();
 
 module.exports = UIEvents
 
-},{"./../processes/io.js":6,"./sitePanel.js":16,"./ui-utils.js":17,"./ui.js":18}],14:[function(require,module,exports){
+},{"./../processes/io.js":6,"./sitePanel.js":16,"./ui-utils.js":17,"./ui.js":18,"dc":43}],14:[function(require,module,exports){
 var layout = (function(){
   var create = function(config, state){
     this.layout = $('body').layout({
@@ -1834,6 +1849,9 @@ var map = (function(){
       .group(emptyGroup)
 
     mapChart.render();
+
+    window.mapChart = mapChart; //map doesn't listen to dc.renderAllEvents -- need to fix, this is a temp work around
+
 
     return mapChart
 

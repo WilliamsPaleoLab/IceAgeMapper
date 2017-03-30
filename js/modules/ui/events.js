@@ -85,11 +85,25 @@ var UIEvents = (function(){
     $(window).on('resize', updateMapSize);
   }
 
+  var onResetAllButtonClick = function(){
+    $("#resetButton").click(function(){
+      var dc = require("dc");
+      dc.filterAll();
+      dc.renderAll();
+      console.log("Reseting all filters.")
+      setTimeout(function(){
+        window.mapChart.render();
+      }, 200)
+
+    })
+  }
+
   function enableAll(){
     onEcolGroupDropdownChange();
     onTaxaSearchChange();
     onSearchButtonClick();
     onSendShareRequestButtonClick();
+    onResetAllButtonClick();
   }
 
   return  {
@@ -98,7 +112,8 @@ var UIEvents = (function(){
     updateMapSize: updateMapSize,
     enableSiteDetailsOnMapClick: enableSiteDetailsOnMapClick,
     enableClickOnPopup: enableClickOnPopup,
-    enableMapSizeChangeOnWindowResize: enableMapSizeChangeOnWindowResize
+    enableMapSizeChangeOnWindowResize: enableMapSizeChangeOnWindowResize,
+    onResetAllButtonClick: onResetAllButtonClick
   }
 })();
 

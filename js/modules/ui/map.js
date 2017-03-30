@@ -52,6 +52,9 @@ var map = (function(){
 
     mapChart.render();
 
+    window.mapChart = mapChart; //map doesn't listen to dc.renderAllEvents -- need to fix, this is a temp work around
+
+
     return mapChart
 
   } //end create function
