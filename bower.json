@@ -21,7 +21,8 @@
     "crossfilter": "latest",
     "dcjs": "latest",
     "pace": "latest",
-    "mapbox-gl-js": "https://github.com/mapbox/mapbox-gl-js"
+    "mapbox-gl-js": "https://github.com/mapbox/mapbox-gl-js",
+    "font-awesome":"latest"
   },
   "browserify": {
   "transform": [

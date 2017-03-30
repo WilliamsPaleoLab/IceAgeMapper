@@ -96,6 +96,7 @@ var ui = (function(){
     UIEvents.enableMapViewLogging(map);
     UIEvents.enableSiteDetailsOnMapClick(map);
 
+    UIEvents.enableMapSizeChangeOnWindowResize();
 
     window.layout = layout;
   } // end initialize

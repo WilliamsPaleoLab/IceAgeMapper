@@ -1669,6 +1669,10 @@ var UIEvents = (function(){
     })
   }
 
+  var enableMapSizeChangeOnWindowResize = function(){
+    $(window).on('resize', updateMapSize);
+  }
+
   function enableAll(){
     onEcolGroupDropdownChange();
     onTaxaSearchChange();
@@ -1681,7 +1685,8 @@ var UIEvents = (function(){
     enableMapViewLogging: enableMapViewLogging,
     updateMapSize: updateMapSize,
     enableSiteDetailsOnMapClick: enableSiteDetailsOnMapClick,
-    enableClickOnPopup: enableClickOnPopup
+    enableClickOnPopup: enableClickOnPopup,
+    enableMapSizeChangeOnWindowResize: enableMapSizeChangeOnWindowResize
   }
 })();
 
@@ -2250,6 +2255,7 @@ var ui = (function(){
     UIEvents.enableMapViewLogging(map);
     UIEvents.enableSiteDetailsOnMapClick(map);
 
+    UIEvents.enableMapSizeChangeOnWindowResize();
 
     window.layout = layout;
   } // end initialize
