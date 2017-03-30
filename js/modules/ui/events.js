@@ -57,9 +57,10 @@ var UIEvents = (function(){
       var zoom = map.getZoom()
       var bearing = map.getBearing();
       var pitch = map.getPitch();
-      map.center = center
-      map.zoom = zoom
-      map.bearing = bearing;
+      state.map.center = center
+      state.map.zoom = zoom
+      state.map.bearing = bearing;
+      state.map.pitch = pitch
     })
   }
 

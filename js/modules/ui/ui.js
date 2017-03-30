@@ -93,7 +93,7 @@ var ui = (function(){
     }
     //make the state record map movements
     UIEvents = require("./events.js");
-    UIEvents.enableMapViewLogging(map);
+    UIEvents.enableMapViewLogging(map, state);
     UIEvents.enableSiteDetailsOnMapClick(map);
 
     UIEvents.enableMapSizeChangeOnWindowResize();
