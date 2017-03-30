@@ -1,0 +1,10 @@
+{
+  "name": "mapbox-gl-js",
+  "_cacheHeaders": {
+    "Content-Type": "text/html; charset=utf-8"
+  },
+  "main": "index",
+  "_source": "https://github.com/mapbox/mapbox-gl-js",
+  "_target": "*",
+  "_originalSource": "https://github.com/mapbox/mapbox-gl-js"
+}
