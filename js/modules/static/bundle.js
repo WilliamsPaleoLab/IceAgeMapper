@@ -1011,6 +1011,8 @@ var tempChart = (function(){
           if (filterEvent != undefined){
             this._chart.on('filtered', filterEvent)
           }
+
+          return this._chart
     };
 
   var annotateTempChart = function(chartBody, chart, config){
@@ -1051,8 +1053,9 @@ var tempChart = (function(){
     }
     //load the file and draw the chart
     IO.getTemperatureData(config, function(data){
-      draw(data, "#tempContainer", "Years Before Present", "Mean Temperature", config);
+      var chart = draw(data, "#tempContainer", "Years Before Present", "Mean Temperature", config);
       renderEmpty();
+      window.tempChart = chart;
     })
   }
 
@@ -1677,13 +1680,14 @@ var UIEvents = (function(){
   var onResetAllButtonClick = function(){
     $("#resetButton").click(function(){
       var dc = require("dc");
+      var initState = require("./../config/state.js");
       dc.filterAll();
       dc.renderAll();
-      console.log("Reseting all filters.")
+      window.map.setCenter({lng: -90, lat: 45})
       setTimeout(function(){
         window.mapChart.render();
+        window.map.setZoom(3);
       }, 200)
-
     })
   }
 
@@ -1708,7 +1712,7 @@ var UIEvents = (function(){
 
 module.exports = UIEvents
 
-},{"./../processes/io.js":6,"./sitePanel.js":16,"./ui-utils.js":17,"./ui.js":18,"dc":43}],14:[function(require,module,exports){
+},{"./../config/state.js":4,"./../processes/io.js":6,"./sitePanel.js":16,"./ui-utils.js":17,"./ui.js":18,"dc":43}],14:[function(require,module,exports){
 var layout = (function(){
   var create = function(config, state){
     this.layout = $('body').layout({
@@ -2260,7 +2264,7 @@ var ui = (function(){
     layout = layoutModule.create(config, state);
 
     //create the bottom temperature distribution
-    temperatureChart = temperatureChartModule.create(config);
+    temperatureChartModule.create(config);
 
     //load some extra components
     UIUtils.createLoadDataWindowComponents(config);
@@ -2287,7 +2291,11 @@ var ui = (function(){
     processedData = process.mergeMetadata(occurrences, datasets);
     crossfilteredData = process.crossfilterIt(processedData)
     analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
-    mapChart.dimension(crossfilteredData.dimensions.geoDimension, crossfilteredData.groups.geoGroup)
+    mapChart.dimension(crossfilteredData.dimensions.geoDimension)
+    mapChart.group(crossfilteredData.groups.geoGroup)
+    temperatureChart = window.tempChart
+    temperatureChart.dimension(crossfilteredData.dimensions.ageDimension)
+    temperatureChart.group(crossfilteredData.groups.ageGroup)
     //generate the data table
 
     var dt = dataTable.create(crossfilteredData.groups.taxaGroup);

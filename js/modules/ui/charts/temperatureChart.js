@@ -75,6 +75,8 @@ var tempChart = (function(){
           if (filterEvent != undefined){
             this._chart.on('filtered', filterEvent)
           }
+
+          return this._chart
     };
 
   var annotateTempChart = function(chartBody, chart, config){
@@ -115,8 +117,9 @@ var tempChart = (function(){
     }
     //load the file and draw the chart
     IO.getTemperatureData(config, function(data){
-      draw(data, "#tempContainer", "Years Before Present", "Mean Temperature", config);
+      var chart = draw(data, "#tempContainer", "Years Before Present", "Mean Temperature", config);
       renderEmpty();
+      window.tempChart = chart;
     })
   }
 

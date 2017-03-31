@@ -89,13 +89,14 @@ var UIEvents = (function(){
   var onResetAllButtonClick = function(){
     $("#resetButton").click(function(){
       var dc = require("dc");
+      var initState = require("./../config/state.js");
       dc.filterAll();
       dc.renderAll();
-      console.log("Reseting all filters.")
+      window.map.setCenter({lng: -90, lat: 45})
       setTimeout(function(){
         window.mapChart.render();
+        window.map.setZoom(3);
       }, 200)
-
     })
   }
 

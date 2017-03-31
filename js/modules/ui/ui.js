@@ -82,7 +82,7 @@ var ui = (function(){
     layout = layoutModule.create(config, state);
 
     //create the bottom temperature distribution
-    temperatureChart = temperatureChartModule.create(config);
+    temperatureChartModule.create(config);
 
     //load some extra components
     UIUtils.createLoadDataWindowComponents(config);
@@ -109,7 +109,11 @@ var ui = (function(){
     processedData = process.mergeMetadata(occurrences, datasets);
     crossfilteredData = process.crossfilterIt(processedData)
     analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
-    mapChart.dimension(crossfilteredData.dimensions.geoDimension, crossfilteredData.groups.geoGroup)
+    mapChart.dimension(crossfilteredData.dimensions.geoDimension)
+    mapChart.group(crossfilteredData.groups.geoGroup)
+    temperatureChart = window.tempChart
+    temperatureChart.dimension(crossfilteredData.dimensions.ageDimension)
+    temperatureChart.group(crossfilteredData.groups.ageGroup)
     //generate the data table
 
     var dt = dataTable.create(crossfilteredData.groups.taxaGroup);
