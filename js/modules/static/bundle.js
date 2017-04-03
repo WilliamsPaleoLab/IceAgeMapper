@@ -914,8 +914,9 @@ var analyticsCharts = (function(){
   function onAgeFilter(t){
     f = t.filter();
     if (f != null){
-      console.log(f)
-        icesheets.filterFromRange(f);
+      setTimeout(function(d){
+          icesheets.filterFromRange(f);
+      }, 100)
     }
   }
 
@@ -1063,8 +1064,9 @@ var tempChart = (function(){
   function onFilter(t){
     f = t.filter();
     if (f != null){
-      console.log(f)
-        icesheets.filterFromRange(f);
+      setTimeout(function(d){
+          icesheets.filterFromRange(f);
+      }, 100)
     }
   }
 
@@ -1769,11 +1771,14 @@ ages = []
 
   function applyFilter(age){
     //put a filter on the map icesheet layer
+    //TODO: this doesn't work
     if (window.map.loaded()){
       window.map.setFilter('icesheets', ['==', 'Age', age]);
+      return
     }else{
       window.map.on('load', function(){
         window.map.setFilter('icesheets', ['==', 'Age', age]);
+        return
       })
     }
   }
@@ -8316,6 +8321,10 @@ var UIUtils = (function(){
       }
   }
 
+  function applyFilters(state, charts){
+    
+  }
+
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,
@@ -8452,10 +8461,13 @@ var ui = (function(){
     crossfilteredData = process.crossfilterIt(processedData)
 
     //assign data to plots
-    analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
+    var charts = analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
     mapChart.dimension(crossfilteredData.dimensions.geoDimension)
     mapChart.group(crossfilteredData.groups.geoGroup)
     temperatureChart = window.tempChart
+    window.charts = charts
+    window.charts.temperatureChart = temperatureChart
+    window.charts.mapChart = mapChart;
 
     temperatureChart.dimension(crossfilteredData.dimensions.ageDimension)
     temperatureChart.group(crossfilteredData.groups.ageGroup)

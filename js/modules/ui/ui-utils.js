@@ -154,6 +154,10 @@ var UIUtils = (function(){
       }
   }
 
+  function applyFilters(state, charts){
+    
+  }
+
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,

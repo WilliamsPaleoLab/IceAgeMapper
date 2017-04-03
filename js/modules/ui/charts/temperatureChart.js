@@ -114,8 +114,9 @@ var tempChart = (function(){
   function onFilter(t){
     f = t.filter();
     if (f != null){
-      console.log(f)
-        icesheets.filterFromRange(f);
+      setTimeout(function(d){
+          icesheets.filterFromRange(f);
+      }, 100)
     }
   }
 

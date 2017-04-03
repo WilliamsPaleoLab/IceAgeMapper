@@ -33,11 +33,14 @@ ages = []
 
   function applyFilter(age){
     //put a filter on the map icesheet layer
+    //TODO: this doesn't work
     if (window.map.loaded()){
       window.map.setFilter('icesheets', ['==', 'Age', age]);
+      return
     }else{
       window.map.on('load', function(){
         window.map.setFilter('icesheets', ['==', 'Age', age]);
+        return
       })
     }
   }

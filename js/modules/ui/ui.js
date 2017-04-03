@@ -117,10 +117,13 @@ var ui = (function(){
     crossfilteredData = process.crossfilterIt(processedData)
 
     //assign data to plots
-    analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
+    var charts = analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
     mapChart.dimension(crossfilteredData.dimensions.geoDimension)
     mapChart.group(crossfilteredData.groups.geoGroup)
     temperatureChart = window.tempChart
+    window.charts = charts
+    window.charts.temperatureChart = temperatureChart
+    window.charts.mapChart = mapChart;
 
     temperatureChart.dimension(crossfilteredData.dimensions.ageDimension)
     temperatureChart.group(crossfilteredData.groups.ageGroup)
