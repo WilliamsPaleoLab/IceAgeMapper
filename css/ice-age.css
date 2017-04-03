@@ -247,8 +247,8 @@ tr:hover {background-color: #00b3b3}
 #data-table-holder{
   top: 15%;
   position: absolute;
-  left: 0px;
-  z-index: 100000000000000;
+  left: 25px!important;
+  z-index: 1000000000000;
 }
 
 .right{
