@@ -511,13 +511,15 @@ var processes = (function(){
     //add necessary metadata
     //derive properties so they're easier to access later with underscore
     occurrence.datasetMeta = dataset
+    console.log(occurrence);
     occurrence.latitude = (occurrence.SiteLatitudeNorth + occurrence.SiteLatitudeSouth)/2
     occurrence.longitude = (occurrence.SiteLongitudeWest + occurrence.SiteLongitudeEast)/2
     occurrence.age = occurrence.SampleAge
     occurrence.ageUncertainty = 0
+    occurrence.altitude = occurrence.datasetMeta.Site.Altitude
     if (occurrence.age == null){
-    occurrence.age = (occurrence.SampleAgeYounger + occurrence.SampleAgeOlder)/2
-    occurrence.ageUncertainty = (occurrence.SampleAgeOlder - occurrence.SampleAgeYounger) / 2
+      occurrence.age = (occurrence.SampleAgeYounger + occurrence.SampleAgeOlder)/2
+      occurrence.ageUncertainty = (occurrence.SampleAgeOlder - occurrence.SampleAgeYounger) / 2
     }
 
     if (occurrence.datasetMeta.DatasetPIs.length == 0){
@@ -545,7 +547,7 @@ var processes = (function(){
     _valid.push(validateField(row.latitude))
     _valid.push(validateField(row.longitude))
     _valid.push(validateField(row.age))
-    if (_valid.indexOf(false) > 0){
+    if (_valid.indexOf(false) > -1){
       return false
     }
     return true
@@ -7893,10 +7895,10 @@ var layout = (function(){
           UIEvents.updateMapSize()
           window.state.layout.southPanelIsOpen = true
         },
-        togglerLength_open:    50,
-        togglerLength_closed:  50,
-        togglerContent_open:  "<button class='toggleButton'>Close</button>",
-        togglerContent_closed: "Timeline"
+        togglerLength_open:    '100%',
+        togglerLength_closed:  '100%',
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose'>Close</button>",
+        togglerContent_closed: "<button class='toggleButton btn'>Timeline <i class='fa fa-arrow-up' aria-hidden='true'></i></button>"
       },
       west: {
         size: config.layout.westPanelSize,
@@ -7918,10 +7920,10 @@ var layout = (function(){
           UIEvents.updateMapSize()
           window.state.layout.westPanelIsOpen = true
         },
-        togglerLength_open:    50,
-        togglerLength_closed:  50,
-        togglerContent_open:   'Close Panel',
-        togglerContent_closed: 'Site Details'
+        togglerLength_open:    '100%',
+        togglerLength_closed:  '100%',
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose rotate-neg btn'>Close </button>",
+        togglerContent_closed: "<button class='toggleButton rotate btn'><span class='rotate'>Site</span><i class='fa fa-arrow-up' aria-hidden='true'></i></button>"
       },
       east: {
         size: config.layout.eastPanelSize,
@@ -7942,10 +7944,10 @@ var layout = (function(){
           UIEvents.updateMapSize();
           window.state.layout.eastPanelIsOpen = true
         },
-        togglerLength_open:    50,
-        togglerLength_closed:  50,
-        togglerContent_open:   'Close Panel',
-        togglerContent_closed: 'Analytics'
+        togglerLength_open:    '50%',
+        togglerLength_closed:  '50%',
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose rotate btn rotate-neg'>Close Dashboard</button>",
+        togglerContent_closed: "<button class='toggleButton rotate btn'><span class='rotate'>Dashboard</span> <i class='fa fa-arrow-down' aria-hidden='true'></i></button>"
       }
     });
     return this.layout
@@ -8171,6 +8173,7 @@ var $ = require("jquery");
 var Awesomplete = require("Awesomplete");
 var IO;
 var utils = require('./../processes/utils.js');
+var dc = require("dc");
 
 var UIUtils = (function(){
   //UI utility method called when metadata for a shared map is not valid
@@ -8300,6 +8303,14 @@ var UIUtils = (function(){
   var handleShareRequestEvent = function(){
     metadata = getShareMapMetadata();
     isValid = utils.validateShareMapMetadata(metadata);
+    //update the state with current filters
+
+    window.state.filters.age = window.charts.ageChart.filter();
+    window.state.filters.abudance = window.charts.abundanceChart.filter();
+    window.state.filters.recordType = window.charts.recordTypeChart.filter();
+    window.state.filters.latitude = window.charts.latitudeChart.filter();
+    window.state.filters.investigator = window.charts.PIChart.filter();
+
     if (isValid.valid){
       IO.sendShareRequest(metadata, onShareRequestSuccess)
     }else{
@@ -8322,7 +8333,15 @@ var UIUtils = (function(){
   }
 
   function applyFilters(state, charts){
-    
+    //apply saved filters to new UI
+    console.log(state.filters);
+    charts.ageChart.filter(state.filters.age);
+    charts.abundanceChart.filter(state.filters.abundance);
+    charts.latitudeChart.filter(state.filters.latitude);
+    charts.PIChart.filter(state.filters.investigator);
+    charts.temperatureChart.filter(state.filters.age);
+    charts.recordTypeChart.filter(state.filters.recordType);
+    dc.renderAll();
   }
 
   return {
@@ -8335,13 +8354,14 @@ var UIUtils = (function(){
     displayInfo: displayInfo,
     displaySuccess: displaySuccess,
     createLoadDataWindowComponents: createLoadDataWindowComponents,
-    handleShareRequestEvent: handleShareRequestEvent
+    handleShareRequestEvent: handleShareRequestEvent,
+    applyFilters: applyFilters
   }
 })();
 
 module.exports = UIUtils;
 
-},{"./../processes/io.js":6,"./../processes/utils.js":8,"Awesomplete":23,"jquery":61,"toastr":245,"underscore":246}],20:[function(require,module,exports){
+},{"./../processes/io.js":6,"./../processes/utils.js":8,"Awesomplete":23,"dc":44,"jquery":61,"toastr":245,"underscore":246}],20:[function(require,module,exports){
 var mapModule = require('./map.js');
 var layoutModule = require('./layout.js');
 var temperatureChartModule = require("./charts/temperatureChart.js");
@@ -8476,7 +8496,7 @@ var ui = (function(){
     var dt = dataTable.create(crossfilteredData.groups.taxaGroup);
 
     //go
-    render();
+    UIUtils.applyFilters(state, window.charts);
     window.appData.occurrences = processedData //store references to dimensions and groups
 
     //open the site panel if requested in the state

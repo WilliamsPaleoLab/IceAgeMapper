@@ -29,19 +29,43 @@ html, body{
   overflow: hidden;
 }
 
-.ui-layout-toggler-south {
-  /*display: none;*/
+.ui-layout-resizer{
+  background-color: white!important;
 }
+.ui-layout-toggler{
+  background-color: rgba(0, 81, 81, 0.25)!important;
+}
+.ui-layout-resizer-south {
+  border-width:			0 1px;
+  height: 25px!important;
+  z-index: 1000000!important;
+}
+
+.ui-layout-toggler-south{
+  height: 100%!important;
+}
+
+
 .ui-layout-resizer-west {
   border-width:			0 1px;
+  width:25px!important;
 }
-.ui-layout-toggler-west {
-  border-width:			0;
+
+.ui-layout-toggler-west{
+border-width:			0 1px;
+width:100%!important;
 }
-.ui-layout-toggler-west div {
-  width:	8px;
-  height:	35px; /* 3x 35 = 105 total height */
+
+.ui-layout-resizer-east {
+  border-width:			0 1px;
+  width:25px!important;
 }
+
+.ui-layout-toggler-east{
+border-width:			0 1px;
+width:100%!important;
+}
+
 
 nav{
 z-index: 100000;
@@ -206,7 +230,9 @@ h5{
 }
 
 .toggleButton{
-  overflow: auto!important;
+  width: 100% !important;
+  color: white;
+  background-color: transparent!important;
 }
 
 tr:nth-child(even) {background-color: #f2f2f2}
@@ -227,4 +253,21 @@ tr:hover {background-color: #00b3b3}
 
 .right{
   float: right;
+}
+
+.rotate{
+  -ms-transform: rotate(90deg)!important; /* IE 9 */
+  -webkit-transform: rotate(90deg)!important; /* Chrome, Safari, Opera */
+  transform: rotate(90deg)!important;
+}
+
+.rotate-neg{
+  -ms-transform: rotate(-90deg)!important; /* IE 9 */
+  -webkit-transform: rotate(-90deg)!important; /* Chrome, Safari, Opera */
+  transform: rotate(-90deg)!important;
+}
+
+
+.toggleButtonClose{
+  color: black;
 }

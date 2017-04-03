@@ -20,10 +20,10 @@ var layout = (function(){
           UIEvents.updateMapSize()
           window.state.layout.southPanelIsOpen = true
         },
-        togglerLength_open:    50,
-        togglerLength_closed:  50,
-        togglerContent_open:  "<button class='toggleButton'>Close</button>",
-        togglerContent_closed: "Timeline"
+        togglerLength_open:    '100%',
+        togglerLength_closed:  '100%',
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose'>Close</button>",
+        togglerContent_closed: "<button class='toggleButton btn'>Timeline <i class='fa fa-arrow-up' aria-hidden='true'></i></button>"
       },
       west: {
         size: config.layout.westPanelSize,
@@ -45,10 +45,10 @@ var layout = (function(){
           UIEvents.updateMapSize()
           window.state.layout.westPanelIsOpen = true
         },
-        togglerLength_open:    50,
-        togglerLength_closed:  50,
-        togglerContent_open:   'Close Panel',
-        togglerContent_closed: 'Site Details'
+        togglerLength_open:    '100%',
+        togglerLength_closed:  '100%',
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose rotate-neg btn'>Close </button>",
+        togglerContent_closed: "<button class='toggleButton rotate btn'><span class='rotate'>Site</span><i class='fa fa-arrow-up' aria-hidden='true'></i></button>"
       },
       east: {
         size: config.layout.eastPanelSize,
@@ -69,10 +69,10 @@ var layout = (function(){
           UIEvents.updateMapSize();
           window.state.layout.eastPanelIsOpen = true
         },
-        togglerLength_open:    50,
-        togglerLength_closed:  50,
-        togglerContent_open:   'Close Panel',
-        togglerContent_closed: 'Analytics'
+        togglerLength_open:    '50%',
+        togglerLength_closed:  '50%',
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose rotate btn rotate-neg'>Close Dashboard</button>",
+        togglerContent_closed: "<button class='toggleButton rotate btn'><span class='rotate'>Dashboard</span> <i class='fa fa-arrow-down' aria-hidden='true'></i></button>"
       }
     });
     return this.layout

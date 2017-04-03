@@ -31,13 +31,15 @@ var processes = (function(){
     //add necessary metadata
     //derive properties so they're easier to access later with underscore
     occurrence.datasetMeta = dataset
+    console.log(occurrence);
     occurrence.latitude = (occurrence.SiteLatitudeNorth + occurrence.SiteLatitudeSouth)/2
     occurrence.longitude = (occurrence.SiteLongitudeWest + occurrence.SiteLongitudeEast)/2
     occurrence.age = occurrence.SampleAge
     occurrence.ageUncertainty = 0
+    occurrence.altitude = occurrence.datasetMeta.Site.Altitude
     if (occurrence.age == null){
-    occurrence.age = (occurrence.SampleAgeYounger + occurrence.SampleAgeOlder)/2
-    occurrence.ageUncertainty = (occurrence.SampleAgeOlder - occurrence.SampleAgeYounger) / 2
+      occurrence.age = (occurrence.SampleAgeYounger + occurrence.SampleAgeOlder)/2
+      occurrence.ageUncertainty = (occurrence.SampleAgeOlder - occurrence.SampleAgeYounger) / 2
     }
 
     if (occurrence.datasetMeta.DatasetPIs.length == 0){
@@ -65,7 +67,7 @@ var processes = (function(){
     _valid.push(validateField(row.latitude))
     _valid.push(validateField(row.longitude))
     _valid.push(validateField(row.age))
-    if (_valid.indexOf(false) > 0){
+    if (_valid.indexOf(false) > -1){
       return false
     }
     return true

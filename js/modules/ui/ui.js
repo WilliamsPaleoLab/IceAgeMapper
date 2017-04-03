@@ -132,7 +132,7 @@ var ui = (function(){
     var dt = dataTable.create(crossfilteredData.groups.taxaGroup);
 
     //go
-    render();
+    UIUtils.applyFilters(state, window.charts);
     window.appData.occurrences = processedData //store references to dimensions and groups
 
     //open the site panel if requested in the state

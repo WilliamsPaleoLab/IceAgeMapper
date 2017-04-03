@@ -4,6 +4,7 @@ var $ = require("jquery");
 var Awesomplete = require("Awesomplete");
 var IO;
 var utils = require('./../processes/utils.js');
+var dc = require("dc");
 
 var UIUtils = (function(){
   //UI utility method called when metadata for a shared map is not valid
@@ -133,6 +134,14 @@ var UIUtils = (function(){
   var handleShareRequestEvent = function(){
     metadata = getShareMapMetadata();
     isValid = utils.validateShareMapMetadata(metadata);
+    //update the state with current filters
+
+    window.state.filters.age = window.charts.ageChart.filter();
+    window.state.filters.abudance = window.charts.abundanceChart.filter();
+    window.state.filters.recordType = window.charts.recordTypeChart.filter();
+    window.state.filters.latitude = window.charts.latitudeChart.filter();
+    window.state.filters.investigator = window.charts.PIChart.filter();
+
     if (isValid.valid){
       IO.sendShareRequest(metadata, onShareRequestSuccess)
     }else{
@@ -155,7 +164,15 @@ var UIUtils = (function(){
   }
 
   function applyFilters(state, charts){
-    
+    //apply saved filters to new UI
+    console.log(state.filters);
+    charts.ageChart.filter(state.filters.age);
+    charts.abundanceChart.filter(state.filters.abundance);
+    charts.latitudeChart.filter(state.filters.latitude);
+    charts.PIChart.filter(state.filters.investigator);
+    charts.temperatureChart.filter(state.filters.age);
+    charts.recordTypeChart.filter(state.filters.recordType);
+    dc.renderAll();
   }
 
   return {
@@ -168,7 +185,8 @@ var UIUtils = (function(){
     displayInfo: displayInfo,
     displaySuccess: displaySuccess,
     createLoadDataWindowComponents: createLoadDataWindowComponents,
-    handleShareRequestEvent: handleShareRequestEvent
+    handleShareRequestEvent: handleShareRequestEvent,
+    applyFilters: applyFilters
   }
 })();
 
