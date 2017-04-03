@@ -31,7 +31,6 @@ var processes = (function(){
     //add necessary metadata
     //derive properties so they're easier to access later with underscore
     occurrence.datasetMeta = dataset
-    console.log(occurrence);
     occurrence.latitude = (occurrence.SiteLatitudeNorth + occurrence.SiteLatitudeSouth)/2
     occurrence.longitude = (occurrence.SiteLongitudeWest + occurrence.SiteLongitudeEast)/2
     occurrence.age = occurrence.SampleAge
@@ -104,7 +103,6 @@ var processes = (function(){
   }
 
   function createCrossfilterGroups(dimensions){
-    console.log(dimensions)
     var groups = {}
     groups.valueGroup = dimensions.valueDimension.group(function(d){
         return Math.round(d/1) * 1 //for making bin sizes

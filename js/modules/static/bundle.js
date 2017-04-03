@@ -511,7 +511,6 @@ var processes = (function(){
     //add necessary metadata
     //derive properties so they're easier to access later with underscore
     occurrence.datasetMeta = dataset
-    console.log(occurrence);
     occurrence.latitude = (occurrence.SiteLatitudeNorth + occurrence.SiteLatitudeSouth)/2
     occurrence.longitude = (occurrence.SiteLongitudeWest + occurrence.SiteLongitudeEast)/2
     occurrence.age = occurrence.SampleAge
@@ -584,7 +583,6 @@ var processes = (function(){
   }
 
   function createCrossfilterGroups(dimensions){
-    console.log(dimensions)
     var groups = {}
     groups.valueGroup = dimensions.valueDimension.group(function(d){
         return Math.round(d/1) * 1 //for making bin sizes
@@ -807,6 +805,7 @@ var analyticsCharts = (function(){
     margins,
     elasticY,
     brushOn){
+      console.log(arguments)
     if (el === undefined){
       throw "Element must be defined!"
       return false
@@ -820,19 +819,23 @@ var analyticsCharts = (function(){
       return false
     }
     if (height === undefined){
-      var height = $(el).height();
-      if (height == 0){
+      console.log("Height is undefined")
+      height = $(el).height();
+      console.log(height);
+      if (height < 250){
         //create the charts even if the window is closed
-        height = 250
+        height = 200
       }
     }
     if(width === undefined){
-      var width = $(el).width();
-      if (width == 0){
+      width = $(el).width();
+      if (width  < 250){
         //create the charts even if the window is closed
         width = 250
       }
     }
+    console.log(width)
+    console.log(height);
     if(margins === undefined){
       var margins = {bottom: 30, top: 10, left: 30, right: 25}
     }
@@ -844,7 +847,6 @@ var analyticsCharts = (function(){
     }
 
     var xScale = createScale(dimension, attribute)
-
     this._chart = dc.barChart(el)
       .width(width)
       .height(height)
@@ -875,7 +877,7 @@ var analyticsCharts = (function(){
       var height = $(el).height();
       if (height == 0){
         //create the charts even if the window is closed
-        height = 250
+        height = 200
       }
     }
     if(width === undefined){
