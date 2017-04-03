@@ -2,6 +2,7 @@ var dc = require("dc");
 var IO = require("./../../processes/io.js");
 var d3 = require('d3');
 var crossfilter = require('crossfilter');
+var icesheets = require("./../icesheets.js");
 
 var tempChart = (function(){
   var draw = function(data,
@@ -110,6 +111,13 @@ var tempChart = (function(){
           .style('fill', config.colors.annotations)
   }
 
+  function onFilter(t){
+    f = t.filter();
+    if (f != null){
+      console.log(f)
+        icesheets.filterFromRange(f);
+    }
+  }
 
   var create = function(config){
     if (config === undefined){
@@ -117,7 +125,7 @@ var tempChart = (function(){
     }
     //load the file and draw the chart
     IO.getTemperatureData(config, function(data){
-      var chart = draw(data, "#tempContainer", "Years Before Present", "Mean Temperature", config);
+      var chart = draw(data, "#tempContainer", "Years Before Present", "Mean Temperature", config, onFilter);
       renderEmpty();
       window.tempChart = chart;
     })

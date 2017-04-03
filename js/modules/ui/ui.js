@@ -10,6 +10,8 @@ var dc = require("dc");
 var UIEvents = require("./events.js")
 var dataTable = require("./dataTable.js");
 var sitePanel = require("./sitePanel.js");
+var icesheets = require("./icesheets.js");
+
 
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
@@ -26,7 +28,6 @@ var ui = (function(){
     state.doSearch = true;
     state.searchSwitch = "search"
     state.taxonname = taxonname;
-    console.log(taxonname)
     initialize(config, state)
   }
 
@@ -99,6 +100,11 @@ var ui = (function(){
     UIEvents.enableMapSizeChangeOnWindowResize();
 
     window.layout = layout;
+
+    icesheets.init();
+
+    icesheets.filter(18000);
+
   } // end initialize
 
   function onNeotomDataReceipt(error, occurrences, datasets){
@@ -106,20 +112,25 @@ var ui = (function(){
       UIUtils.displayError(error)
       throw error
     }
+    //get the data ready to plot
     processedData = process.mergeMetadata(occurrences, datasets);
     crossfilteredData = process.crossfilterIt(processedData)
+
+    //assign data to plots
     analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
     mapChart.dimension(crossfilteredData.dimensions.geoDimension)
     mapChart.group(crossfilteredData.groups.geoGroup)
     temperatureChart = window.tempChart
+
     temperatureChart.dimension(crossfilteredData.dimensions.ageDimension)
     temperatureChart.group(crossfilteredData.groups.ageGroup)
-    //generate the data table
 
+    //generate the data table
     var dt = dataTable.create(crossfilteredData.groups.taxaGroup);
 
+    //go
     render();
-    window.appData.occurrences = processedData
+    window.appData.occurrences = processedData //store references to dimensions and groups
 
     //open the site panel if requested in the state
     if (state.openSite){

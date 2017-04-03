@@ -1,5 +1,6 @@
 var dc = require('dc');
 var d3 = require('d3');
+var icesheets = require('./../icesheets.js');
 
 var analyticsCharts = (function(){
 
@@ -20,8 +21,8 @@ var analyticsCharts = (function(){
     attribute,
     xUnits,
     height,
-    filterEvent,
     width,
+    filterEvent,
     margins,
     elasticY,
     brushOn){
@@ -77,7 +78,8 @@ var analyticsCharts = (function(){
       this._chart.xUnits(function(start, end, xDomain) { return (end - start) / xUnits; })
 
     if (filterEvent != undefined){
-      _chart.on('filtered', filterEvent)
+      console.log("Adding a filter event");
+      this._chart.on('filtered', filterEvent)
     }
     return this._chart
   }; //end create bar chart function
@@ -130,13 +132,19 @@ var analyticsCharts = (function(){
     return scale
   }
 
+  function onAgeFilter(t){
+    f = t.filter();
+    if (f != null){
+      console.log(f)
+        icesheets.filterFromRange(f);
+    }
+  }
 
   //chart creation functions
-
   var create = function(dimensions, groups){
     var recordTypeScale = d3.scale.ordinal().range(["#1b9e77", "#d95f02", "#7570b3"]).domain(["present/absent", "NISP", "MNI"])
     this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency", dimensions.latitudeDimension, groups.latitudeGroup, "latitude", 0.5);
-    this.ageChart = new analyticsBarChart("#ageChart", "Age (kya)", "Frequency", dimensions.ageDimension, groups.ageGroup, "age", 1000);
+    this.ageChart = new analyticsBarChart("#ageChart", "Age (kya)", "Frequency", dimensions.ageDimension, groups.ageGroup, "age", 1000, undefined, undefined, onAgeFilter);
     this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency", dimensions.valueDimension, groups.valueGroup, "Value", 1);
     this.PIChart = new analyticsPieChart("#PIChart", dimensions.piDimension, groups.piGroup);
     this.recordTypeChart = new analyticsPieChart("#recordTypeChart", dimensions.recordTypeDimension, groups.recordTypeGroup, recordTypeScale)
