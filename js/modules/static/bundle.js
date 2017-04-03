@@ -19,9 +19,9 @@ var config  = (function(){
         "property": "VariableUnits",
         "type": "categorical",
         "stops": [
-            ["present/absent", "#fbb03b"],
-            ["NISP", "steelblue"],
-            ["MNI", "#e55e5e"]
+            ["present/absent", "#1b9e77"],
+            ["NISP", "#d95f02"],
+            ["MNI", "#7570b3"]
         ]
     },
       symbolRadius: 5 //size of the map points
@@ -198,7 +198,7 @@ console.log("Welcome to Ice Age Mapper (Version 2.2)\n\tAuthor: Scott Farley \n\
 var $ = jQuery = jquery = require("jquery");
 global.jQuery = window.$ = window.jQuery = $;
 require("jquery-ui-bundle");
-require('./../../lib/layout.js');
+require('./ui/jquery-layout.js');
 require("bootstrap");
 
 window.mapboxToken = "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ4anhrMSJ9.jRJCOGU1AOHfNXHH7cwU7Q"
@@ -232,7 +232,7 @@ $(document).ready(function(){
 })
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./../../lib/layout.js":19,"./config/data.js":2,"./config/prototypes.js":3,"./ui/events.js":13,"./ui/ui.js":18,"bootstrap":23,"jquery":60,"jquery-ui-bundle":59}],6:[function(require,module,exports){
+},{"./config/data.js":2,"./config/prototypes.js":3,"./ui/events.js":13,"./ui/jquery-layout.js":14,"./ui/ui.js":19,"bootstrap":23,"jquery":60,"jquery-ui-bundle":59}],6:[function(require,module,exports){
 //functions to deal with data loading and communication with the server(s)
 var d3 = require('d3');
 var queue = require('d3-queue');
@@ -477,7 +477,7 @@ var io = (function(){
 
 module.exports = io;
 
-},{"./../config/config.js":1,"./../ui/ui-utils.js":17,"./utils.js":8,"d3":42,"d3-queue":41}],7:[function(require,module,exports){
+},{"./../config/config.js":1,"./../ui/ui-utils.js":18,"./utils.js":8,"d3":42,"d3-queue":41}],7:[function(require,module,exports){
 var crossfilter = require("crossfilter");
 var mapboxgl = require('mapbox-gl')
 
@@ -862,7 +862,7 @@ var analyticsCharts = (function(){
   }; //end create bar chart function
 
   //constructor function for a dc bar chart
-  var analyticsPieChart = function(el, dimension, group, filterEvent, height, width, margins){
+  var analyticsPieChart = function(el, dimension, group, scale, filterEvent, height, width, margins){
     if (el === undefined){
       throw "Element must be defined!"
       return false
@@ -891,9 +891,15 @@ var analyticsCharts = (function(){
       .dimension(dimension)
       .group(group)
 
-    if (filterEvent != undefined){
-      _chart.on('filtered', filterEvent)
+    if (scale != undefined){
+      this._chart.colors(scale);
     }
+
+    if (filterEvent != undefined){
+      this._chart.on('filtered', filterEvent)
+    }
+
+
     return this._chart
   }; //end create pie chart function
   //
@@ -907,13 +913,12 @@ var analyticsCharts = (function(){
   //chart creation functions
 
   var create = function(dimensions, groups){
-    console.log(dimensions)
-    console.log(groups)
+    var recordTypeScale = d3.scale.ordinal().range(["#1b9e77", "#d95f02", "#7570b3"]).domain(["present/absent", "NISP", "MNI"])
     this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency", dimensions.latitudeDimension, groups.latitudeGroup, "latitude", 0.5);
     this.ageChart = new analyticsBarChart("#ageChart", "Age (kya)", "Frequency", dimensions.ageDimension, groups.ageGroup, "age", 1000);
     this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency", dimensions.valueDimension, groups.valueGroup, "Value", 1);
     this.PIChart = new analyticsPieChart("#PIChart", dimensions.piDimension, groups.piGroup);
-    this.recordTypeChart = new analyticsPieChart("#recordTypeChart", dimensions.recordTypeDimension, groups.recordTypeGroup)
+    this.recordTypeChart = new analyticsPieChart("#recordTypeChart", dimensions.recordTypeDimension, groups.recordTypeGroup, recordTypeScale)
     return this
   }
 
@@ -974,7 +979,7 @@ var tempChart = (function(){
           margins = {bottom:30,left:50,right:10,top:10}
         }
         if(xDomain === undefined){
-          xDomain = [0, 22]
+          xDomain = [0, 22000]
         }
         if(yDomain === undefined){
           yDomain = d3.extent(data, function(d){return +d.TempC})
@@ -991,7 +996,7 @@ var tempChart = (function(){
             .xAxisLabel(xLab)
             .on('renderlet', function(chart) {
                 var tempLineFn = d3.svg.line()
-                      .x(function(d) { return chart.x()(+d.Age); })
+                      .x(function(d) { return chart.x()(+d.YearsBP); })
                       .y(function(d) { return chart.y()(+d.TempC); })
                       //get drawing context
                       var chartBody = chart.select('g.chart-body');
@@ -1018,21 +1023,21 @@ var tempChart = (function(){
   var annotateTempChart = function(chartBody, chart, config){
       chartBody.selectAll("text").remove()
       chartBody.append('text')
-        .attr('x', chart.x()(18))
+        .attr('x', chart.x()(18000))
         .attr('y', chart.y()(-40))
         .attr('text-anchor', 'middle')
         .text("Deglaciation")
         .style('fill', config.colors.annotations)
 
         chartBody.append('text')
-          .attr('x', chart.x()(14.7))
+          .attr('x', chart.x()(14700))
           .attr('y', chart.y()(-31.7))
           .attr('text-anchor', 'middle')
           .text("Bolling Allerod")
           .style('fill', config.colors.annotations)
 
           chartBody.append('text')
-            .attr('x', chart.x()(8))
+            .attr('x', chart.x()(8000))
             .attr('y', chart.y()(-40))
             .attr('text-anchor', 'end')
             .text("The Holocene")
@@ -1107,7 +1112,7 @@ var dataTable = (function(){
     .height(100)
     .width(150)
     .dimension(dimension)
-    .group(function(d){return ""})
+    .group(function(d){return "Number of Samples"})
     .size(2)
     .columns([function (d) {
       return d.Taxon }, function (d) { return d.Count}])
@@ -1712,621 +1717,7 @@ var UIEvents = (function(){
 
 module.exports = UIEvents
 
-},{"./../config/state.js":4,"./../processes/io.js":6,"./sitePanel.js":16,"./ui-utils.js":17,"./ui.js":18,"dc":43}],14:[function(require,module,exports){
-var layout = (function(){
-  var create = function(config, state){
-    this.layout = $('body').layout({
-      south: {
-        size: config.layout.southPanelSize,
-        resizable: config.layout.southPanelResizable,
-        initClosed: !state.layout.southPanelIsOpen,
-        closable: config.layout.southPanelClosable,
-        onresize: function(){
-          var UIEvents = require('./events.js');
-          UIEvents.updateMapSize()
-        },
-        onclose: function(){
-          var UIEvents = require('./events.js');
-          UIEvents.updateMapSize()
-          window.state.layout.southPanelIsOpen = false
-        },
-        onopen: function(){
-          var UIEvents = require('./events.js');
-          UIEvents.updateMapSize()
-          window.state.layout.southPanelIsOpen = true
-        },
-        togglerLength_open:    50,
-        togglerLength_closed:  50,
-        togglerContent_open:  "<button class='toggleButton'>Close</button>",
-        togglerContent_closed: "Timeline"
-      },
-      west: {
-        size: config.layout.westPanelSize,
-        resizable: config.layout.westPanelResizable,
-        initClosed: !state.layout.westPanelIsOpen,
-        closable: config.layout.westPanelClosable,
-        onresize: function(){
-          var UIEvents = require('./events.js');
-          UIEvents.updateMapSize()
-        },
-        onclose: function(){
-          var UIEvents = require('./events.js');
-          UIEvents.updateMapSize()
-          window.state.layout.westPanelIsOpen = false
-          window.state.openSite = false;
-        },
-        onopen: function(){
-          var UIEvents = require('./events.js');
-          UIEvents.updateMapSize()
-          window.state.layout.westPanelIsOpen = true
-        },
-        togglerLength_open:    50,
-        togglerLength_closed:  50,
-        togglerContent_open:   'Close Panel',
-        togglerContent_closed: 'Site Details'
-      },
-      east: {
-        size: config.layout.eastPanelSize,
-        resizable: config.layout.eastPanelResizable,
-        initClosed: !state.layout.eastPanelIsOpen,
-        closable: config.layout.eastPanelClosable,
-        onresize: function(){
-          var UIEvents = require('./events.js');
-          UIEvents.updateMapSize()
-        },
-        onclose: function(){
-          var UIEvents = require('./events.js');
-          UIEvents.updateMapSize();
-          window.state.layout.eastPanelIsOpen = false
-        },
-        onopen: function(){
-          var UIEvents = require('./events.js');
-          UIEvents.updateMapSize();
-          window.state.layout.eastPanelIsOpen = true
-        },
-        togglerLength_open:    50,
-        togglerLength_closed:  50,
-        togglerContent_open:   'Close Panel',
-        togglerContent_closed: 'Analytics'
-      }
-    });
-    return this.layout
-  }
-  return {
-    create: create,
-    layout: this.layout
-  }
-})();
-
-module.exports = layout;
-
-},{"./events.js":13}],15:[function(require,module,exports){
-var crossfilter = require("crossfilter");
-var dc = require('dc');
-var dc_mapbox = require("./dc-mapbox.js");
-
-
-var map = (function(){
-
-  function createOptions(config, state, container){
-    if (container === undefined){
-      container = "map"
-    }
-    if (config === undefined){
-      config = window.config
-    }
-    if(state === undefined){
-      state = window.state
-    }
-
-    var opts = {
-      container:container,
-      center: state.map.center,
-      zoom: state.map.zoom,
-      bearing: state.map.bearing,
-      pitch: state.map.pitch,
-      style: config.map.style,
-      pointType: "circle",
-      pointRadius: config.map.symbolRadius,
-      pointColor: config.map.symbolColor,
-      latitudeField: "latitude",
-      longitudeField: "longitude",
-      popupTextFunction: config.map.popupTextFunction,
-      renderPopup: false
-    }
-    return opts
-  }
-
-  //create an empty map
-  function create(mapOptions){
-    // //create a fake dataset to put on the map before the user selects data from Neotoma
-    empty = crossfilter()
-    emptyDimension = empty.dimension(function(d){return d})
-    emptyGroup = emptyDimension.group().reduceCount()
-
-    if (mapOptions === undefined){
-      mapOptions = createOptions()
-      console.log(mapOptions)
-    }
-
-    var mapChart = dc_mapbox.pointSymbolMap("#map", window.mapboxToken, mapOptions)
-      .dimension(emptyDimension)
-      .group(emptyGroup)
-
-    mapChart.render();
-
-    window.mapChart = mapChart; //map doesn't listen to dc.renderAllEvents -- need to fix, this is a temp work around
-
-
-    return mapChart
-
-  } //end create function
-
-  return {
-    create: create
-  }
-})();
-
-module.exports = map;
-
-},{"./dc-mapbox.js":12,"crossfilter":37,"dc":43}],16:[function(require,module,exports){
-var mapboxgl = require('mapbox-gl');
-var utils = require('./../processes/utils.js');
-var _ = require("underscore");
-
-
-var sitePanel = (function(){
-
-  var addSiteMetadata = function(activeSite){
-    //site level metadata
-    $("#siteName").text(activeSite.SiteName)
-    $("#siteAltitude").text(activeSite.Altitude + "m")
-    $("#siteDescription").text(activeSite.SiteDescription)
-    $("#siteNotes").text(activeSite.SiteNotes)
-  }
-
-  var addDataTable = function(theseSamples){
-    //build a data table
-    //list each sample's value and age
-    $("#sampleTable").empty();
-    table = "<thead><th>Age</th><th>Value</th><th>Units</th></thead>"
-
-    //add one row for each sample
-    for (var i=0; i < theseSamples.length; i++){
-      thisSample = theseSamples[i]
-      table +=  "<tr><td>" + thisSample.age + "</td><td>" + thisSample.Value + "</td><td>" + thisSample.VariableUnits + "</td></tr>"
-    }
-    $("#sampleTable").html(table)
-  }
-
-  function addPIInformation(theseSamples){
-    //all sites only have one dataset (in this model)
-    //but some datasets have multiple listed PIs (some have none)
-    piTable = ""
-    for (var i = 0; i < theseSamples[0].datasetMeta.DatasetPIs.length; i++){
-        thisSitePI = theseSamples[0].datasetMeta.DatasetPIs[i]
-        piTable += "<tr><td>Dataset Investigator: </td><td>" + thisSitePI.ContactName + "</td><tr>"
-    }
-    if (piTable == ""){
-      piTable = "<i>No Investigators Listed</i>"
-    }
-    $("#pi-table").html(piTable)
-  }
-
-  function getTheseSamples(siteID){
-    theseSamples = utils.lookupSamples(siteID)
-    theseSamples = _.sortBy(theseSamples, function(d){return d.age})
-    return theseSamples
-  }
-
-  var doOpen = function(siteID){
-    //open details about the clicked site
-    //called from the map popups
-
-    //reflect this event in the application state
-    state.activeSite = utils.lookupSite(siteID)
-    state.activeSiteID = siteID
-    state.openSite = true; //programmatically open the map if the map is shared while the site window is open
-
-    //do the actual panel open
-    window.layout.open("west") //open the panel
-
-    theseSamples = getTheseSamples(siteID)
-
-
-    //add the UI elements
-    addSiteMetadata(state.activeSite)
-
-    addDataTable(theseSamples);
-
-    addPIInformation(theseSamples)
-
-  }
-
-
-
-  //trigger a popup on the open site
-  function triggerPopup(lat, lng){
-    //returns true if we need to return  the
-      coords = new mapboxgl.LngLat(lng, lat)
-      pt = window.map.project(coords)
-
-      //is there anything there?
-      var features = window.map.queryRenderedFeatures(pt, { layers: ['points'] });
-
-      if (!features.length) {
-          return false;
-      }
-
-      var feature = features[0];
-      //make sure the popup opens on the point of the symbol, not the point of the event
-      coords = new mapboxgl.LngLat(feature.properties.longitude, feature.properties.latitude)
-      var popup = new mapboxgl.Popup()
-          .setLngLat(coords)
-          .setHTML(createPopupText(feature)) //custom popup function
-          .addTo(window.map);
-      var UIEvents = require("./events.js");
-      UIEvents.enableClickOnPopup();
-      return feature
-  };
-
-  function createPopupText(feature){
-    dsMeta = JSON.parse(feature.properties.datasetMeta);
-    html = "<h4><a classs='popup-link' data-siteID=" + dsMeta.Site.SiteID + ">" + dsMeta.Site.SiteName + "</a></h4>"
-    return html
-  }
-
-
-  function triggerPopupOnSite(activeSite){
-    //where does it go?
-      lng = (activeSite.LongitudeWest + activeSite.LongitudeEast) / 2
-      lat = (activeSite.LatitudeNorth + activeSite.LatitudeSouth) / 2
-
-      triggerPopup(lat, lng)
-  }
-
-  //this function gives ability to programmatically open panel and open the popup so it's just like a regular user event
-  function triggerOpen(siteID){
-      doOpen(siteID);
-      //wait for the map to stop doing stuff
-      activeSite = utils.lookupSite(siteID);
-      console.log(activeSite);
-      setTimeout(function(d){
-        triggerPopupOnSite(activeSite)
-      }, 500);
-  }
-
-  return {
-    open: doOpen,
-    triggerPopup: triggerPopup,
-    triggerPopupOnSite: triggerPopupOnSite,
-    triggerOpen: triggerOpen
-  }
-})();
-
-module.exports = sitePanel;
-
-},{"./../processes/utils.js":8,"./events.js":13,"mapbox-gl":127,"underscore":245}],17:[function(require,module,exports){
-var toastr = require('toastr');
-var _ = require("underscore");
-var $ = require("jquery");
-var Awesomplete = require("Awesomplete");
-var IO;
-var utils = require('./../processes/utils.js');
-
-var UIUtils = (function(){
-  //UI utility method called when metadata for a shared map is not valid
-
-  function failShareValidation(validationResponse){
-    for (var i=0; i < validationResponse.failed.length; i++){
-      failed = validationResponse.failed[i];
-      toastr.error("Please enter a " + failed + "!", "Metadata Required")
-    }
-  };
-
-
-  //callback once the share token has been returned from the server
-  function onShareSuccess (data){
-    if (data.success){
-      toastr.success("Configuration Storage Complete!")
-      hash = data['configHash']
-      urlString = config.baseURL +"?shareToken="+ hash
-      state.shareToken = hash
-      $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
-    }else{
-      toastr.error("Failed to share map.")
-      throw "Failed to sync with map server"
-    }
-  };
-
-  function createLoadDataWindowComponents(config){
-    IO = require("./../processes/io.js"); //this is weird, it fails if we load at beginning of script TODO: fix
-    IO.getTaxa(config, onTaxaReceipt);
-  }
-
-
-  function onTaxaReceipt(data, config){
-      createTaxaAutocomplete(data);
-      window.appData.taxa = data
-      //also load the dropdown menus
-      IO.getEcolGroups(config, onEcolGroupsReceipt); //pass through the taxa data
-  }
-
-  function onEcolGroupsReceipt(data){
-    if (data['success']){
-      populateEcolGroupDropdown(data['data'], window.appData.taxa);
-      window.appData.ecolGroups = data;
-    }else{
-      displayError("Failed to load remote data source.");
-      throw "Failed to load ecological groups";
-    }
-  }
-
-  //populate the ecological group menu with data
-  //used as a callback from the getEcolGroups function
-  var populateEcolGroupDropdown = function(data, taxa){
-    //populate the ecological groups dropdown menu
-    //add a new <option> for each group in the response
-    $("#ecolGroupSelect").empty() //clear the list
-    for (var i = 0; i < data.length; i++){
-      grp = data[i]
-      html = "<option value='" + grp['EcolGroupID'] + "'>" + grp['EcolGroup'] + "</option>"
-      $("#ecolGroupSelect").append(html)
-    }
-
-    //set the attached taxa menu to be a smart default
-    filterAndPopulateTaxaDropdown(data[0], taxa)
-  }
-
-  var filterAndPopulateTaxaDropdown = function(selectedGroup, taxa){
-    console.log(taxa)
-    //filter the taxa list to the selected ecological group
-    //put the filtered list into the taxa dropdown
-    filteredTaxa = _.filter(taxa, function(d){
-      return ((d.EcolGroups.indexOf(selectedGroup) > -1))
-    })
-    //add an <option> to the dropdown for each of the filtered taxa
-    $("#taxonSelect").empty()
-    for (var i=0; i < filteredTaxa.length; i++){
-      t = filteredTaxa[i]
-      html = "<option value='" + t['TaxonID'] + "'>" + t['TaxonName']
-      if (t['Extinct']){
-        html += "  <span class='text-muted'>(extinct) </span>"
-      }
-      html += "</option>"
-      $("#taxonSelect").append(html)
-    }
-  };
-
-
-  //get details about the person sharing the map
-  function getShareMapMetadata(){
-    //get metadata
-    author = $("#authorName").val();
-    org = $("#authorOrg").val();
-    mapTitle = $("#mapTitle").val();
-    mapDesc = $("#mapDescription").val();
-
-    return {
-      author: author,
-      organization: org,
-      mapTitle: mapTitle,
-      mapDescription: mapDesc
-    }
-  };
-
-
-  var createTaxaAutocomplete = function(data){
-    //populate the search bar, and make it so it autocompletes when a user starts typing
-    //add taxa to the data list first
-    taxaNames = _.pluck(data, "TaxonName")
-    input = document.getElementById("taxaAutocomplete")
-    taxaAutocomplete = new Awesomplete(input, {
-      list: taxaNames,
-      minChars: 2,
-      filter: Awesomplete.FILTER_STARTSWITH
-    })
-    return taxaAutocomplete
-  }
-
-  var displayError = function(message, title){
-    toastr.warning(message, title);
-  }
-  var displayInfo = function(message, title){
-    toastr.info(message, title);
-  }
-  var displaySuccess = function(message, title){
-    toastr.success(message, title)
-  }
-
-  var handleShareRequestEvent = function(){
-    metadata = getShareMapMetadata();
-    isValid = utils.validateShareMapMetadata(metadata);
-    if (isValid.valid){
-      IO.sendShareRequest(metadata, onShareRequestSuccess)
-    }else{
-      for (var i =0; i < isValid.failed.length; i++){
-        displayError("You must enter a " + isValid.failed[i] + " to your map!");
-      }
-    }
-  }
-
-  var onShareRequestSuccess = function(data){
-      if (data.success){
-        displaySuccess("Configuration Storage Complete!")
-        hash = data['configHash']
-        urlString = window.config.baseURL +"?shareToken="+ hash
-        window.state.shareToken = hash
-        $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
-      }else{
-        displayError("Failed to share map.")
-      }
-  }
-
-  return {
-    failShareValidation: failShareValidation,
-    onShareSuccess: onShareSuccess,
-    populateEcolGroupDropdown: populateEcolGroupDropdown,
-    filterAndPopulateTaxaDropdown: filterAndPopulateTaxaDropdown,
-    createTaxaAutocomplete: createTaxaAutocomplete,
-    displayError:displayError,
-    displayInfo: displayInfo,
-    displaySuccess: displaySuccess,
-    createLoadDataWindowComponents: createLoadDataWindowComponents,
-    handleShareRequestEvent: handleShareRequestEvent
-  }
-})();
-
-module.exports = UIUtils;
-
-},{"./../processes/io.js":6,"./../processes/utils.js":8,"Awesomplete":22,"jquery":60,"toastr":244,"underscore":245}],18:[function(require,module,exports){
-var mapModule = require('./map.js');
-var layoutModule = require('./layout.js');
-var temperatureChartModule = require("./charts/temperatureChart.js");
-var IO = require("./../processes/io.js");
-var UIUtils = require("./ui-utils.js");
-var process = require("./../processes/process.js");
-var utils = require("./../processes/utils.js");
-var analytics = require("./charts/charts.js");
-var dc = require("dc");
-var UIEvents = require("./events.js")
-var dataTable = require("./dataTable.js");
-var sitePanel = require("./sitePanel.js");
-
-var ui = (function(){
-  var layout, mapChart, map, initialize, temperatureChart;
-
-
-  //load a configuration from the database
-  var loadFromToken = function(configToken){
-    IO.getConfiguration(configToken, initialize)
-  };
-
-  var loadFromTaxonName = function(taxonname){
-    var config = require("./../config/config.js");
-    var state = require("./../config/state.js");
-    state.doSearch = true;
-    state.searchSwitch = "search"
-    state.taxonname = taxonname;
-    console.log(taxonname)
-    initialize(config, state)
-  }
-
-  var loadFromTaxonID = function(taxonid){
-    var config = require("./../config/config.js");
-    var state = require("./../config/state.js");
-    state.doSearch = true;
-    state.searchSwitch = "browse"
-    state.taxonid = taxonid;
-    initialize(config, state)
-  }
-
-
-  //create a new default configuration
-  var loadClean = function(){
-    var config = require("./../config/config.js");
-    var state = require("./../config/state.js");
-    initialize(config, state);
-  }
-
-  var create = function(){
-
-    //see if the user passed in any url parameters
-    var shareToken = utils.getParameterByName('shareToken');
-    var taxonName = utils.getParameterByName('taxonname');
-    var taxonID = utils.getParameterByName('taxonid');
-
-
-    //load preferentially off those parameters --> only one will happen
-    if (utils.isValidToken(shareToken)){
-      loadFromToken(shareToken)
-    }else if(utils.isValidTaxonName(taxonName)){
-      loadFromTaxonName(taxonName)
-    }else if (utils.isValidTaxonID(taxonID)){
-      loadFromTaxonID(taxonID);
-    }else{
-      loadClean();
-    }
-  }
-
-  //initialize a new UI session using the configuration either default or remote
-  var  initialize = function(config, state){
-    window.config = config;
-    window.state = state;
-
-    //create UI components
-    //make the map and its dc container
-    mapChart = mapModule.create();
-    map = mapChart.map();
-    window.map = map; //this is lazy but I'm not sure of another way to enable events
-
-    //render the layout
-    layout = layoutModule.create(config, state);
-
-    //create the bottom temperature distribution
-    temperatureChartModule.create(config);
-
-    //load some extra components
-    UIUtils.createLoadDataWindowComponents(config);
-
-    //get the data from neotoma
-    if (state.doSearch){
-      IO.getNeotomaData(config, state, onNeotomDataReceipt)
-    }
-    //make the state record map movements
-    UIEvents = require("./events.js");
-    UIEvents.enableMapViewLogging(map, state);
-    UIEvents.enableSiteDetailsOnMapClick(map);
-
-    UIEvents.enableMapSizeChangeOnWindowResize();
-
-    window.layout = layout;
-  } // end initialize
-
-  function onNeotomDataReceipt(error, occurrences, datasets){
-    if (error){
-      UIUtils.displayError(error)
-      throw error
-    }
-    processedData = process.mergeMetadata(occurrences, datasets);
-    crossfilteredData = process.crossfilterIt(processedData)
-    analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
-    mapChart.dimension(crossfilteredData.dimensions.geoDimension)
-    mapChart.group(crossfilteredData.groups.geoGroup)
-    temperatureChart = window.tempChart
-    temperatureChart.dimension(crossfilteredData.dimensions.ageDimension)
-    temperatureChart.group(crossfilteredData.groups.ageGroup)
-    //generate the data table
-
-    var dt = dataTable.create(crossfilteredData.groups.taxaGroup);
-
-    render();
-    window.appData.occurrences = processedData
-
-    //open the site panel if requested in the state
-    if (state.openSite){
-      sitePanel.triggerOpen(state.activeSiteID);
-    }
-  }
-
-  function render(){
-    dc.renderAll();
-  }
-
-
-  return {
-    create:create,
-    layout: layout,
-    mapChart: mapChart,
-    map: map,
-    temperatureChart: temperatureChart,
-    onNeotomDataReceipt: onNeotomDataReceipt
-  }
-})();
-
-module.exports = ui;
-
-},{"./../config/config.js":1,"./../config/state.js":4,"./../processes/io.js":6,"./../processes/process.js":7,"./../processes/utils.js":8,"./charts/charts.js":9,"./charts/temperatureChart.js":10,"./dataTable.js":11,"./events.js":13,"./layout.js":14,"./map.js":15,"./sitePanel.js":16,"./ui-utils.js":17,"dc":43}],19:[function(require,module,exports){
+},{"./../config/state.js":4,"./../processes/io.js":6,"./sitePanel.js":17,"./ui-utils.js":18,"./ui.js":19,"dc":43}],14:[function(require,module,exports){
 /**
  * @preserve
  * jquery.layout 1.4.4
@@ -8403,7 +7794,621 @@ if ($.effects) {
 
 })( jQuery );
 
-},{}],20:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
+var layout = (function(){
+  var create = function(config, state){
+    this.layout = $('body').layout({
+      south: {
+        size: config.layout.southPanelSize,
+        resizable: config.layout.southPanelResizable,
+        initClosed: !state.layout.southPanelIsOpen,
+        closable: config.layout.southPanelClosable,
+        onresize: function(){
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+        },
+        onclose: function(){
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.southPanelIsOpen = false
+        },
+        onopen: function(){
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.southPanelIsOpen = true
+        },
+        togglerLength_open:    50,
+        togglerLength_closed:  50,
+        togglerContent_open:  "<button class='toggleButton'>Close</button>",
+        togglerContent_closed: "Timeline"
+      },
+      west: {
+        size: config.layout.westPanelSize,
+        resizable: config.layout.westPanelResizable,
+        initClosed: !state.layout.westPanelIsOpen,
+        closable: config.layout.westPanelClosable,
+        onresize: function(){
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+        },
+        onclose: function(){
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.westPanelIsOpen = false
+          window.state.openSite = false;
+        },
+        onopen: function(){
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+          window.state.layout.westPanelIsOpen = true
+        },
+        togglerLength_open:    50,
+        togglerLength_closed:  50,
+        togglerContent_open:   'Close Panel',
+        togglerContent_closed: 'Site Details'
+      },
+      east: {
+        size: config.layout.eastPanelSize,
+        resizable: config.layout.eastPanelResizable,
+        initClosed: !state.layout.eastPanelIsOpen,
+        closable: config.layout.eastPanelClosable,
+        onresize: function(){
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize()
+        },
+        onclose: function(){
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize();
+          window.state.layout.eastPanelIsOpen = false
+        },
+        onopen: function(){
+          var UIEvents = require('./events.js');
+          UIEvents.updateMapSize();
+          window.state.layout.eastPanelIsOpen = true
+        },
+        togglerLength_open:    50,
+        togglerLength_closed:  50,
+        togglerContent_open:   'Close Panel',
+        togglerContent_closed: 'Analytics'
+      }
+    });
+    return this.layout
+  }
+  return {
+    create: create,
+    layout: this.layout
+  }
+})();
+
+module.exports = layout;
+
+},{"./events.js":13}],16:[function(require,module,exports){
+var crossfilter = require("crossfilter");
+var dc = require('dc');
+var dc_mapbox = require("./dc-mapbox.js");
+
+
+var map = (function(){
+
+  function createOptions(config, state, container){
+    if (container === undefined){
+      container = "map"
+    }
+    if (config === undefined){
+      config = window.config
+    }
+    if(state === undefined){
+      state = window.state
+    }
+
+    var opts = {
+      container:container,
+      center: state.map.center,
+      zoom: state.map.zoom,
+      bearing: state.map.bearing,
+      pitch: state.map.pitch,
+      style: config.map.style,
+      pointType: "circle",
+      pointRadius: config.map.symbolRadius,
+      pointColor: config.map.symbolColor,
+      latitudeField: "latitude",
+      longitudeField: "longitude",
+      popupTextFunction: config.map.popupTextFunction,
+      renderPopup: false
+    }
+    return opts
+  }
+
+  //create an empty map
+  function create(mapOptions){
+    // //create a fake dataset to put on the map before the user selects data from Neotoma
+    empty = crossfilter()
+    emptyDimension = empty.dimension(function(d){return d})
+    emptyGroup = emptyDimension.group().reduceCount()
+
+    if (mapOptions === undefined){
+      mapOptions = createOptions()
+      console.log(mapOptions)
+    }
+
+    var mapChart = dc_mapbox.pointSymbolMap("#map", window.mapboxToken, mapOptions)
+      .dimension(emptyDimension)
+      .group(emptyGroup)
+
+    mapChart.render();
+
+    window.mapChart = mapChart; //map doesn't listen to dc.renderAllEvents -- need to fix, this is a temp work around
+
+
+    return mapChart
+
+  } //end create function
+
+  return {
+    create: create
+  }
+})();
+
+module.exports = map;
+
+},{"./dc-mapbox.js":12,"crossfilter":37,"dc":43}],17:[function(require,module,exports){
+var mapboxgl = require('mapbox-gl');
+var utils = require('./../processes/utils.js');
+var _ = require("underscore");
+
+
+var sitePanel = (function(){
+
+  var addSiteMetadata = function(activeSite){
+    //site level metadata
+    $("#siteName").text(activeSite.SiteName)
+    $("#siteAltitude").text(activeSite.Altitude + "m")
+    $("#siteDescription").text(activeSite.SiteDescription)
+    $("#siteNotes").text(activeSite.SiteNotes)
+  }
+
+  var addDataTable = function(theseSamples){
+    //build a data table
+    //list each sample's value and age
+    $("#sampleTable").empty();
+    table = "<thead><th>Age</th><th>Value</th><th>Units</th></thead>"
+
+    //add one row for each sample
+    for (var i=0; i < theseSamples.length; i++){
+      thisSample = theseSamples[i]
+      table +=  "<tr><td>" + thisSample.age + "</td><td>" + thisSample.Value + "</td><td>" + thisSample.VariableUnits + "</td></tr>"
+    }
+    $("#sampleTable").html(table)
+  }
+
+  function addPIInformation(theseSamples){
+    //all sites only have one dataset (in this model)
+    //but some datasets have multiple listed PIs (some have none)
+    piTable = ""
+    for (var i = 0; i < theseSamples[0].datasetMeta.DatasetPIs.length; i++){
+        thisSitePI = theseSamples[0].datasetMeta.DatasetPIs[i]
+        piTable += "<tr><td>Dataset Investigator: </td><td>" + thisSitePI.ContactName + "</td><tr>"
+    }
+    if (piTable == ""){
+      piTable = "<i>No Investigators Listed</i>"
+    }
+    $("#pi-table").html(piTable)
+  }
+
+  function getTheseSamples(siteID){
+    theseSamples = utils.lookupSamples(siteID)
+    theseSamples = _.sortBy(theseSamples, function(d){return d.age})
+    return theseSamples
+  }
+
+  var doOpen = function(siteID){
+    //open details about the clicked site
+    //called from the map popups
+
+    //reflect this event in the application state
+    state.activeSite = utils.lookupSite(siteID)
+    state.activeSiteID = siteID
+    state.openSite = true; //programmatically open the map if the map is shared while the site window is open
+
+    //do the actual panel open
+    window.layout.open("west") //open the panel
+
+    theseSamples = getTheseSamples(siteID)
+
+
+    //add the UI elements
+    addSiteMetadata(state.activeSite)
+
+    addDataTable(theseSamples);
+
+    addPIInformation(theseSamples)
+
+  }
+
+
+
+  //trigger a popup on the open site
+  function triggerPopup(lat, lng){
+    //returns true if we need to return  the
+      coords = new mapboxgl.LngLat(lng, lat)
+      pt = window.map.project(coords)
+
+      //is there anything there?
+      var features = window.map.queryRenderedFeatures(pt, { layers: ['points'] });
+
+      if (!features.length) {
+          return false;
+      }
+
+      var feature = features[0];
+      //make sure the popup opens on the point of the symbol, not the point of the event
+      coords = new mapboxgl.LngLat(feature.properties.longitude, feature.properties.latitude)
+      var popup = new mapboxgl.Popup()
+          .setLngLat(coords)
+          .setHTML(createPopupText(feature)) //custom popup function
+          .addTo(window.map);
+      var UIEvents = require("./events.js");
+      UIEvents.enableClickOnPopup();
+      return feature
+  };
+
+  function createPopupText(feature){
+    dsMeta = JSON.parse(feature.properties.datasetMeta);
+    html = "<h4><a classs='popup-link' data-siteID=" + dsMeta.Site.SiteID + ">" + dsMeta.Site.SiteName + "</a></h4>"
+    return html
+  }
+
+
+  function triggerPopupOnSite(activeSite){
+    //where does it go?
+      lng = (activeSite.LongitudeWest + activeSite.LongitudeEast) / 2
+      lat = (activeSite.LatitudeNorth + activeSite.LatitudeSouth) / 2
+
+      triggerPopup(lat, lng)
+  }
+
+  //this function gives ability to programmatically open panel and open the popup so it's just like a regular user event
+  function triggerOpen(siteID){
+      doOpen(siteID);
+      //wait for the map to stop doing stuff
+      activeSite = utils.lookupSite(siteID);
+      console.log(activeSite);
+      setTimeout(function(d){
+        triggerPopupOnSite(activeSite)
+      }, 500);
+  }
+
+  return {
+    open: doOpen,
+    triggerPopup: triggerPopup,
+    triggerPopupOnSite: triggerPopupOnSite,
+    triggerOpen: triggerOpen
+  }
+})();
+
+module.exports = sitePanel;
+
+},{"./../processes/utils.js":8,"./events.js":13,"mapbox-gl":127,"underscore":245}],18:[function(require,module,exports){
+var toastr = require('toastr');
+var _ = require("underscore");
+var $ = require("jquery");
+var Awesomplete = require("Awesomplete");
+var IO;
+var utils = require('./../processes/utils.js');
+
+var UIUtils = (function(){
+  //UI utility method called when metadata for a shared map is not valid
+
+  function failShareValidation(validationResponse){
+    for (var i=0; i < validationResponse.failed.length; i++){
+      failed = validationResponse.failed[i];
+      toastr.error("Please enter a " + failed + "!", "Metadata Required")
+    }
+  };
+
+
+  //callback once the share token has been returned from the server
+  function onShareSuccess (data){
+    if (data.success){
+      toastr.success("Configuration Storage Complete!")
+      hash = data['configHash']
+      urlString = config.baseURL +"?shareToken="+ hash
+      state.shareToken = hash
+      $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
+    }else{
+      toastr.error("Failed to share map.")
+      throw "Failed to sync with map server"
+    }
+  };
+
+  function createLoadDataWindowComponents(config){
+    IO = require("./../processes/io.js"); //this is weird, it fails if we load at beginning of script TODO: fix
+    IO.getTaxa(config, onTaxaReceipt);
+  }
+
+
+  function onTaxaReceipt(data, config){
+      createTaxaAutocomplete(data);
+      window.appData.taxa = data
+      //also load the dropdown menus
+      IO.getEcolGroups(config, onEcolGroupsReceipt); //pass through the taxa data
+  }
+
+  function onEcolGroupsReceipt(data){
+    if (data['success']){
+      populateEcolGroupDropdown(data['data'], window.appData.taxa);
+      window.appData.ecolGroups = data;
+    }else{
+      displayError("Failed to load remote data source.");
+      throw "Failed to load ecological groups";
+    }
+  }
+
+  //populate the ecological group menu with data
+  //used as a callback from the getEcolGroups function
+  var populateEcolGroupDropdown = function(data, taxa){
+    //populate the ecological groups dropdown menu
+    //add a new <option> for each group in the response
+    $("#ecolGroupSelect").empty() //clear the list
+    for (var i = 0; i < data.length; i++){
+      grp = data[i]
+      html = "<option value='" + grp['EcolGroupID'] + "'>" + grp['EcolGroup'] + "</option>"
+      $("#ecolGroupSelect").append(html)
+    }
+
+    //set the attached taxa menu to be a smart default
+    filterAndPopulateTaxaDropdown(data[0], taxa)
+  }
+
+  var filterAndPopulateTaxaDropdown = function(selectedGroup, taxa){
+    console.log(taxa)
+    //filter the taxa list to the selected ecological group
+    //put the filtered list into the taxa dropdown
+    filteredTaxa = _.filter(taxa, function(d){
+      return ((d.EcolGroups.indexOf(selectedGroup) > -1))
+    })
+    //add an <option> to the dropdown for each of the filtered taxa
+    $("#taxonSelect").empty()
+    for (var i=0; i < filteredTaxa.length; i++){
+      t = filteredTaxa[i]
+      html = "<option value='" + t['TaxonID'] + "'>" + t['TaxonName']
+      if (t['Extinct']){
+        html += "  <span class='text-muted'>(extinct) </span>"
+      }
+      html += "</option>"
+      $("#taxonSelect").append(html)
+    }
+  };
+
+
+  //get details about the person sharing the map
+  function getShareMapMetadata(){
+    //get metadata
+    author = $("#authorName").val();
+    org = $("#authorOrg").val();
+    mapTitle = $("#mapTitle").val();
+    mapDesc = $("#mapDescription").val();
+
+    return {
+      author: author,
+      organization: org,
+      mapTitle: mapTitle,
+      mapDescription: mapDesc
+    }
+  };
+
+
+  var createTaxaAutocomplete = function(data){
+    //populate the search bar, and make it so it autocompletes when a user starts typing
+    //add taxa to the data list first
+    taxaNames = _.pluck(data, "TaxonName")
+    input = document.getElementById("taxaAutocomplete")
+    taxaAutocomplete = new Awesomplete(input, {
+      list: taxaNames,
+      minChars: 2,
+      filter: Awesomplete.FILTER_STARTSWITH
+    })
+    return taxaAutocomplete
+  }
+
+  var displayError = function(message, title){
+    toastr.warning(message, title);
+  }
+  var displayInfo = function(message, title){
+    toastr.info(message, title);
+  }
+  var displaySuccess = function(message, title){
+    toastr.success(message, title)
+  }
+
+  var handleShareRequestEvent = function(){
+    metadata = getShareMapMetadata();
+    isValid = utils.validateShareMapMetadata(metadata);
+    if (isValid.valid){
+      IO.sendShareRequest(metadata, onShareRequestSuccess)
+    }else{
+      for (var i =0; i < isValid.failed.length; i++){
+        displayError("You must enter a " + isValid.failed[i] + " to your map!");
+      }
+    }
+  }
+
+  var onShareRequestSuccess = function(data){
+      if (data.success){
+        displaySuccess("Configuration Storage Complete!")
+        hash = data['configHash']
+        urlString = window.config.baseURL +"?shareToken="+ hash
+        window.state.shareToken = hash
+        $("#shareURL").html("<a href='" + urlString + "'>" + hash + "</a>")
+      }else{
+        displayError("Failed to share map.")
+      }
+  }
+
+  return {
+    failShareValidation: failShareValidation,
+    onShareSuccess: onShareSuccess,
+    populateEcolGroupDropdown: populateEcolGroupDropdown,
+    filterAndPopulateTaxaDropdown: filterAndPopulateTaxaDropdown,
+    createTaxaAutocomplete: createTaxaAutocomplete,
+    displayError:displayError,
+    displayInfo: displayInfo,
+    displaySuccess: displaySuccess,
+    createLoadDataWindowComponents: createLoadDataWindowComponents,
+    handleShareRequestEvent: handleShareRequestEvent
+  }
+})();
+
+module.exports = UIUtils;
+
+},{"./../processes/io.js":6,"./../processes/utils.js":8,"Awesomplete":22,"jquery":60,"toastr":244,"underscore":245}],19:[function(require,module,exports){
+var mapModule = require('./map.js');
+var layoutModule = require('./layout.js');
+var temperatureChartModule = require("./charts/temperatureChart.js");
+var IO = require("./../processes/io.js");
+var UIUtils = require("./ui-utils.js");
+var process = require("./../processes/process.js");
+var utils = require("./../processes/utils.js");
+var analytics = require("./charts/charts.js");
+var dc = require("dc");
+var UIEvents = require("./events.js")
+var dataTable = require("./dataTable.js");
+var sitePanel = require("./sitePanel.js");
+
+var ui = (function(){
+  var layout, mapChart, map, initialize, temperatureChart;
+
+
+  //load a configuration from the database
+  var loadFromToken = function(configToken){
+    IO.getConfiguration(configToken, initialize)
+  };
+
+  var loadFromTaxonName = function(taxonname){
+    var config = require("./../config/config.js");
+    var state = require("./../config/state.js");
+    state.doSearch = true;
+    state.searchSwitch = "search"
+    state.taxonname = taxonname;
+    console.log(taxonname)
+    initialize(config, state)
+  }
+
+  var loadFromTaxonID = function(taxonid){
+    var config = require("./../config/config.js");
+    var state = require("./../config/state.js");
+    state.doSearch = true;
+    state.searchSwitch = "browse"
+    state.taxonid = taxonid;
+    initialize(config, state)
+  }
+
+
+  //create a new default configuration
+  var loadClean = function(){
+    var config = require("./../config/config.js");
+    var state = require("./../config/state.js");
+    initialize(config, state);
+  }
+
+  var create = function(){
+
+    //see if the user passed in any url parameters
+    var shareToken = utils.getParameterByName('shareToken');
+    var taxonName = utils.getParameterByName('taxonname');
+    var taxonID = utils.getParameterByName('taxonid');
+
+
+    //load preferentially off those parameters --> only one will happen
+    if (utils.isValidToken(shareToken)){
+      loadFromToken(shareToken)
+    }else if(utils.isValidTaxonName(taxonName)){
+      loadFromTaxonName(taxonName)
+    }else if (utils.isValidTaxonID(taxonID)){
+      loadFromTaxonID(taxonID);
+    }else{
+      loadClean();
+    }
+  }
+
+  //initialize a new UI session using the configuration either default or remote
+  var  initialize = function(config, state){
+    window.config = config;
+    window.state = state;
+
+    //create UI components
+    //make the map and its dc container
+    mapChart = mapModule.create();
+    map = mapChart.map();
+    window.map = map; //this is lazy but I'm not sure of another way to enable events
+
+    //render the layout
+    layout = layoutModule.create(config, state);
+
+    //create the bottom temperature distribution
+    temperatureChartModule.create(config);
+
+    //load some extra components
+    UIUtils.createLoadDataWindowComponents(config);
+
+    //get the data from neotoma
+    if (state.doSearch){
+      IO.getNeotomaData(config, state, onNeotomDataReceipt)
+    }
+    //make the state record map movements
+    UIEvents = require("./events.js");
+    UIEvents.enableMapViewLogging(map, state);
+    UIEvents.enableSiteDetailsOnMapClick(map);
+
+    UIEvents.enableMapSizeChangeOnWindowResize();
+
+    window.layout = layout;
+  } // end initialize
+
+  function onNeotomDataReceipt(error, occurrences, datasets){
+    if (error){
+      UIUtils.displayError(error)
+      throw error
+    }
+    processedData = process.mergeMetadata(occurrences, datasets);
+    crossfilteredData = process.crossfilterIt(processedData)
+    analytics.create(crossfilteredData.dimensions, crossfilteredData.groups)
+    mapChart.dimension(crossfilteredData.dimensions.geoDimension)
+    mapChart.group(crossfilteredData.groups.geoGroup)
+    temperatureChart = window.tempChart
+    temperatureChart.dimension(crossfilteredData.dimensions.ageDimension)
+    temperatureChart.group(crossfilteredData.groups.ageGroup)
+    //generate the data table
+
+    var dt = dataTable.create(crossfilteredData.groups.taxaGroup);
+
+    render();
+    window.appData.occurrences = processedData
+
+    //open the site panel if requested in the state
+    if (state.openSite){
+      sitePanel.triggerOpen(state.activeSiteID);
+    }
+  }
+
+  function render(){
+    dc.renderAll();
+  }
+
+
+  return {
+    create:create,
+    layout: layout,
+    mapChart: mapChart,
+    map: map,
+    temperatureChart: temperatureChart,
+    onNeotomDataReceipt: onNeotomDataReceipt
+  }
+})();
+
+module.exports = ui;
+
+},{"./../config/config.js":1,"./../config/state.js":4,"./../processes/io.js":6,"./../processes/process.js":7,"./../processes/utils.js":8,"./charts/charts.js":9,"./charts/temperatureChart.js":10,"./dataTable.js":11,"./events.js":13,"./layout.js":15,"./map.js":16,"./sitePanel.js":17,"./ui-utils.js":18,"dc":43}],20:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :

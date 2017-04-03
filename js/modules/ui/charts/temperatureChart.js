@@ -38,7 +38,7 @@ var tempChart = (function(){
           margins = {bottom:30,left:50,right:10,top:10}
         }
         if(xDomain === undefined){
-          xDomain = [0, 22]
+          xDomain = [0, 22000]
         }
         if(yDomain === undefined){
           yDomain = d3.extent(data, function(d){return +d.TempC})
@@ -55,7 +55,7 @@ var tempChart = (function(){
             .xAxisLabel(xLab)
             .on('renderlet', function(chart) {
                 var tempLineFn = d3.svg.line()
-                      .x(function(d) { return chart.x()(+d.Age); })
+                      .x(function(d) { return chart.x()(+d.YearsBP); })
                       .y(function(d) { return chart.y()(+d.TempC); })
                       //get drawing context
                       var chartBody = chart.select('g.chart-body');
@@ -82,21 +82,21 @@ var tempChart = (function(){
   var annotateTempChart = function(chartBody, chart, config){
       chartBody.selectAll("text").remove()
       chartBody.append('text')
-        .attr('x', chart.x()(18))
+        .attr('x', chart.x()(18000))
         .attr('y', chart.y()(-40))
         .attr('text-anchor', 'middle')
         .text("Deglaciation")
         .style('fill', config.colors.annotations)
 
         chartBody.append('text')
-          .attr('x', chart.x()(14.7))
+          .attr('x', chart.x()(14700))
           .attr('y', chart.y()(-31.7))
           .attr('text-anchor', 'middle')
           .text("Bolling Allerod")
           .style('fill', config.colors.annotations)
 
           chartBody.append('text')
-            .attr('x', chart.x()(8))
+            .attr('x', chart.x()(8000))
             .attr('y', chart.y()(-40))
             .attr('text-anchor', 'end')
             .text("The Holocene")

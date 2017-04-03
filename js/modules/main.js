@@ -6,7 +6,7 @@ console.log("Welcome to Ice Age Mapper (Version 2.2)\n\tAuthor: Scott Farley \n\
 var $ = jQuery = jquery = require("jquery");
 global.jQuery = window.$ = window.jQuery = $;
 require("jquery-ui-bundle");
-require('./../../lib/layout.js');
+require('./ui/jquery-layout.js');
 require("bootstrap");
 
 window.mapboxToken = "pk.eyJ1Ijoic2ZhcmxleTIiLCJhIjoiY2lmeWVydWtkNTJpb3RmbTFkdjQ4anhrMSJ9.jRJCOGU1AOHfNXHH7cwU7Q"

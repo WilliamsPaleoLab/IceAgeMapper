@@ -83,7 +83,7 @@ var analyticsCharts = (function(){
   }; //end create bar chart function
 
   //constructor function for a dc bar chart
-  var analyticsPieChart = function(el, dimension, group, filterEvent, height, width, margins){
+  var analyticsPieChart = function(el, dimension, group, scale, filterEvent, height, width, margins){
     if (el === undefined){
       throw "Element must be defined!"
       return false
@@ -112,9 +112,15 @@ var analyticsCharts = (function(){
       .dimension(dimension)
       .group(group)
 
-    if (filterEvent != undefined){
-      _chart.on('filtered', filterEvent)
+    if (scale != undefined){
+      this._chart.colors(scale);
     }
+
+    if (filterEvent != undefined){
+      this._chart.on('filtered', filterEvent)
+    }
+
+
     return this._chart
   }; //end create pie chart function
   //
@@ -128,13 +134,12 @@ var analyticsCharts = (function(){
   //chart creation functions
 
   var create = function(dimensions, groups){
-    console.log(dimensions)
-    console.log(groups)
+    var recordTypeScale = d3.scale.ordinal().range(["#1b9e77", "#d95f02", "#7570b3"]).domain(["present/absent", "NISP", "MNI"])
     this.latitudeChart =  new analyticsBarChart("#latitudeChart", "Latitude", "Frequency", dimensions.latitudeDimension, groups.latitudeGroup, "latitude", 0.5);
     this.ageChart = new analyticsBarChart("#ageChart", "Age (kya)", "Frequency", dimensions.ageDimension, groups.ageGroup, "age", 1000);
     this.abundanceChart = new analyticsBarChart("#abundanceChart", "Absolute Abundance", "Frequency", dimensions.valueDimension, groups.valueGroup, "Value", 1);
     this.PIChart = new analyticsPieChart("#PIChart", dimensions.piDimension, groups.piGroup);
-    this.recordTypeChart = new analyticsPieChart("#recordTypeChart", dimensions.recordTypeDimension, groups.recordTypeGroup)
+    this.recordTypeChart = new analyticsPieChart("#recordTypeChart", dimensions.recordTypeDimension, groups.recordTypeGroup, recordTypeScale)
     return this
   }
 

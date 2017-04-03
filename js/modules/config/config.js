@@ -18,9 +18,9 @@ var config  = (function(){
         "property": "VariableUnits",
         "type": "categorical",
         "stops": [
-            ["present/absent", "#fbb03b"],
-            ["NISP", "steelblue"],
-            ["MNI", "#e55e5e"]
+            ["present/absent", "#1b9e77"],
+            ["NISP", "#d95f02"],
+            ["MNI", "#7570b3"]
         ]
     },
       symbolRadius: 5 //size of the map points

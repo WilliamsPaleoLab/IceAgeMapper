@@ -13,7 +13,7 @@ var dataTable = (function(){
     .height(100)
     .width(150)
     .dimension(dimension)
-    .group(function(d){return ""})
+    .group(function(d){return "Number of Samples"})
     .size(2)
     .columns([function (d) {
       return d.Taxon }, function (d) { return d.Count}])
