@@ -26,7 +26,6 @@ var analyticsCharts = (function(){
     margins,
     elasticY,
     brushOn){
-      console.log(arguments)
     if (el === undefined){
       throw "Element must be defined!"
       return false
@@ -40,9 +39,7 @@ var analyticsCharts = (function(){
       return false
     }
     if (height === undefined){
-      console.log("Height is undefined")
       height = $(el).height();
-      console.log(height);
       if (height < 250){
         //create the charts even if the window is closed
         height = 200
@@ -55,8 +52,6 @@ var analyticsCharts = (function(){
         width = 250
       }
     }
-    console.log(width)
-    console.log(height);
     if(margins === undefined){
       var margins = {bottom: 30, top: 10, left: 30, right: 25}
     }
@@ -82,7 +77,6 @@ var analyticsCharts = (function(){
       this._chart.xUnits(function(start, end, xDomain) { return (end - start) / xUnits; })
 
     if (filterEvent != undefined){
-      console.log("Adding a filter event");
       this._chart.on('filtered', filterEvent)
     }
     return this._chart
@@ -136,8 +130,7 @@ var analyticsCharts = (function(){
     return scale
   }
 
-  function onAgeFilter(t){
-    f = t.filter();
+  function onAgeFilter(t, f){
     if (f != null){
       setTimeout(function(d){
           icesheets.filterFromRange(f);

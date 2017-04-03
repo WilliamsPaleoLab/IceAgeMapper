@@ -5,6 +5,7 @@ var Awesomplete = require("Awesomplete");
 var IO;
 var utils = require('./../processes/utils.js');
 var dc = require("dc");
+var icesheets = require('./icesheets.js');
 
 var UIUtils = (function(){
   //UI utility method called when metadata for a shared map is not valid
@@ -141,6 +142,8 @@ var UIUtils = (function(){
     window.state.filters.recordType = window.charts.recordTypeChart.filter();
     window.state.filters.latitude = window.charts.latitudeChart.filter();
     window.state.filters.investigator = window.charts.PIChart.filter();
+    window.state.filters.age = window.charts.temperatureChart.filter(); //overwrites age filter, but they're the same dimension.
+
 
     if (isValid.valid){
       IO.sendShareRequest(metadata, onShareRequestSuccess)
@@ -172,6 +175,7 @@ var UIUtils = (function(){
     charts.PIChart.filter(state.filters.investigator);
     charts.temperatureChart.filter(state.filters.age);
     charts.recordTypeChart.filter(state.filters.recordType);
+    charts.temperatureChart.filter(state.filters.age)
     dc.renderAll();
   }
 

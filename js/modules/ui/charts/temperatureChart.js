@@ -111,8 +111,7 @@ var tempChart = (function(){
           .style('fill', config.colors.annotations)
   }
 
-  function onFilter(t){
-    f = t.filter();
+  function onFilter(t, f){
     if (f != null){
       setTimeout(function(d){
           icesheets.filterFromRange(f);

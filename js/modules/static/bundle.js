@@ -805,7 +805,6 @@ var analyticsCharts = (function(){
     margins,
     elasticY,
     brushOn){
-      console.log(arguments)
     if (el === undefined){
       throw "Element must be defined!"
       return false
@@ -819,9 +818,7 @@ var analyticsCharts = (function(){
       return false
     }
     if (height === undefined){
-      console.log("Height is undefined")
       height = $(el).height();
-      console.log(height);
       if (height < 250){
         //create the charts even if the window is closed
         height = 200
@@ -834,8 +831,6 @@ var analyticsCharts = (function(){
         width = 250
       }
     }
-    console.log(width)
-    console.log(height);
     if(margins === undefined){
       var margins = {bottom: 30, top: 10, left: 30, right: 25}
     }
@@ -861,7 +856,6 @@ var analyticsCharts = (function(){
       this._chart.xUnits(function(start, end, xDomain) { return (end - start) / xUnits; })
 
     if (filterEvent != undefined){
-      console.log("Adding a filter event");
       this._chart.on('filtered', filterEvent)
     }
     return this._chart
@@ -915,8 +909,7 @@ var analyticsCharts = (function(){
     return scale
   }
 
-  function onAgeFilter(t){
-    f = t.filter();
+  function onAgeFilter(t, f){
     if (f != null){
       setTimeout(function(d){
           icesheets.filterFromRange(f);
@@ -1065,8 +1058,7 @@ var tempChart = (function(){
           .style('fill', config.colors.annotations)
   }
 
-  function onFilter(t){
-    f = t.filter();
+  function onFilter(t, f){
     if (f != null){
       setTimeout(function(d){
           icesheets.filterFromRange(f);
@@ -8176,6 +8168,7 @@ var Awesomplete = require("Awesomplete");
 var IO;
 var utils = require('./../processes/utils.js');
 var dc = require("dc");
+var icesheets = require('./icesheets.js');
 
 var UIUtils = (function(){
   //UI utility method called when metadata for a shared map is not valid
@@ -8312,6 +8305,8 @@ var UIUtils = (function(){
     window.state.filters.recordType = window.charts.recordTypeChart.filter();
     window.state.filters.latitude = window.charts.latitudeChart.filter();
     window.state.filters.investigator = window.charts.PIChart.filter();
+    window.state.filters.age = window.charts.temperatureChart.filter(); //overwrites age filter, but they're the same dimension.
+
 
     if (isValid.valid){
       IO.sendShareRequest(metadata, onShareRequestSuccess)
@@ -8343,6 +8338,7 @@ var UIUtils = (function(){
     charts.PIChart.filter(state.filters.investigator);
     charts.temperatureChart.filter(state.filters.age);
     charts.recordTypeChart.filter(state.filters.recordType);
+    charts.temperatureChart.filter(state.filters.age)
     dc.renderAll();
   }
 
@@ -8363,7 +8359,7 @@ var UIUtils = (function(){
 
 module.exports = UIUtils;
 
-},{"./../processes/io.js":6,"./../processes/utils.js":8,"Awesomplete":23,"dc":44,"jquery":61,"toastr":245,"underscore":246}],20:[function(require,module,exports){
+},{"./../processes/io.js":6,"./../processes/utils.js":8,"./icesheets.js":14,"Awesomplete":23,"dc":44,"jquery":61,"toastr":245,"underscore":246}],20:[function(require,module,exports){
 var mapModule = require('./map.js');
 var layoutModule = require('./layout.js');
 var temperatureChartModule = require("./charts/temperatureChart.js");
