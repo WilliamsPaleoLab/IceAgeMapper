@@ -38,7 +38,7 @@ html, body{
 .ui-layout-resizer-south {
   border-width:			0 1px;
   height: 25px!important;
-  z-index: 1000000!important;
+  z-index: 1040!important;
 }
 
 .ui-layout-toggler-south{
@@ -68,7 +68,7 @@ width:100%!important;
 
 
 nav{
-z-index: 100000;
+z-index: 1040;
 }
 
 
@@ -124,7 +124,7 @@ margin-bottom: 0px;
   top: 0px;
   left: 0px;
   opacity: 50%;
-  z-index: 1999;
+  z-index: 1040;
   visibility: hidden;
 }
 
@@ -248,7 +248,7 @@ tr:hover {background-color: #00b3b3}
   top: 15%;
   position: absolute;
   left: 25px!important;
-  z-index: 1000000000000;
+  z-index: 1040;
 }
 
 .right{
