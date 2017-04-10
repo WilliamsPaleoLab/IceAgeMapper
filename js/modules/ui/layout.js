@@ -22,7 +22,7 @@ var layout = (function(){
         },
         togglerLength_open:    '100%',
         togglerLength_closed:  '100%',
-        togglerContent_open:  "<button class='toggleButton toggleButtonClose'>Close</button>",
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose' data-intro='Panels can be opened and closed using by clicking on their edges.' data-step=8>Close</button>",
         togglerContent_closed: "<button class='toggleButton btn'>Timeline <i class='fa fa-arrow-up' aria-hidden='true'></i></button>"
       },
       west: {
@@ -71,7 +71,7 @@ var layout = (function(){
         },
         togglerLength_open:    '50%',
         togglerLength_closed:  '50%',
-        togglerContent_open:  "<button class='toggleButton toggleButtonClose rotate btn rotate-neg'>Close Dashboard</button>",
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose rotate btn rotate-neg' data-intro='Panels can be resized by clicking and dragging on their margins.' data-step=7>Close Dashboard</button>",
         togglerContent_closed: "<button class='toggleButton rotate btn'><span class='rotate'>Dashboard</span> <i class='fa fa-arrow-down' aria-hidden='true'></i></button>"
       }
     });

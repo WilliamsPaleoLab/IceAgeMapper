@@ -79,10 +79,14 @@ var config  = (function(){
     doAnnotations: true, //should annotations about time periods be put into the tempCurve?
     baseURL : "iam.html", //where does the *map* reside? e.g., what is this page?
     validationRules: {
-      authorRequired: true,
+      authorRequired: false,
       titleRequired: true,
       descriptionRequired: true,
-      organizationRequired: true
+      organizationRequired: false
+    },
+    walkthrough: {
+      loadClean: false,
+      defaultTaxonName: "sequoia"
     }
   }
 })(); //end configuration
@@ -211,6 +215,7 @@ var prototypes = require("./config/prototypes.js");
 var UIEvents = require("./ui/events.js");
 var appData = require("./config/data.js");
 
+
 // var utils = require("./processes/utils.js");
 
 
@@ -232,7 +237,7 @@ $(document).ready(function(){
 })
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./config/data.js":2,"./config/prototypes.js":3,"./ui/events.js":13,"./ui/jquery-layout.js":15,"./ui/ui.js":20,"bootstrap":24,"jquery":61,"jquery-ui-bundle":60}],6:[function(require,module,exports){
+},{"./config/data.js":2,"./config/prototypes.js":3,"./ui/events.js":13,"./ui/jquery-layout.js":15,"./ui/ui.js":20,"bootstrap":24,"jquery":62,"jquery-ui-bundle":61}],6:[function(require,module,exports){
 //functions to deal with data loading and communication with the server(s)
 var d3 = require('d3');
 var queue = require('d3-queue');
@@ -619,7 +624,7 @@ var processes = (function(){
 
 module.exports = processes;
 
-},{"crossfilter":38,"mapbox-gl":128}],8:[function(require,module,exports){
+},{"crossfilter":38,"mapbox-gl":129}],8:[function(require,module,exports){
 
 var _ = require("underscore");
 var utils = (function(){
@@ -759,6 +764,15 @@ var utils = (function(){
     return uri
   }
 
+  var isValidWalkthroughParameterValue = function(param){
+    //gives flexibility to include multiple walkthroughs using numbers or hashes instead of just a single walkthrough with true false,
+    //but for now, only one is allowed.
+    if((param === true) || (param === 'true')){
+      return true
+    }
+    return false
+  }
+
 
   return {
     getParameterByName: getParameterByName,
@@ -768,7 +782,8 @@ var utils = (function(){
     isValidToken: isValidToken,
     isValidTaxonName: isValidTaxonName,
     isValidTaxonID: isValidTaxonID,
-    createShareLink : createShareLink
+    createShareLink : createShareLink,
+    isValidWalkthroughParameterValue: isValidWalkthroughParameterValue
   }
 
 })();//end utils module
@@ -776,7 +791,7 @@ var utils = (function(){
 
 module.exports = utils;
 
-},{"underscore":246}],9:[function(require,module,exports){
+},{"underscore":247}],9:[function(require,module,exports){
 var dc = require('dc');
 var d3 = require('d3');
 var icesheets = require('./../icesheets.js');
@@ -1607,7 +1622,7 @@ var mapboxgl = require('mapbox-gl');
 
 module.exports = dc_mapbox;
 
-},{"dc":44,"mapbox-gl":128}],13:[function(require,module,exports){
+},{"dc":44,"mapbox-gl":129}],13:[function(require,module,exports){
 var IO = require("./../processes/io.js");
 var ui = require("./ui.js");
 var UIUtils = require("./ui-utils.js");
@@ -1789,7 +1804,7 @@ ages = []
 
 module.exports = icesheets;
 
-},{"underscore":246}],15:[function(require,module,exports){
+},{"underscore":247}],15:[function(require,module,exports){
 /**
  * @preserve
  * jquery.layout 1.4.4
@@ -7891,7 +7906,7 @@ var layout = (function(){
         },
         togglerLength_open:    '100%',
         togglerLength_closed:  '100%',
-        togglerContent_open:  "<button class='toggleButton toggleButtonClose'>Close</button>",
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose' data-intro='Panels can be opened and closed using by clicking on their edges.' data-step=8>Close</button>",
         togglerContent_closed: "<button class='toggleButton btn'>Timeline <i class='fa fa-arrow-up' aria-hidden='true'></i></button>"
       },
       west: {
@@ -7940,7 +7955,7 @@ var layout = (function(){
         },
         togglerLength_open:    '50%',
         togglerLength_closed:  '50%',
-        togglerContent_open:  "<button class='toggleButton toggleButtonClose rotate btn rotate-neg'>Close Dashboard</button>",
+        togglerContent_open:  "<button class='toggleButton toggleButtonClose rotate btn rotate-neg' data-intro='Panels can be resized by clicking and dragging on their margins.' data-step=7>Close Dashboard</button>",
         togglerContent_closed: "<button class='toggleButton rotate btn'><span class='rotate'>Dashboard</span> <i class='fa fa-arrow-down' aria-hidden='true'></i></button>"
       }
     });
@@ -8160,7 +8175,7 @@ var sitePanel = (function(){
 
 module.exports = sitePanel;
 
-},{"./../processes/utils.js":8,"./events.js":13,"mapbox-gl":128,"underscore":246}],19:[function(require,module,exports){
+},{"./../processes/utils.js":8,"./events.js":13,"mapbox-gl":129,"underscore":247}],19:[function(require,module,exports){
 var toastr = require('toastr');
 var _ = require("underscore");
 var $ = require("jquery");
@@ -8359,7 +8374,7 @@ var UIUtils = (function(){
 
 module.exports = UIUtils;
 
-},{"./../processes/io.js":6,"./../processes/utils.js":8,"./icesheets.js":14,"Awesomplete":23,"dc":44,"jquery":61,"toastr":245,"underscore":246}],20:[function(require,module,exports){
+},{"./../processes/io.js":6,"./../processes/utils.js":8,"./icesheets.js":14,"Awesomplete":23,"dc":44,"jquery":62,"toastr":246,"underscore":247}],20:[function(require,module,exports){
 var mapModule = require('./map.js');
 var layoutModule = require('./layout.js');
 var temperatureChartModule = require("./charts/temperatureChart.js");
@@ -8378,6 +8393,24 @@ var icesheets = require("./icesheets.js");
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
 
+  var loadWalkthrough = function(){
+    console.log("Loading walkthrough...")
+    var config = require("./../config/config.js");
+    var state = require("./../config/state.js");
+    var i = require("intro.js");
+    var introJs = i.introJs() //configure so it's recognized as a module
+    if (config.walkthrough.loadClean){
+      initialize(config, state);
+    }else{
+      loadFromTaxonName(config.walkthrough.defaultTaxonName)
+    }
+
+    introJs.setOption("nextLabel", " > ");
+    introJs.setOption("prevLabel", " < ");
+    introJs.setOption('overlayOpacity', 0.8);
+    introJs.setOption('showProgress', false);
+    introJs.start();
+  }
 
   //load a configuration from the database
   var loadFromToken = function(configToken){
@@ -8416,6 +8449,7 @@ var ui = (function(){
     var shareToken = utils.getParameterByName('shareToken');
     var taxonName = utils.getParameterByName('taxonname');
     var taxonID = utils.getParameterByName('taxonid');
+    var doWalkthrough = utils.getParameterByName('walkthrough')
 
 
     //load preferentially off those parameters --> only one will happen
@@ -8425,6 +8459,8 @@ var ui = (function(){
       loadFromTaxonName(taxonName)
     }else if (utils.isValidTaxonID(taxonID)){
       loadFromTaxonID(taxonID);
+    }else if (utils.isValidWalkthroughParameterValue(doWalkthrough)){
+      loadWalkthrough();
     }else{
       loadClean();
     }
@@ -8520,7 +8556,7 @@ var ui = (function(){
 
 module.exports = ui;
 
-},{"./../config/config.js":1,"./../config/state.js":4,"./../processes/io.js":6,"./../processes/process.js":7,"./../processes/utils.js":8,"./charts/charts.js":9,"./charts/temperatureChart.js":10,"./dataTable.js":11,"./events.js":13,"./icesheets.js":14,"./layout.js":16,"./map.js":17,"./sitePanel.js":18,"./ui-utils.js":19,"dc":44}],21:[function(require,module,exports){
+},{"./../config/config.js":1,"./../config/state.js":4,"./../processes/io.js":6,"./../processes/process.js":7,"./../processes/utils.js":8,"./charts/charts.js":9,"./charts/temperatureChart.js":10,"./dataTable.js":11,"./events.js":13,"./icesheets.js":14,"./layout.js":16,"./map.js":17,"./sitePanel.js":18,"./ui-utils.js":19,"dc":44,"intro.js":60}],21:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
@@ -36644,7 +36680,7 @@ function rad(_) {
     return _ * Math.PI / 180;
 }
 
-},{"wgs84":255}],49:[function(require,module,exports){
+},{"wgs84":256}],49:[function(require,module,exports){
 var geojsonArea = require('geojson-area');
 
 module.exports = rewind;
@@ -37792,6 +37828,1994 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 }
 
 },{}],60:[function(require,module,exports){
+/**
+ * Intro.js v2.5.0
+ * https://github.com/usablica/intro.js
+ *
+ * Copyright (C) 2016 Afshin Mehrabani (@afshinmeh)
+ */
+
+(function (root, factory) {
+  if (typeof exports === 'object') {
+    // CommonJS
+    factory(exports);
+  } else if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define(['exports'], factory);
+  } else {
+    // Browser globals
+    factory(root);
+  }
+} (this, function (exports) {
+  //Default config/variables
+  var VERSION = '2.5.0';
+
+  /**
+   * IntroJs main class
+   *
+   * @class IntroJs
+   */
+  function IntroJs(obj) {
+    this._targetElement = obj;
+    this._introItems = [];
+
+    this._options = {
+      /* Next button label in tooltip box */
+      nextLabel: 'Next &rarr;',
+      /* Previous button label in tooltip box */
+      prevLabel: '&larr; Back',
+      /* Skip button label in tooltip box */
+      skipLabel: 'Skip',
+      /* Done button label in tooltip box */
+      doneLabel: 'Done',
+      /* Hide previous button in the first step? Otherwise, it will be disabled button. */
+      hidePrev: false,
+      /* Hide next button in the last step? Otherwise, it will be disabled button. */
+      hideNext: false,
+      /* Default tooltip box position */
+      tooltipPosition: 'bottom',
+      /* Next CSS class for tooltip boxes */
+      tooltipClass: '',
+      /* CSS class that is added to the helperLayer */
+      highlightClass: '',
+      /* Close introduction when pressing Escape button? */
+      exitOnEsc: true,
+      /* Close introduction when clicking on overlay layer? */
+      exitOnOverlayClick: true,
+      /* Show step numbers in introduction? */
+      showStepNumbers: true,
+      /* Let user use keyboard to navigate the tour? */
+      keyboardNavigation: true,
+      /* Show tour control buttons? */
+      showButtons: true,
+      /* Show tour bullets? */
+      showBullets: true,
+      /* Show tour progress? */
+      showProgress: false,
+      /* Scroll to highlighted element? */
+      scrollToElement: true,
+      /* Set the overlay opacity */
+      overlayOpacity: 0.8,
+      /* Padding to add after scrolling when element is not in the viewport (in pixels) */
+      scrollPadding: 30,
+      /* Precedence of positions, when auto is enabled */
+      positionPrecedence: ["bottom", "top", "right", "left"],
+      /* Disable an interaction with element? */
+      disableInteraction: false,
+      /* Default hint position */
+      hintPosition: 'top-middle',
+      /* Hint button label */
+      hintButtonLabel: 'Got it',
+      /* Adding animation to hints? */
+      hintAnimation: true
+    };
+  }
+
+  /**
+   * Initiate a new introduction/guide from an element in the page
+   *
+   * @api private
+   * @method _introForElement
+   * @param {Object} targetElm
+   * @returns {Boolean} Success or not?
+   */
+  function _introForElement(targetElm) {
+    var introItems = [],
+        self = this;
+
+    if (this._options.steps) {
+      //use steps passed programmatically
+      for (var i = 0, stepsLength = this._options.steps.length; i < stepsLength; i++) {
+        var currentItem = _cloneObject(this._options.steps[i]);
+        //set the step
+        currentItem.step = introItems.length + 1;
+        //use querySelector function only when developer used CSS selector
+        if (typeof(currentItem.element) === 'string') {
+          //grab the element with given selector from the page
+          currentItem.element = document.querySelector(currentItem.element);
+        }
+
+        //intro without element
+        if (typeof(currentItem.element) === 'undefined' || currentItem.element == null) {
+          var floatingElementQuery = document.querySelector(".introjsFloatingElement");
+
+          if (floatingElementQuery == null) {
+            floatingElementQuery = document.createElement('div');
+            floatingElementQuery.className = 'introjsFloatingElement';
+
+            document.body.appendChild(floatingElementQuery);
+          }
+
+          currentItem.element  = floatingElementQuery;
+          currentItem.position = 'floating';
+        }
+
+        if (currentItem.element != null) {
+          introItems.push(currentItem);
+        }
+      }
+
+    } else {
+      //use steps from data-* annotations
+      var allIntroSteps = targetElm.querySelectorAll('*[data-intro]');
+      //if there's no element to intro
+      if (allIntroSteps.length < 1) {
+        return false;
+      }
+
+      //first add intro items with data-step
+      for (var i = 0, elmsLength = allIntroSteps.length; i < elmsLength; i++) {
+        var currentElement = allIntroSteps[i];
+
+        // skip hidden elements
+        if (currentElement.style.display == 'none') {
+          continue;
+        }
+
+        var step = parseInt(currentElement.getAttribute('data-step'), 10);
+
+        if (step > 0) {
+          introItems[step - 1] = {
+            element: currentElement,
+            intro: currentElement.getAttribute('data-intro'),
+            step: parseInt(currentElement.getAttribute('data-step'), 10),
+            tooltipClass: currentElement.getAttribute('data-tooltipClass'),
+            highlightClass: currentElement.getAttribute('data-highlightClass'),
+            position: currentElement.getAttribute('data-position') || this._options.tooltipPosition
+          };
+        }
+      }
+
+      //next add intro items without data-step
+      //todo: we need a cleanup here, two loops are redundant
+      var nextStep = 0;
+      for (var i = 0, elmsLength = allIntroSteps.length; i < elmsLength; i++) {
+        var currentElement = allIntroSteps[i];
+
+        if (currentElement.getAttribute('data-step') == null) {
+
+          while (true) {
+            if (typeof introItems[nextStep] == 'undefined') {
+              break;
+            } else {
+              nextStep++;
+            }
+          }
+
+          introItems[nextStep] = {
+            element: currentElement,
+            intro: currentElement.getAttribute('data-intro'),
+            step: nextStep + 1,
+            tooltipClass: currentElement.getAttribute('data-tooltipClass'),
+            highlightClass: currentElement.getAttribute('data-highlightClass'),
+            position: currentElement.getAttribute('data-position') || this._options.tooltipPosition
+          };
+        }
+      }
+    }
+
+    //removing undefined/null elements
+    var tempIntroItems = [];
+    for (var z = 0; z < introItems.length; z++) {
+      introItems[z] && tempIntroItems.push(introItems[z]);  // copy non-empty values to the end of the array
+    }
+
+    introItems = tempIntroItems;
+
+    //Ok, sort all items with given steps
+    introItems.sort(function (a, b) {
+      return a.step - b.step;
+    });
+
+    //set it to the introJs object
+    self._introItems = introItems;
+
+    //add overlay layer to the page
+    if(_addOverlayLayer.call(self, targetElm)) {
+      //then, start the show
+      _nextStep.call(self);
+
+      var skipButton     = targetElm.querySelector('.introjs-skipbutton'),
+          nextStepButton = targetElm.querySelector('.introjs-nextbutton');
+
+      self._onKeyDown = function(e) {
+        if (e.keyCode === 27 && self._options.exitOnEsc == true) {
+          //escape key pressed, exit the intro
+          //check if exit callback is defined
+          _exitIntro.call(self, targetElm);
+        } else if(e.keyCode === 37) {
+          //left arrow
+          _previousStep.call(self);
+        } else if (e.keyCode === 39) {
+          //right arrow
+          _nextStep.call(self);
+        } else if (e.keyCode === 13) {
+          //srcElement === ie
+          var target = e.target || e.srcElement;
+          if (target && target.className.indexOf('introjs-prevbutton') > 0) {
+            //user hit enter while focusing on previous button
+            _previousStep.call(self);
+          } else if (target && target.className.indexOf('introjs-skipbutton') > 0) {
+            //user hit enter while focusing on skip button
+            if (self._introItems.length - 1 == self._currentStep && typeof (self._introCompleteCallback) === 'function') {
+                self._introCompleteCallback.call(self);
+            }
+
+            _exitIntro.call(self, targetElm);
+          } else {
+            //default behavior for responding to enter
+            _nextStep.call(self);
+          }
+
+          //prevent default behaviour on hitting Enter, to prevent steps being skipped in some browsers
+          if(e.preventDefault) {
+            e.preventDefault();
+          } else {
+            e.returnValue = false;
+          }
+        }
+      };
+
+      self._onResize = function(e) {
+        _setHelperLayerPosition.call(self, document.querySelector('.introjs-helperLayer'));
+        _setHelperLayerPosition.call(self, document.querySelector('.introjs-tooltipReferenceLayer'));
+      };
+
+      if (window.addEventListener) {
+        if (this._options.keyboardNavigation) {
+          window.addEventListener('keydown', self._onKeyDown, true);
+        }
+        //for window resize
+        window.addEventListener('resize', self._onResize, true);
+      } else if (document.attachEvent) { //IE
+        if (this._options.keyboardNavigation) {
+          document.attachEvent('onkeydown', self._onKeyDown);
+        }
+        //for window resize
+        document.attachEvent('onresize', self._onResize);
+      }
+    }
+    return false;
+  }
+
+ /*
+   * makes a copy of the object
+   * @api private
+   * @method _cloneObject
+  */
+  function _cloneObject(object) {
+      if (object == null || typeof (object) != 'object' || typeof (object.nodeType) != 'undefined') {
+        return object;
+      }
+      var temp = {};
+      for (var key in object) {
+        if (typeof (jQuery) != 'undefined' && object[key] instanceof jQuery) {
+          temp[key] = object[key];
+        } else {
+          temp[key] = _cloneObject(object[key]);
+        }
+      }
+      return temp;
+  }
+  /**
+   * Go to specific step of introduction
+   *
+   * @api private
+   * @method _goToStep
+   */
+  function _goToStep(step) {
+    //because steps starts with zero
+    this._currentStep = step - 2;
+    if (typeof (this._introItems) !== 'undefined') {
+      _nextStep.call(this);
+    }
+  }
+
+  /**
+   * Go to the specific step of introduction with the explicit [data-step] number
+   *
+   * @api private
+   * @method _goToStepNumber
+   */
+  function _goToStepNumber(step) {
+    this._currentStepNumber = step;
+    if (typeof (this._introItems) !== 'undefined') {
+      _nextStep.call(this);
+    }
+  }
+
+  /**
+   * Go to next step on intro
+   *
+   * @api private
+   * @method _nextStep
+   */
+  function _nextStep() {
+    this._direction = 'forward';
+
+    if (typeof (this._currentStepNumber) !== 'undefined') {
+        for( var i = 0, len = this._introItems.length; i < len; i++ ) {
+            var item = this._introItems[i];
+            if( item.step === this._currentStepNumber ) {
+                this._currentStep = i - 1;
+                this._currentStepNumber = undefined;
+            }
+        }
+    }
+
+    if (typeof (this._currentStep) === 'undefined') {
+      this._currentStep = 0;
+    } else {
+      ++this._currentStep;
+    }
+
+    if ((this._introItems.length) <= this._currentStep) {
+      //end of the intro
+      //check if any callback is defined
+      if (typeof (this._introCompleteCallback) === 'function') {
+        this._introCompleteCallback.call(this);
+      }
+      _exitIntro.call(this, this._targetElement);
+      return;
+    }
+
+    var nextStep = this._introItems[this._currentStep];
+    if (typeof (this._introBeforeChangeCallback) !== 'undefined') {
+      this._introBeforeChangeCallback.call(this, nextStep.element);
+    }
+
+    _showElement.call(this, nextStep);
+  }
+
+  /**
+   * Go to previous step on intro
+   *
+   * @api private
+   * @method _previousStep
+   */
+  function _previousStep() {
+    this._direction = 'backward';
+
+    if (this._currentStep === 0) {
+      return false;
+    }
+
+    var nextStep = this._introItems[--this._currentStep];
+    if (typeof (this._introBeforeChangeCallback) !== 'undefined') {
+      this._introBeforeChangeCallback.call(this, nextStep.element);
+    }
+
+    _showElement.call(this, nextStep);
+  }
+
+  /**
+   * Exit from intro
+   *
+   * @api private
+   * @method _exitIntro
+   * @param {Object} targetElement
+   */
+  function _exitIntro(targetElement) {
+    //remove overlay layers from the page
+    var overlayLayers = targetElement.querySelectorAll('.introjs-overlay');
+
+    if (overlayLayers && overlayLayers.length > 0) {
+      for (var i = overlayLayers.length - 1; i >= 0; i--) {
+        //for fade-out animation
+        var overlayLayer = overlayLayers[i];
+        overlayLayer.style.opacity = 0;
+        setTimeout(function () {
+          if (this.parentNode) {
+            this.parentNode.removeChild(this);
+          }
+        }.bind(overlayLayer), 500);
+      };
+    }
+
+    //remove all helper layers
+    var helperLayer = targetElement.querySelector('.introjs-helperLayer');
+    if (helperLayer) {
+      helperLayer.parentNode.removeChild(helperLayer);
+    }
+
+    var referenceLayer = targetElement.querySelector('.introjs-tooltipReferenceLayer');
+    if (referenceLayer) {
+      referenceLayer.parentNode.removeChild(referenceLayer);
+    }
+    //remove disableInteractionLayer
+    var disableInteractionLayer = targetElement.querySelector('.introjs-disableInteraction');
+    if (disableInteractionLayer) {
+      disableInteractionLayer.parentNode.removeChild(disableInteractionLayer);
+    }
+
+    //remove intro floating element
+    var floatingElement = document.querySelector('.introjsFloatingElement');
+    if (floatingElement) {
+      floatingElement.parentNode.removeChild(floatingElement);
+    }
+
+    _removeShowElement();
+
+    //remove `introjs-fixParent` class from the elements
+    var fixParents = document.querySelectorAll('.introjs-fixParent');
+    if (fixParents && fixParents.length > 0) {
+      for (var i = fixParents.length - 1; i >= 0; i--) {
+        fixParents[i].className = fixParents[i].className.replace(/introjs-fixParent/g, '').replace(/^\s+|\s+$/g, '');
+      }
+    }
+
+    //clean listeners
+    if (window.removeEventListener) {
+      window.removeEventListener('keydown', this._onKeyDown, true);
+    } else if (document.detachEvent) { //IE
+      document.detachEvent('onkeydown', this._onKeyDown);
+    }
+
+    //check if any callback is defined
+    if (this._introExitCallback != undefined) {
+      this._introExitCallback.call(self);
+    }
+
+    //set the step to zero
+    this._currentStep = undefined;
+  }
+
+  /**
+   * Render tooltip box in the page
+   *
+   * @api private
+   * @method _placeTooltip
+   * @param {HTMLElement} targetElement
+   * @param {HTMLElement} tooltipLayer
+   * @param {HTMLElement} arrowLayer
+   * @param {HTMLElement} helperNumberLayer
+   * @param {Boolean} hintMode
+   */
+  function _placeTooltip(targetElement, tooltipLayer, arrowLayer, helperNumberLayer, hintMode) {
+    var tooltipCssClass = '',
+        currentStepObj,
+        tooltipOffset,
+        targetOffset,
+        windowSize,
+        currentTooltipPosition;
+
+    hintMode = hintMode || false;
+
+    //reset the old style
+    tooltipLayer.style.top        = null;
+    tooltipLayer.style.right      = null;
+    tooltipLayer.style.bottom     = null;
+    tooltipLayer.style.left       = null;
+    tooltipLayer.style.marginLeft = null;
+    tooltipLayer.style.marginTop  = null;
+
+    arrowLayer.style.display = 'inherit';
+
+    if (typeof(helperNumberLayer) != 'undefined' && helperNumberLayer != null) {
+      helperNumberLayer.style.top  = null;
+      helperNumberLayer.style.left = null;
+    }
+
+    //prevent error when `this._currentStep` is undefined
+    if (!this._introItems[this._currentStep]) return;
+
+    //if we have a custom css class for each step
+    currentStepObj = this._introItems[this._currentStep];
+    if (typeof (currentStepObj.tooltipClass) === 'string') {
+      tooltipCssClass = currentStepObj.tooltipClass;
+    } else {
+      tooltipCssClass = this._options.tooltipClass;
+    }
+
+    tooltipLayer.className = ('introjs-tooltip ' + tooltipCssClass).replace(/^\s+|\s+$/g, '');
+
+    currentTooltipPosition = this._introItems[this._currentStep].position;
+    if ((currentTooltipPosition == "auto" || this._options.tooltipPosition == "auto")) {
+      if (currentTooltipPosition != "floating") { // Floating is always valid, no point in calculating
+        currentTooltipPosition = _determineAutoPosition.call(this, targetElement, tooltipLayer, currentTooltipPosition);
+      }
+    }
+    targetOffset  = _getOffset(targetElement);
+    tooltipOffset = _getOffset(tooltipLayer);
+    windowSize    = _getWinSize();
+
+    switch (currentTooltipPosition) {
+      case 'top':
+        arrowLayer.className = 'introjs-arrow bottom';
+
+        if (hintMode) {
+          var tooltipLayerStyleLeft = 0;
+        } else {
+          var tooltipLayerStyleLeft = 15;
+        }
+
+        _checkRight(targetOffset, tooltipLayerStyleLeft, tooltipOffset, windowSize, tooltipLayer);
+        tooltipLayer.style.bottom = (targetOffset.height +  20) + 'px';
+        break;
+      case 'right':
+        tooltipLayer.style.left = (targetOffset.width + 20) + 'px';
+        if (targetOffset.top + tooltipOffset.height > windowSize.height) {
+          // In this case, right would have fallen below the bottom of the screen.
+          // Modify so that the bottom of the tooltip connects with the target
+          arrowLayer.className = "introjs-arrow left-bottom";
+          tooltipLayer.style.top = "-" + (tooltipOffset.height - targetOffset.height - 20) + "px";
+        } else {
+          arrowLayer.className = 'introjs-arrow left';
+        }
+        break;
+      case 'left':
+        if (!hintMode && this._options.showStepNumbers == true) {
+          tooltipLayer.style.top = '15px';
+        }
+
+        if (targetOffset.top + tooltipOffset.height > windowSize.height) {
+          // In this case, left would have fallen below the bottom of the screen.
+          // Modify so that the bottom of the tooltip connects with the target
+          tooltipLayer.style.top = "-" + (tooltipOffset.height - targetOffset.height - 20) + "px";
+          arrowLayer.className = 'introjs-arrow right-bottom';
+        } else {
+          arrowLayer.className = 'introjs-arrow right';
+        }
+        tooltipLayer.style.right = (targetOffset.width + 20) + 'px';
+
+        break;
+      case 'floating':
+        arrowLayer.style.display = 'none';
+
+        //we have to adjust the top and left of layer manually for intro items without element
+        tooltipLayer.style.left   = '50%';
+        tooltipLayer.style.top    = '50%';
+        tooltipLayer.style.marginLeft = '-' + (tooltipOffset.width / 2)  + 'px';
+        tooltipLayer.style.marginTop  = '-' + (tooltipOffset.height / 2) + 'px';
+
+        if (typeof(helperNumberLayer) != 'undefined' && helperNumberLayer != null) {
+          helperNumberLayer.style.left = '-' + ((tooltipOffset.width / 2) + 18) + 'px';
+          helperNumberLayer.style.top  = '-' + ((tooltipOffset.height / 2) + 18) + 'px';
+        }
+
+        break;
+      case 'bottom-right-aligned':
+        arrowLayer.className      = 'introjs-arrow top-right';
+
+        var tooltipLayerStyleRight = 0;
+        _checkLeft(targetOffset, tooltipLayerStyleRight, tooltipOffset, tooltipLayer);
+        tooltipLayer.style.top    = (targetOffset.height +  20) + 'px';
+        break;
+
+      case 'bottom-middle-aligned':
+        arrowLayer.className      = 'introjs-arrow top-middle';
+
+        var tooltipLayerStyleLeftRight = targetOffset.width / 2 - tooltipOffset.width / 2;
+
+        // a fix for middle aligned hints
+        if (hintMode) {
+          tooltipLayerStyleLeftRight += 5;
+        }
+
+        if (_checkLeft(targetOffset, tooltipLayerStyleLeftRight, tooltipOffset, tooltipLayer)) {
+          tooltipLayer.style.right = null;
+          _checkRight(targetOffset, tooltipLayerStyleLeftRight, tooltipOffset, windowSize, tooltipLayer);
+        }
+        tooltipLayer.style.top = (targetOffset.height + 20) + 'px';
+        break;
+
+      case 'bottom-left-aligned':
+      // Bottom-left-aligned is the same as the default bottom
+      case 'bottom':
+      // Bottom going to follow the default behavior
+      default:
+        arrowLayer.className = 'introjs-arrow top';
+
+        var tooltipLayerStyleLeft = 0;
+        _checkRight(targetOffset, tooltipLayerStyleLeft, tooltipOffset, windowSize, tooltipLayer);
+        tooltipLayer.style.top    = (targetOffset.height +  20) + 'px';
+        break;
+    }
+  }
+
+  /**
+   * Set tooltip left so it doesn't go off the right side of the window
+   *
+   * @return boolean true, if tooltipLayerStyleLeft is ok.  false, otherwise.
+   */
+  function _checkRight(targetOffset, tooltipLayerStyleLeft, tooltipOffset, windowSize, tooltipLayer) {
+    if (targetOffset.left + tooltipLayerStyleLeft + tooltipOffset.width > windowSize.width) {
+      // off the right side of the window
+      tooltipLayer.style.left = (windowSize.width - tooltipOffset.width - targetOffset.left) + 'px';
+      return false;
+    }
+    tooltipLayer.style.left = tooltipLayerStyleLeft + 'px';
+    return true;
+  }
+
+  /**
+   * Set tooltip right so it doesn't go off the left side of the window
+   *
+   * @return boolean true, if tooltipLayerStyleRight is ok.  false, otherwise.
+   */
+  function _checkLeft(targetOffset, tooltipLayerStyleRight, tooltipOffset, tooltipLayer) {
+    if (targetOffset.left + targetOffset.width - tooltipLayerStyleRight - tooltipOffset.width < 0) {
+      // off the left side of the window
+      tooltipLayer.style.left = (-targetOffset.left) + 'px';
+      return false;
+    }
+    tooltipLayer.style.right = tooltipLayerStyleRight + 'px';
+    return true;
+  }
+
+  /**
+   * Determines the position of the tooltip based on the position precedence and availability
+   * of screen space.
+   *
+   * @param {Object} targetElement
+   * @param {Object} tooltipLayer
+   * @param {Object} desiredTooltipPosition
+   *
+   */
+  function _determineAutoPosition(targetElement, tooltipLayer, desiredTooltipPosition) {
+
+    // Take a clone of position precedence. These will be the available
+    var possiblePositions = this._options.positionPrecedence.slice();
+
+    var windowSize = _getWinSize();
+    var tooltipHeight = _getOffset(tooltipLayer).height + 10;
+    var tooltipWidth = _getOffset(tooltipLayer).width + 20;
+    var targetOffset = _getOffset(targetElement);
+
+    // If we check all the possible areas, and there are no valid places for the tooltip, the element
+    // must take up most of the screen real estate. Show the tooltip floating in the middle of the screen.
+    var calculatedPosition = "floating";
+
+    // Check if the width of the tooltip + the starting point would spill off the right side of the screen
+    // If no, neither bottom or top are valid
+    if (targetOffset.left + tooltipWidth > windowSize.width || ((targetOffset.left + (targetOffset.width / 2)) - tooltipWidth) < 0) {
+      _removeEntry(possiblePositions, "bottom");
+      _removeEntry(possiblePositions, "top");
+    } else {
+      // Check for space below
+      if ((targetOffset.height + targetOffset.top + tooltipHeight) > windowSize.height) {
+        _removeEntry(possiblePositions, "bottom");
+      }
+
+      // Check for space above
+      if (targetOffset.top - tooltipHeight < 0) {
+        _removeEntry(possiblePositions, "top");
+      }
+    }
+
+    // Check for space to the right
+    if (targetOffset.width + targetOffset.left + tooltipWidth > windowSize.width) {
+      _removeEntry(possiblePositions, "right");
+    }
+
+    // Check for space to the left
+    if (targetOffset.left - tooltipWidth < 0) {
+      _removeEntry(possiblePositions, "left");
+    }
+
+    // At this point, our array only has positions that are valid. Pick the first one, as it remains in order
+    if (possiblePositions.length > 0) {
+      calculatedPosition = possiblePositions[0];
+    }
+
+    // If the requested position is in the list, replace our calculated choice with that
+    if (desiredTooltipPosition && desiredTooltipPosition != "auto") {
+      if (possiblePositions.indexOf(desiredTooltipPosition) > -1) {
+        calculatedPosition = desiredTooltipPosition;
+      }
+    }
+
+    return calculatedPosition;
+  }
+
+  /**
+   * Remove an entry from a string array if it's there, does nothing if it isn't there.
+   *
+   * @param {Array} stringArray
+   * @param {String} stringToRemove
+   */
+  function _removeEntry(stringArray, stringToRemove) {
+    if (stringArray.indexOf(stringToRemove) > -1) {
+      stringArray.splice(stringArray.indexOf(stringToRemove), 1);
+    }
+  }
+
+  /**
+   * Update the position of the helper layer on the screen
+   *
+   * @api private
+   * @method _setHelperLayerPosition
+   * @param {Object} helperLayer
+   */
+  function _setHelperLayerPosition(helperLayer) {
+    if (helperLayer) {
+      //prevent error when `this._currentStep` in undefined
+      if (!this._introItems[this._currentStep]) return;
+
+      var currentElement  = this._introItems[this._currentStep],
+          elementPosition = _getOffset(currentElement.element),
+          widthHeightPadding = 10;
+
+      // If the target element is fixed, the tooltip should be fixed as well.
+      // Otherwise, remove a fixed class that may be left over from the previous
+      // step.
+      if (_isFixed(currentElement.element)) {
+        helperLayer.className += ' introjs-fixedTooltip';
+      } else {
+        helperLayer.className = helperLayer.className.replace(' introjs-fixedTooltip', '');
+      }
+
+      if (currentElement.position == 'floating') {
+        widthHeightPadding = 0;
+      }
+
+      //set new position to helper layer
+      helperLayer.setAttribute('style', 'width: ' + (elementPosition.width  + widthHeightPadding)  + 'px; ' +
+                                        'height:' + (elementPosition.height + widthHeightPadding)  + 'px; ' +
+                                        'top:'    + (elementPosition.top    - 5)   + 'px;' +
+                                        'left: '  + (elementPosition.left   - 5)   + 'px;');
+
+    }
+  }
+
+  /**
+   * Add disableinteraction layer and adjust the size and position of the layer
+   *
+   * @api private
+   * @method _disableInteraction
+   */
+  function _disableInteraction() {
+    var disableInteractionLayer = document.querySelector('.introjs-disableInteraction');
+    if (disableInteractionLayer === null) {
+      disableInteractionLayer = document.createElement('div');
+      disableInteractionLayer.className = 'introjs-disableInteraction';
+      this._targetElement.appendChild(disableInteractionLayer);
+    }
+
+    _setHelperLayerPosition.call(this, disableInteractionLayer);
+  }
+
+  /**
+   * Setting anchors to behave like buttons
+   *
+   * @api private
+   * @method _setAnchorAsButton
+   */
+  function _setAnchorAsButton(anchor){
+    anchor.setAttribute('role', 'button');
+    anchor.tabIndex = 0;
+  }
+
+  /**
+   * Show an element on the page
+   *
+   * @api private
+   * @method _showElement
+   * @param {Object} targetElement
+   */
+  function _showElement(targetElement) {
+    if (typeof (this._introChangeCallback) !== 'undefined') {
+      this._introChangeCallback.call(this, targetElement.element);
+    }
+
+    var self = this,
+        oldHelperLayer = document.querySelector('.introjs-helperLayer'),
+        oldReferenceLayer = document.querySelector('.introjs-tooltipReferenceLayer'),
+        highlightClass = 'introjs-helperLayer',
+        elementPosition = _getOffset(targetElement.element);
+
+    //check for a current step highlight class
+    if (typeof (targetElement.highlightClass) === 'string') {
+      highlightClass += (' ' + targetElement.highlightClass);
+    }
+    //check for options highlight class
+    if (typeof (this._options.highlightClass) === 'string') {
+      highlightClass += (' ' + this._options.highlightClass);
+    }
+
+    if (oldHelperLayer != null) {
+      var oldHelperNumberLayer = oldReferenceLayer.querySelector('.introjs-helperNumberLayer'),
+          oldtooltipLayer      = oldReferenceLayer.querySelector('.introjs-tooltiptext'),
+          oldArrowLayer        = oldReferenceLayer.querySelector('.introjs-arrow'),
+          oldtooltipContainer  = oldReferenceLayer.querySelector('.introjs-tooltip'),
+          skipTooltipButton    = oldReferenceLayer.querySelector('.introjs-skipbutton'),
+          prevTooltipButton    = oldReferenceLayer.querySelector('.introjs-prevbutton'),
+          nextTooltipButton    = oldReferenceLayer.querySelector('.introjs-nextbutton');
+
+      //update or reset the helper highlight class
+      oldHelperLayer.className = highlightClass;
+      //hide the tooltip
+      oldtooltipContainer.style.opacity = 0;
+      oldtooltipContainer.style.display = "none";
+
+      if (oldHelperNumberLayer != null) {
+        var lastIntroItem = this._introItems[(targetElement.step - 2 >= 0 ? targetElement.step - 2 : 0)];
+
+        if (lastIntroItem != null && (this._direction == 'forward' && lastIntroItem.position == 'floating') || (this._direction == 'backward' && targetElement.position == 'floating')) {
+          oldHelperNumberLayer.style.opacity = 0;
+        }
+      }
+
+      //set new position to helper layer
+      _setHelperLayerPosition.call(self, oldHelperLayer);
+      _setHelperLayerPosition.call(self, oldReferenceLayer);
+
+      //remove `introjs-fixParent` class from the elements
+      var fixParents = document.querySelectorAll('.introjs-fixParent');
+      if (fixParents && fixParents.length > 0) {
+        for (var i = fixParents.length - 1; i >= 0; i--) {
+          fixParents[i].className = fixParents[i].className.replace(/introjs-fixParent/g, '').replace(/^\s+|\s+$/g, '');
+        };
+      }
+
+      //remove old classes if the element still exist
+      _removeShowElement();
+
+      //we should wait until the CSS3 transition is competed (it's 0.3 sec) to prevent incorrect `height` and `width` calculation
+      if (self._lastShowElementTimer) {
+        clearTimeout(self._lastShowElementTimer);
+      }
+      self._lastShowElementTimer = setTimeout(function() {
+        //set current step to the label
+        if (oldHelperNumberLayer != null) {
+          oldHelperNumberLayer.innerHTML = targetElement.step;
+        }
+        //set current tooltip text
+        oldtooltipLayer.innerHTML = targetElement.intro;
+        //set the tooltip position
+        oldtooltipContainer.style.display = "block";
+        _placeTooltip.call(self, targetElement.element, oldtooltipContainer, oldArrowLayer, oldHelperNumberLayer);
+
+        //change active bullet
+        if (self._options.showBullets) {
+            oldReferenceLayer.querySelector('.introjs-bullets li > a.active').className = '';
+            oldReferenceLayer.querySelector('.introjs-bullets li > a[data-stepnumber="' + targetElement.step + '"]').className = 'active';
+        }
+        oldReferenceLayer.querySelector('.introjs-progress .introjs-progressbar').setAttribute('style', 'width:' + _getProgress.call(self) + '%;');
+
+        //show the tooltip
+        oldtooltipContainer.style.opacity = 1;
+        if (oldHelperNumberLayer) oldHelperNumberLayer.style.opacity = 1;
+
+        //reset button focus
+        if (nextTooltipButton.tabIndex === -1) {
+          //tabindex of -1 means we are at the end of the tour - focus on skip / done
+          skipTooltipButton.focus();
+        } else {
+          //still in the tour, focus on next
+          nextTooltipButton.focus();
+        }
+      }, 350);
+
+      // end of old element if-else condition
+    } else {
+      var helperLayer       = document.createElement('div'),
+          referenceLayer    = document.createElement('div'),
+          arrowLayer        = document.createElement('div'),
+          tooltipLayer      = document.createElement('div'),
+          tooltipTextLayer  = document.createElement('div'),
+          bulletsLayer      = document.createElement('div'),
+          progressLayer     = document.createElement('div'),
+          buttonsLayer      = document.createElement('div');
+
+      helperLayer.className = highlightClass;
+      referenceLayer.className = 'introjs-tooltipReferenceLayer';
+
+      //set new position to helper layer
+      _setHelperLayerPosition.call(self, helperLayer);
+      _setHelperLayerPosition.call(self, referenceLayer);
+
+      //add helper layer to target element
+      this._targetElement.appendChild(helperLayer);
+      this._targetElement.appendChild(referenceLayer);
+
+      arrowLayer.className = 'introjs-arrow';
+
+      tooltipTextLayer.className = 'introjs-tooltiptext';
+      tooltipTextLayer.innerHTML = targetElement.intro;
+
+      bulletsLayer.className = 'introjs-bullets';
+
+      if (this._options.showBullets === false) {
+        bulletsLayer.style.display = 'none';
+      }
+
+      var ulContainer = document.createElement('ul');
+
+      for (var i = 0, stepsLength = this._introItems.length; i < stepsLength; i++) {
+        var innerLi    = document.createElement('li');
+        var anchorLink = document.createElement('a');
+
+        anchorLink.onclick = function() {
+          self.goToStep(this.getAttribute('data-stepnumber'));
+        };
+
+        if (i === (targetElement.step-1)) anchorLink.className = 'active';
+
+        _setAnchorAsButton(anchorLink);
+        anchorLink.innerHTML = "&nbsp;";
+        anchorLink.setAttribute('data-stepnumber', this._introItems[i].step);
+
+        innerLi.appendChild(anchorLink);
+        ulContainer.appendChild(innerLi);
+      }
+
+      bulletsLayer.appendChild(ulContainer);
+
+      progressLayer.className = 'introjs-progress';
+
+      if (this._options.showProgress === false) {
+        progressLayer.style.display = 'none';
+      }
+      var progressBar = document.createElement('div');
+      progressBar.className = 'introjs-progressbar';
+      progressBar.setAttribute('style', 'width:' + _getProgress.call(this) + '%;');
+
+      progressLayer.appendChild(progressBar);
+
+      buttonsLayer.className = 'introjs-tooltipbuttons';
+      if (this._options.showButtons === false) {
+        buttonsLayer.style.display = 'none';
+      }
+
+      tooltipLayer.className = 'introjs-tooltip';
+      tooltipLayer.appendChild(tooltipTextLayer);
+      tooltipLayer.appendChild(bulletsLayer);
+      tooltipLayer.appendChild(progressLayer);
+
+      //add helper layer number
+      if (this._options.showStepNumbers == true) {
+        var helperNumberLayer = document.createElement('span');
+        helperNumberLayer.className = 'introjs-helperNumberLayer';
+        helperNumberLayer.innerHTML = targetElement.step;
+        referenceLayer.appendChild(helperNumberLayer);
+      }
+
+      tooltipLayer.appendChild(arrowLayer);
+      referenceLayer.appendChild(tooltipLayer);
+
+      //next button
+      var nextTooltipButton = document.createElement('a');
+
+      nextTooltipButton.onclick = function() {
+        if (self._introItems.length - 1 != self._currentStep) {
+          _nextStep.call(self);
+        }
+      };
+
+      _setAnchorAsButton(nextTooltipButton);
+      nextTooltipButton.innerHTML = this._options.nextLabel;
+
+      //previous button
+      var prevTooltipButton = document.createElement('a');
+
+      prevTooltipButton.onclick = function() {
+        if (self._currentStep != 0) {
+          _previousStep.call(self);
+        }
+      };
+
+      _setAnchorAsButton(prevTooltipButton);
+      prevTooltipButton.innerHTML = this._options.prevLabel;
+
+      //skip button
+      var skipTooltipButton = document.createElement('a');
+      skipTooltipButton.className = 'introjs-button introjs-skipbutton';
+      _setAnchorAsButton(skipTooltipButton);
+      skipTooltipButton.innerHTML = this._options.skipLabel;
+
+      skipTooltipButton.onclick = function() {
+        if (self._introItems.length - 1 == self._currentStep && typeof (self._introCompleteCallback) === 'function') {
+          self._introCompleteCallback.call(self);
+        }
+
+        _exitIntro.call(self, self._targetElement);
+      };
+
+      buttonsLayer.appendChild(skipTooltipButton);
+
+      //in order to prevent displaying next/previous button always
+      if (this._introItems.length > 1) {
+        buttonsLayer.appendChild(prevTooltipButton);
+        buttonsLayer.appendChild(nextTooltipButton);
+      }
+
+      tooltipLayer.appendChild(buttonsLayer);
+
+      //set proper position
+      _placeTooltip.call(self, targetElement.element, tooltipLayer, arrowLayer, helperNumberLayer);
+
+      //end of new element if-else condition
+    }
+
+    //disable interaction
+    if (this._options.disableInteraction === true) {
+      _disableInteraction.call(self);
+    }
+
+    prevTooltipButton.removeAttribute('tabIndex');
+    nextTooltipButton.removeAttribute('tabIndex');
+
+    // when it's the first step of tour
+    if (this._currentStep == 0 && this._introItems.length > 1) {
+      skipTooltipButton.className = 'introjs-button introjs-skipbutton';
+      nextTooltipButton.className = 'introjs-button introjs-nextbutton';
+
+      if (this._options.hidePrev == true) {
+        prevTooltipButton.className = 'introjs-button introjs-prevbutton introjs-hidden';
+        nextTooltipButton.className += ' introjs-fullbutton';
+      } else {
+        prevTooltipButton.className = 'introjs-button introjs-prevbutton introjs-disabled';
+      }
+
+      prevTooltipButton.tabIndex = '-1';
+      skipTooltipButton.innerHTML = this._options.skipLabel;
+    } else if (this._introItems.length - 1 == this._currentStep || this._introItems.length == 1) {
+      // last step of tour
+      skipTooltipButton.innerHTML = this._options.doneLabel;
+      // adding donebutton class in addition to skipbutton
+      skipTooltipButton.className += ' introjs-donebutton';
+      prevTooltipButton.className = 'introjs-button introjs-prevbutton';
+
+      if (this._options.hideNext == true) {
+        nextTooltipButton.className = 'introjs-button introjs-nextbutton introjs-hidden';
+        prevTooltipButton.className += ' introjs-fullbutton';
+      } else {
+        nextTooltipButton.className = 'introjs-button introjs-nextbutton introjs-disabled';
+      }
+
+      nextTooltipButton.tabIndex = '-1';
+    } else {
+      // steps between start and end
+      skipTooltipButton.className = 'introjs-button introjs-skipbutton';
+      prevTooltipButton.className = 'introjs-button introjs-prevbutton';
+      nextTooltipButton.className = 'introjs-button introjs-nextbutton';
+      skipTooltipButton.innerHTML = this._options.skipLabel;
+    }
+
+    //Set focus on "next" button, so that hitting Enter always moves you onto the next step
+    nextTooltipButton.focus();
+
+    _setShowElement(targetElement);
+
+    if (!_elementInViewport(targetElement.element) && this._options.scrollToElement === true) {
+      var rect = targetElement.element.getBoundingClientRect(),
+        winHeight = _getWinSize().height,
+        top = rect.bottom - (rect.bottom - rect.top),
+        bottom = rect.bottom - winHeight;
+
+      //Scroll up
+      if (top < 0 || targetElement.element.clientHeight > winHeight) {
+        window.scrollBy(0, top - this._options.scrollPadding); // 30px padding from edge to look nice
+
+      //Scroll down
+      } else {
+        window.scrollBy(0, bottom + 70 + this._options.scrollPadding); // 70px + 30px padding from edge to look nice
+      }
+    }
+
+    if (typeof (this._introAfterChangeCallback) !== 'undefined') {
+      this._introAfterChangeCallback.call(this, targetElement.element);
+    }
+  }
+
+  /**
+   * To remove all show element(s)
+   *
+   * @api private
+   * @method _removeShowElement
+   */
+  function _removeShowElement() {
+    var elms = document.querySelectorAll('.introjs-showElement');
+
+    for (var i = 0, l = elms.length; i < l; i++) {
+      var elm = elms[i];
+      _removeClass(elm, /introjs-[a-zA-Z]+/g);
+    }
+  }
+
+  /**
+   * To set the show element
+   * This function set a relative (in most cases) position and changes the z-index
+   *
+   * @api private
+   * @method _setShowElement
+   * @param {Object} targetElement
+   */
+  function _setShowElement(targetElement) {
+    // we need to add this show element class to the parent of SVG elements
+    // because the SVG elements can't have independent z-index
+    if (targetElement.element instanceof SVGElement) {
+      var parentElm = targetElement.element.parentNode;
+
+      while (targetElement.element.parentNode != null) {
+        if (!parentElm.tagName || parentElm.tagName.toLowerCase() === 'body') break;
+
+        if (parentElm.tagName.toLowerCase() === 'svg') {
+          _setClass(parentElm, 'introjs-showElement introjs-relativePosition');
+        }
+
+        parentElm = parentElm.parentNode;
+      }
+    }
+
+    _setClass(targetElement.element, 'introjs-showElement');
+
+    var currentElementPosition = _getPropValue(targetElement.element, 'position');
+    if (currentElementPosition !== 'absolute' &&
+        currentElementPosition !== 'relative' &&
+        currentElementPosition !== 'fixed') {
+      //change to new intro item
+      //targetElement.element.className += ' introjs-relativePosition';
+      _setClass(targetElement.element, 'introjs-relativePosition')
+    }
+
+    var parentElm = targetElement.element.parentNode;
+    while (parentElm != null) {
+      if (!parentElm.tagName || parentElm.tagName.toLowerCase() === 'body') break;
+
+      //fix The Stacking Context problem.
+      //More detail: https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Understanding_z_index/The_stacking_context
+      var zIndex = _getPropValue(parentElm, 'z-index');
+      var opacity = parseFloat(_getPropValue(parentElm, 'opacity'));
+      var transform = _getPropValue(parentElm, 'transform') || _getPropValue(parentElm, '-webkit-transform') || _getPropValue(parentElm, '-moz-transform') || _getPropValue(parentElm, '-ms-transform') || _getPropValue(parentElm, '-o-transform');
+      if (/[0-9]+/.test(zIndex) || opacity < 1 || (transform !== 'none' && transform !== undefined)) {
+        parentElm.className += ' introjs-fixParent';
+      }
+
+      parentElm = parentElm.parentNode;
+    }
+  }
+
+  function _setClass(element, className) {
+    if (element instanceof SVGElement) {
+      var pre = element.getAttribute('class') || '';
+
+      element.setAttribute('class', pre + ' ' + className);
+    } else {
+      element.className += ' ' + className;
+    }
+  }
+
+  function _removeClass(element, classNameRegex) {
+    if (element instanceof SVGElement) {
+      var pre = element.getAttribute('class') || '';
+
+      element.setAttribute('class', pre.replace(classNameRegex, '').replace(/^\s+|\s+$/g, ''));
+    } else {
+      element.className = element.className.replace(classNameRegex, '').replace(/^\s+|\s+$/g, '');
+    }
+  }
+
+  /**
+   * Get an element CSS property on the page
+   * Thanks to JavaScript Kit: http://www.javascriptkit.com/dhtmltutors/dhtmlcascade4.shtml
+   *
+   * @api private
+   * @method _getPropValue
+   * @param {Object} element
+   * @param {String} propName
+   * @returns Element's property value
+   */
+  function _getPropValue (element, propName) {
+    var propValue = '';
+    if (element.currentStyle) { //IE
+      propValue = element.currentStyle[propName];
+    } else if (document.defaultView && document.defaultView.getComputedStyle) { //Others
+      propValue = document.defaultView.getComputedStyle(element, null).getPropertyValue(propName);
+    }
+
+    //Prevent exception in IE
+    if (propValue && propValue.toLowerCase) {
+      return propValue.toLowerCase();
+    } else {
+      return propValue;
+    }
+  }
+
+  /**
+   * Checks to see if target element (or parents) position is fixed or not
+   *
+   * @api private
+   * @method _isFixed
+   * @param {Object} element
+   * @returns Boolean
+   */
+  function _isFixed (element) {
+    var p = element.parentNode;
+
+    if (!p || p.nodeName === 'HTML') {
+      return false;
+    }
+
+    if (_getPropValue(element, 'position') == 'fixed') {
+      return true;
+    }
+
+    return _isFixed(p);
+  }
+
+  /**
+   * Provides a cross-browser way to get the screen dimensions
+   * via: http://stackoverflow.com/questions/5864467/internet-explorer-innerheight
+   *
+   * @api private
+   * @method _getWinSize
+   * @returns {Object} width and height attributes
+   */
+  function _getWinSize() {
+    if (window.innerWidth != undefined) {
+      return { width: window.innerWidth, height: window.innerHeight };
+    } else {
+      var D = document.documentElement;
+      return { width: D.clientWidth, height: D.clientHeight };
+    }
+  }
+
+  /**
+   * Check to see if the element is in the viewport or not
+   * http://stackoverflow.com/questions/123999/how-to-tell-if-a-dom-element-is-visible-in-the-current-viewport
+   *
+   * @api private
+   * @method _elementInViewport
+   * @param {Object} el
+   */
+  function _elementInViewport(el) {
+    var rect = el.getBoundingClientRect();
+
+    return (
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      (rect.bottom+80) <= window.innerHeight && // add 80 to get the text right
+      rect.right <= window.innerWidth
+    );
+  }
+
+  /**
+   * Add overlay layer to the page
+   *
+   * @api private
+   * @method _addOverlayLayer
+   * @param {Object} targetElm
+   */
+  function _addOverlayLayer(targetElm) {
+    var overlayLayer = document.createElement('div'),
+        styleText = '',
+        self = this;
+
+    //set css class name
+    overlayLayer.className = 'introjs-overlay';
+
+    //check if the target element is body, we should calculate the size of overlay layer in a better way
+    if (!targetElm.tagName || targetElm.tagName.toLowerCase() === 'body') {
+      styleText += 'top: 0;bottom: 0; left: 0;right: 0;position: fixed;';
+      overlayLayer.setAttribute('style', styleText);
+    } else {
+      //set overlay layer position
+      var elementPosition = _getOffset(targetElm);
+      if (elementPosition) {
+        styleText += 'width: ' + elementPosition.width + 'px; height:' + elementPosition.height + 'px; top:' + elementPosition.top + 'px;left: ' + elementPosition.left + 'px;';
+        overlayLayer.setAttribute('style', styleText);
+      }
+    }
+
+    targetElm.appendChild(overlayLayer);
+
+    overlayLayer.onclick = function() {
+      if (self._options.exitOnOverlayClick == true) {
+        _exitIntro.call(self, targetElm);
+      }
+    };
+
+    setTimeout(function() {
+      styleText += 'opacity: ' + self._options.overlayOpacity.toString() + ';';
+      overlayLayer.setAttribute('style', styleText);
+    }, 10);
+
+    return true;
+  }
+
+  /**
+   * Removes open hint (tooltip hint)
+   *
+   * @api private
+   * @method _removeHintTooltip
+   */
+  function _removeHintTooltip() {
+    var tooltip = this._targetElement.querySelector('.introjs-hintReference');
+
+    if (tooltip) {
+      var step = tooltip.getAttribute('data-step');
+      tooltip.parentNode.removeChild(tooltip);
+      return step;
+    }
+  }
+
+  /**
+   * Start parsing hint items
+   *
+   * @api private
+   * @param {Object} targetElm
+   * @method _startHint
+   */
+  function _populateHints(targetElm) {
+    var self = this;
+    this._introItems = [];
+
+    if (this._options.hints) {
+      for (var i = 0, l = this._options.hints.length; i < l; i++) {
+        var currentItem = _cloneObject(this._options.hints[i]);
+
+        if (typeof(currentItem.element) === 'string') {
+          //grab the element with given selector from the page
+          currentItem.element = document.querySelector(currentItem.element);
+        }
+
+        currentItem.hintPosition = currentItem.hintPosition || this._options.hintPosition;
+        currentItem.hintAnimation = currentItem.hintAnimation || this._options.hintAnimation;
+
+        if (currentItem.element != null) {
+          this._introItems.push(currentItem);
+        }
+      }
+    } else {
+      var hints = targetElm.querySelectorAll('*[data-hint]');
+
+      if (hints.length < 1) {
+        return false;
+      }
+
+      //first add intro items with data-step
+      for (var i = 0, l = hints.length; i < l; i++) {
+        var currentElement = hints[i];
+
+        // hint animation
+        var hintAnimation = currentElement.getAttribute('data-hintAnimation');
+
+        if (hintAnimation) {
+          hintAnimation = (hintAnimation == 'true');
+        } else {
+          hintAnimation = this._options.hintAnimation;
+        }
+
+        this._introItems.push({
+          element: currentElement,
+          hint: currentElement.getAttribute('data-hint'),
+          hintPosition: currentElement.getAttribute('data-hintPosition') || this._options.hintPosition,
+          hintAnimation: hintAnimation,
+          tooltipClass: currentElement.getAttribute('data-tooltipClass'),
+          position: currentElement.getAttribute('data-position') || this._options.tooltipPosition
+        });
+      }
+    }
+
+    _addHints.call(this);
+
+    if (document.addEventListener) {
+      document.addEventListener('click', _removeHintTooltip.bind(this), false);
+      //for window resize
+      window.addEventListener('resize', _reAlignHints.bind(this), true);
+    } else if (document.attachEvent) { //IE
+      //for window resize
+      document.attachEvent('onclick', _removeHintTooltip.bind(this));
+      document.attachEvent('onresize', _reAlignHints.bind(this));
+    }
+  }
+
+  /**
+   * Re-aligns all hint elements
+   *
+   * @api private
+   * @method _reAlignHints
+   */
+  function _reAlignHints() {
+    for (var i = 0, l = this._introItems.length; i < l; i++) {
+      var item = this._introItems[i];
+
+      if (typeof (item.targetElement) == 'undefined') continue;
+
+      _alignHintPosition.call(this, item.hintPosition, item.element, item.targetElement)
+    }
+  }
+
+  /**
+   * Hide a hint
+   *
+   * @api private
+   * @method _hideHint
+   */
+  function _hideHint(stepId) {
+    _removeHintTooltip.call(this);
+    var hint = this._targetElement.querySelector('.introjs-hint[data-step="' + stepId + '"]');
+
+    if (hint) {
+      hint.className += ' introjs-hidehint';
+    }
+
+    // call the callback function (if any)
+    if (typeof (this._hintCloseCallback) !== 'undefined') {
+      this._hintCloseCallback.call(this, stepId);
+    }
+  }
+
+  /**
+   * Hide all hints
+   *
+   * @api private
+   * @method _hideHints
+   */
+  function _hideHints() {
+    var hints = this._targetElement.querySelectorAll('.introjs-hint');
+
+    if (hints && hints.length > 0) {
+      for (var i = 0; i < hints.length; i++) {
+        _hideHint.call(this, hints[i].getAttribute('data-step'));
+      }
+    }
+  }
+
+  /**
+   * Show all hints
+   *
+   * @api private
+   * @method _showHints
+   */
+  function _showHints() {
+    var hints = this._targetElement.querySelectorAll('.introjs-hint');
+
+    if (hints && hints.length > 0) {
+      for (var i = 0; i < hints.length; i++) {
+        _showHint.call(this, hints[i].getAttribute('data-step'));
+      }
+    } else {
+      _populateHints.call(this, this._targetElement);
+    }
+  };
+
+  /**
+   * Show a hint
+   *
+   * @api private
+   * @method _showHint
+   */
+  function _showHint(stepId) {
+    var hint = this._targetElement.querySelector('.introjs-hint[data-step="' + stepId + '"]');
+
+    if (hint) {
+      hint.className = hint.className.replace(/introjs\-hidehint/g, '');
+    }
+  };
+
+  /**
+   * Removes all hint elements on the page
+   * Useful when you want to destroy the elements and add them again (e.g. a modal or popup)
+   *
+   * @api private
+   * @method _removeHints
+   */
+  function _removeHints() {
+    var hints = this._targetElement.querySelectorAll('.introjs-hint');
+
+    if (hints && hints.length > 0) {
+      for (var i = 0; i < hints.length; i++) {
+        _removeHint.call(this, hints[i].getAttribute('data-step'));
+      }
+    }
+  };
+
+  /**
+   * Remove one single hint element from the page
+   * Useful when you want to destroy the element and add them again (e.g. a modal or popup)
+   * Use removeHints if you want to remove all elements.
+   *
+   * @api private
+   * @method _removeHint
+   */
+  function _removeHint(stepId) {
+    var hint = this._targetElement.querySelector('.introjs-hint[data-step="' + stepId + '"]');
+
+    if (hint) {
+      hint.parentNode.removeChild(hint);
+    }
+  };
+
+  /**
+   * Add all available hints to the page
+   *
+   * @api private
+   * @method _addHints
+   */
+  function _addHints() {
+    var self = this;
+
+    var oldHintsWrapper = document.querySelector('.introjs-hints');
+
+    if (oldHintsWrapper != null) {
+      hintsWrapper = oldHintsWrapper;
+    } else {
+      var hintsWrapper = document.createElement('div');
+      hintsWrapper.className = 'introjs-hints';
+    }
+
+    for (var i = 0, l = this._introItems.length; i < l; i++) {
+      var item = this._introItems[i];
+
+      // avoid append a hint twice
+      if (document.querySelector('.introjs-hint[data-step="' + i + '"]'))
+        continue;
+
+      var hint = document.createElement('a');
+      _setAnchorAsButton(hint);
+
+      (function (hint, item, i) {
+        // when user clicks on the hint element
+        hint.onclick = function(e) {
+          var evt = e ? e : window.event;
+          if (evt.stopPropagation)    evt.stopPropagation();
+          if (evt.cancelBubble != null) evt.cancelBubble = true;
+
+          _hintClick.call(self, hint, item, i);
+        };
+      }(hint, item, i));
+
+      hint.className = 'introjs-hint';
+
+      if (!item.hintAnimation) {
+        hint.className += ' introjs-hint-no-anim';
+      }
+
+      // hint's position should be fixed if the target element's position is fixed
+      if (_isFixed(item.element)) {
+        hint.className += ' introjs-fixedhint';
+      }
+
+      var hintDot = document.createElement('div');
+      hintDot.className = 'introjs-hint-dot';
+      var hintPulse = document.createElement('div');
+      hintPulse.className = 'introjs-hint-pulse';
+
+      hint.appendChild(hintDot);
+      hint.appendChild(hintPulse);
+      hint.setAttribute('data-step', i);
+
+      // we swap the hint element with target element
+      // because _setHelperLayerPosition uses `element` property
+      item.targetElement = item.element;
+      item.element = hint;
+
+      // align the hint position
+      _alignHintPosition.call(this, item.hintPosition, hint, item.targetElement);
+
+      hintsWrapper.appendChild(hint);
+    }
+
+    // adding the hints wrapper
+    document.body.appendChild(hintsWrapper);
+
+    // call the callback function (if any)
+    if (typeof (this._hintsAddedCallback) !== 'undefined') {
+      this._hintsAddedCallback.call(this);
+    }
+  }
+
+  /**
+   * Aligns hint position
+   *
+   * @api private
+   * @method _alignHintPosition
+   * @param {String} position
+   * @param {Object} hint
+   * @param {Object} element
+   */
+  function _alignHintPosition(position, hint, element) {
+    // get/calculate offset of target element
+    var offset = _getOffset.call(this, element);
+    var iconWidth = 20;
+    var iconHeight = 20;
+
+    // align the hint element
+    switch (position) {
+      default:
+      case 'top-left':
+        hint.style.left = offset.left + 'px';
+        hint.style.top = offset.top + 'px';
+        break;
+      case 'top-right':
+        hint.style.left = (offset.left + offset.width - iconWidth) + 'px';
+        hint.style.top = offset.top + 'px';
+        break;
+      case 'bottom-left':
+        hint.style.left = offset.left + 'px';
+        hint.style.top = (offset.top + offset.height - iconHeight) + 'px';
+        break;
+      case 'bottom-right':
+        hint.style.left = (offset.left + offset.width - iconWidth) + 'px';
+        hint.style.top = (offset.top + offset.height - iconHeight) + 'px';
+        break;
+      case 'middle-left':
+        hint.style.left = offset.left + 'px';
+        hint.style.top = (offset.top + (offset.height - iconHeight) / 2) + 'px';
+        break;
+      case 'middle-right':
+        hint.style.left = (offset.left + offset.width - iconWidth) + 'px';
+        hint.style.top = (offset.top + (offset.height - iconHeight) / 2) + 'px';
+        break;
+      case 'middle-middle':
+        hint.style.left = (offset.left + (offset.width - iconWidth) / 2) + 'px';
+        hint.style.top = (offset.top + (offset.height - iconHeight) / 2) + 'px';
+        break;
+      case 'bottom-middle':
+        hint.style.left = (offset.left + (offset.width - iconWidth) / 2) + 'px';
+        hint.style.top = (offset.top + offset.height - iconHeight) + 'px';
+        break;
+      case 'top-middle':
+        hint.style.left = (offset.left + (offset.width - iconWidth) / 2) + 'px';
+        hint.style.top = offset.top + 'px';
+        break;
+    }
+  }
+
+  /**
+   * Triggers when user clicks on the hint element
+   *
+   * @api private
+   * @method _hintClick
+   * @param {Object} hintElement
+   * @param {Object} item
+   * @param {Number} stepId
+   */
+  function _hintClick(hintElement, item, stepId) {
+    // call the callback function (if any)
+    if (typeof (this._hintClickCallback) !== 'undefined') {
+      this._hintClickCallback.call(this, hintElement, item, stepId);
+    }
+
+    // remove all open tooltips
+    var removedStep = _removeHintTooltip.call(this);
+
+    // to toggle the tooltip
+    if (parseInt(removedStep, 10) == stepId) {
+      return;
+    }
+
+    var tooltipLayer = document.createElement('div');
+    var tooltipTextLayer = document.createElement('div');
+    var arrowLayer = document.createElement('div');
+    var referenceLayer = document.createElement('div');
+
+    tooltipLayer.className = 'introjs-tooltip';
+
+    tooltipLayer.onclick = function (e) {
+      //IE9 & Other Browsers
+      if (e.stopPropagation) {
+        e.stopPropagation();
+      }
+      //IE8 and Lower
+      else {
+        e.cancelBubble = true;
+      }
+    };
+
+    tooltipTextLayer.className = 'introjs-tooltiptext';
+
+    var tooltipWrapper = document.createElement('p');
+    tooltipWrapper.innerHTML = item.hint;
+
+    var closeButton = document.createElement('a');
+    closeButton.className = 'introjs-button';
+    closeButton.innerHTML = this._options.hintButtonLabel;
+    closeButton.onclick = _hideHint.bind(this, stepId);
+
+    tooltipTextLayer.appendChild(tooltipWrapper);
+    tooltipTextLayer.appendChild(closeButton);
+
+    arrowLayer.className = 'introjs-arrow';
+    tooltipLayer.appendChild(arrowLayer);
+
+    tooltipLayer.appendChild(tooltipTextLayer);
+
+    // set current step for _placeTooltip function
+    this._currentStep = hintElement.getAttribute('data-step');
+
+    // align reference layer position
+    referenceLayer.className = 'introjs-tooltipReferenceLayer introjs-hintReference';
+    referenceLayer.setAttribute('data-step', hintElement.getAttribute('data-step'));
+    _setHelperLayerPosition.call(this, referenceLayer);
+
+    referenceLayer.appendChild(tooltipLayer);
+    document.body.appendChild(referenceLayer);
+
+    //set proper position
+    _placeTooltip.call(this, hintElement, tooltipLayer, arrowLayer, null, true);
+  }
+
+  /**
+   * Get an element position on the page
+   * Thanks to `meouw`: http://stackoverflow.com/a/442474/375966
+   *
+   * @api private
+   * @method _getOffset
+   * @param {Object} element
+   * @returns Element's position info
+   */
+  function _getOffset(element) {
+    var elementPosition = {};
+
+    var body = document.body;
+    var docEl = document.documentElement;
+
+    var scrollTop = window.pageYOffset || docEl.scrollTop || body.scrollTop;
+    var scrollLeft = window.pageXOffset || docEl.scrollLeft || body.scrollLeft;
+
+    if (element instanceof SVGElement) {
+      var x = element.getBoundingClientRect()
+      elementPosition.top = x.top + scrollTop;
+      elementPosition.width = x.width;
+      elementPosition.height = x.height;
+      elementPosition.left = x.left + scrollLeft;
+    } else {
+      //set width
+      elementPosition.width = element.offsetWidth;
+
+      //set height
+      elementPosition.height = element.offsetHeight;
+
+      //calculate element top and left
+      var _x = 0;
+      var _y = 0;
+      while (element && !isNaN(element.offsetLeft) && !isNaN(element.offsetTop)) {
+        _x += element.offsetLeft;
+        _y += element.offsetTop;
+        element = element.offsetParent;
+      }
+      //set top
+      elementPosition.top = _y;
+      //set left
+      elementPosition.left = _x;
+    }
+
+    return elementPosition;
+  }
+
+  /**
+   * Gets the current progress percentage
+   *
+   * @api private
+   * @method _getProgress
+   * @returns current progress percentage
+   */
+  function _getProgress() {
+    // Steps are 0 indexed
+    var currentStep = parseInt((this._currentStep + 1), 10);
+    return ((currentStep / this._introItems.length) * 100);
+  }
+
+  /**
+   * Overwrites obj1's values with obj2's and adds obj2's if non existent in obj1
+   * via: http://stackoverflow.com/questions/171251/how-can-i-merge-properties-of-two-javascript-objects-dynamically
+   *
+   * @param obj1
+   * @param obj2
+   * @returns obj3 a new object based on obj1 and obj2
+   */
+  function _mergeOptions(obj1,obj2) {
+    var obj3 = {};
+    for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
+    for (var attrname in obj2) { obj3[attrname] = obj2[attrname]; }
+    return obj3;
+  }
+
+  var introJs = function (targetElm) {
+    if (typeof (targetElm) === 'object') {
+      //Ok, create a new instance
+      return new IntroJs(targetElm);
+
+    } else if (typeof (targetElm) === 'string') {
+      //select the target element with query selector
+      var targetElement = document.querySelector(targetElm);
+
+      if (targetElement) {
+        return new IntroJs(targetElement);
+      } else {
+        throw new Error('There is no element with given selector.');
+      }
+    } else {
+      return new IntroJs(document.body);
+    }
+  };
+
+  /**
+   * Current IntroJs version
+   *
+   * @property version
+   * @type String
+   */
+  introJs.version = VERSION;
+
+  //Prototype
+  introJs.fn = IntroJs.prototype = {
+    clone: function () {
+      return new IntroJs(this);
+    },
+    setOption: function(option, value) {
+      this._options[option] = value;
+      return this;
+    },
+    setOptions: function(options) {
+      this._options = _mergeOptions(this._options, options);
+      return this;
+    },
+    start: function () {
+      _introForElement.call(this, this._targetElement);
+      return this;
+    },
+    goToStep: function(step) {
+      _goToStep.call(this, step);
+      return this;
+    },
+    addStep: function(options) {
+      if (!this._options.steps) {
+        this._options.steps = [];
+      }
+
+      this._options.steps.push(options);
+
+      return this;
+    },
+    addSteps: function(steps) {
+      if (!steps.length) return;
+
+      for(var index = 0; index < steps.length; index++) {
+        this.addStep(steps[index]);
+      }
+
+      return this;
+    },
+    goToStepNumber: function(step) {
+      _goToStepNumber.call(this, step);
+
+      return this;
+    },
+    nextStep: function() {
+      _nextStep.call(this);
+      return this;
+    },
+    previousStep: function() {
+      _previousStep.call(this);
+      return this;
+    },
+    exit: function() {
+      _exitIntro.call(this, this._targetElement);
+      return this;
+    },
+    refresh: function() {
+      // re-align intros
+      _setHelperLayerPosition.call(this, document.querySelector('.introjs-helperLayer'));
+      _setHelperLayerPosition.call(this, document.querySelector('.introjs-tooltipReferenceLayer'));
+
+      //re-align hints
+      _reAlignHints.call(this);
+      return this;
+    },
+    onbeforechange: function(providedCallback) {
+      if (typeof (providedCallback) === 'function') {
+        this._introBeforeChangeCallback = providedCallback;
+      } else {
+        throw new Error('Provided callback for onbeforechange was not a function');
+      }
+      return this;
+    },
+    onchange: function(providedCallback) {
+      if (typeof (providedCallback) === 'function') {
+        this._introChangeCallback = providedCallback;
+      } else {
+        throw new Error('Provided callback for onchange was not a function.');
+      }
+      return this;
+    },
+    onafterchange: function(providedCallback) {
+      if (typeof (providedCallback) === 'function') {
+        this._introAfterChangeCallback = providedCallback;
+      } else {
+        throw new Error('Provided callback for onafterchange was not a function');
+      }
+      return this;
+    },
+    oncomplete: function(providedCallback) {
+      if (typeof (providedCallback) === 'function') {
+        this._introCompleteCallback = providedCallback;
+      } else {
+        throw new Error('Provided callback for oncomplete was not a function.');
+      }
+      return this;
+    },
+    onhintsadded: function(providedCallback) {
+      if (typeof (providedCallback) === 'function') {
+        this._hintsAddedCallback = providedCallback;
+      } else {
+        throw new Error('Provided callback for onhintsadded was not a function.');
+      }
+      return this;
+    },
+    onhintclick: function(providedCallback) {
+      if (typeof (providedCallback) === 'function') {
+        this._hintClickCallback = providedCallback;
+      } else {
+        throw new Error('Provided callback for onhintclick was not a function.');
+      }
+      return this;
+    },
+    onhintclose: function(providedCallback) {
+      if (typeof (providedCallback) === 'function') {
+        this._hintCloseCallback = providedCallback;
+      } else {
+        throw new Error('Provided callback for onhintclose was not a function.');
+      }
+      return this;
+    },
+    onexit: function(providedCallback) {
+      if (typeof (providedCallback) === 'function') {
+        this._introExitCallback = providedCallback;
+      } else {
+        throw new Error('Provided callback for onexit was not a function.');
+      }
+      return this;
+    },
+    addHints: function() {
+      _populateHints.call(this, this._targetElement);
+      return this;
+    },
+    hideHint: function (stepId) {
+      _hideHint.call(this, stepId);
+      return this;
+    },
+    hideHints: function () {
+      _hideHints.call(this);
+      return this;
+    },
+    showHint: function (stepId) {
+      _showHint.call(this, stepId);
+      return this;
+    },
+    showHints: function () {
+      _showHints.call(this);
+      return this;
+    },
+    removeHints: function () {
+      _removeHints.call(this);
+      return this;
+    },
+    removeHint: function (stepId) {
+      _removeHint.call(this, stepId);
+      return this;
+    }
+  };
+
+  exports.introJs = introJs;
+  return introJs;
+}));
+
+},{}],61:[function(require,module,exports){
 /*! jQuery UI - v1.11.4 - 2015-03-11
 * http://jqueryui.com
 * Includes: core.js, widget.js, mouse.js, position.js, accordion.js, autocomplete.js, button.js, datepicker.js, dialog.js, draggable.js, droppable.js, effect.js, effect-blind.js, effect-bounce.js, effect-clip.js, effect-drop.js, effect-explode.js, effect-fade.js, effect-fold.js, effect-highlight.js, effect-puff.js, effect-pulsate.js, effect-scale.js, effect-shake.js, effect-size.js, effect-slide.js, effect-transfer.js, menu.js, progressbar.js, resizable.js, selectable.js, selectmenu.js, slider.js, sortable.js, spinner.js, tabs.js, tooltip.js
@@ -54409,7 +56433,7 @@ var tooltip = $.widget( "ui.tooltip", {
 
 
 }));
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.1.1
  * https://jquery.com/
@@ -64631,7 +66655,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 'use strict';
 
 var sort = require('./sort');
@@ -64677,7 +66701,7 @@ KDBush.prototype = {
 function defaultGetX(p) { return p[0]; }
 function defaultGetY(p) { return p[1]; }
 
-},{"./range":63,"./sort":64,"./within":65}],63:[function(require,module,exports){
+},{"./range":64,"./sort":65,"./within":66}],64:[function(require,module,exports){
 'use strict';
 
 module.exports = range;
@@ -64725,7 +66749,7 @@ function range(ids, coords, minX, minY, maxX, maxY, nodeSize) {
     return result;
 }
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 'use strict';
 
 module.exports = sortKD;
@@ -64793,7 +66817,7 @@ function swap(arr, i, j) {
     arr[j] = tmp;
 }
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 'use strict';
 
 module.exports = within;
@@ -64845,7 +66869,7 @@ function sqDist(ax, ay, bx, by) {
     return dx * dx + dy * dy;
 }
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 /**
  * lodash 3.0.7 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -65189,7 +67213,7 @@ function isObject(value) {
 
 module.exports = baseIsEqual;
 
-},{"lodash.isarray":70,"lodash.istypedarray":72,"lodash.keys":73}],67:[function(require,module,exports){
+},{"lodash.isarray":71,"lodash.istypedarray":73,"lodash.keys":74}],68:[function(require,module,exports){
 /**
  * lodash 3.0.1 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -65256,7 +67280,7 @@ function identity(value) {
 
 module.exports = bindCallback;
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 /**
  * lodash 3.9.1 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -65395,7 +67419,7 @@ function isNative(value) {
 
 module.exports = getNative;
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 /**
  * lodash (Custom Build) <https://lodash.com/>
  * Build: `lodash modularize exports="npm" -o ./`
@@ -65626,7 +67650,7 @@ function isObjectLike(value) {
 
 module.exports = isArguments;
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 /**
  * lodash 3.0.4 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -65808,7 +67832,7 @@ function isNative(value) {
 
 module.exports = isArray;
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 /**
  * lodash 3.0.4 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -65872,7 +67896,7 @@ function isEqual(value, other, customizer, thisArg) {
 
 module.exports = isEqual;
 
-},{"lodash._baseisequal":66,"lodash._bindcallback":67}],72:[function(require,module,exports){
+},{"lodash._baseisequal":67,"lodash._bindcallback":68}],73:[function(require,module,exports){
 /**
  * lodash 3.0.6 (Custom Build) <https://lodash.com/>
  * Build: `lodash modularize exports="npm" -o ./`
@@ -66022,7 +68046,7 @@ function isTypedArray(value) {
 
 module.exports = isTypedArray;
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 /**
  * lodash 3.1.2 (Custom Build) <https://lodash.com/>
  * Build: `lodash modern modularize exports="npm" -o ./`
@@ -66260,7 +68284,7 @@ function keysIn(object) {
 
 module.exports = keys;
 
-},{"lodash._getnative":68,"lodash.isarguments":69,"lodash.isarray":70}],74:[function(require,module,exports){
+},{"lodash._getnative":69,"lodash.isarguments":70,"lodash.isarray":71}],75:[function(require,module,exports){
 // Constants
 var Kn = 18,
     Xn = 0.950470, // D65 standard referent
@@ -66360,7 +68384,7 @@ module.exports ={
   }
 };
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 'use strict';
 
 var colorSpaces = require('./color_spaces');
@@ -66569,7 +68593,7 @@ module.exports['piecewise-constant'] = function(parameters) {
     return createFunction(parameters, 'interval');
 };
 
-},{"./color_spaces":74}],76:[function(require,module,exports){
+},{"./color_spaces":75}],77:[function(require,module,exports){
 'use strict';
 
 var refProperties = require('./util/ref_properties');
@@ -66623,7 +68647,7 @@ function derefLayers(layers) {
     return layers;
 }
 
-},{"./util/ref_properties":82}],77:[function(require,module,exports){
+},{"./util/ref_properties":83}],78:[function(require,module,exports){
 'use strict';
 
 var isEqual = require('lodash.isequal');
@@ -66982,7 +69006,7 @@ function diffStyles(before, after) {
 module.exports = diffStyles;
 module.exports.operations = operations;
 
-},{"lodash.isequal":71}],78:[function(require,module,exports){
+},{"lodash.isequal":72}],79:[function(require,module,exports){
 'use strict';
 
 var format = require('util').format;
@@ -67000,7 +69024,7 @@ function ValidationError(key, value /*, message, ...*/) {
 
 module.exports = ValidationError;
 
-},{"util":261}],79:[function(require,module,exports){
+},{"util":262}],80:[function(require,module,exports){
 'use strict';
 
 var refProperties = require('./util/ref_properties');
@@ -67048,7 +69072,7 @@ function groupByLayout(layers) {
     return result;
 }
 
-},{"./util/ref_properties":82,"fast-stable-stringify":46}],80:[function(require,module,exports){
+},{"./util/ref_properties":83,"fast-stable-stringify":46}],81:[function(require,module,exports){
 'use strict';
 
 module.exports = function (output) {
@@ -67061,7 +69085,7 @@ module.exports = function (output) {
     return output;
 };
 
-},{}],81:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 'use strict';
 
 module.exports = function getType(val) {
@@ -67080,12 +69104,12 @@ module.exports = function getType(val) {
     }
 };
 
-},{}],82:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 'use strict';
 
 module.exports = ['type', 'source', 'source-layer', 'minzoom', 'maxzoom', 'filter', 'layout'];
 
-},{}],83:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 'use strict';
 
 // Turn jsonlint-lines-primitives objects into primitive objects
@@ -67097,7 +69121,7 @@ module.exports = function unbundle(value) {
     }
 };
 
-},{}],84:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67165,7 +69189,7 @@ module.exports = function validate(options) {
     }
 };
 
-},{"../error/validation_error":78,"../util/extend":80,"../util/get_type":81,"./validate_array":85,"./validate_boolean":86,"./validate_color":87,"./validate_constants":88,"./validate_enum":89,"./validate_filter":90,"./validate_function":91,"./validate_layer":93,"./validate_light":95,"./validate_number":96,"./validate_object":97,"./validate_source":99,"./validate_string":100}],85:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/extend":81,"../util/get_type":82,"./validate_array":86,"./validate_boolean":87,"./validate_color":88,"./validate_constants":89,"./validate_enum":90,"./validate_filter":91,"./validate_function":92,"./validate_layer":94,"./validate_light":96,"./validate_number":97,"./validate_object":98,"./validate_source":100,"./validate_string":101}],86:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -67219,7 +69243,7 @@ module.exports = function validateArray(options) {
     return errors;
 };
 
-},{"../error/validation_error":78,"../util/get_type":81,"./validate":84}],86:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82,"./validate":85}],87:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -67237,7 +69261,7 @@ module.exports = function validateBoolean(options) {
     return [];
 };
 
-},{"../error/validation_error":78,"../util/get_type":81}],87:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82}],88:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67260,7 +69284,7 @@ module.exports = function validateColor(options) {
     return [];
 };
 
-},{"../error/validation_error":78,"../util/get_type":81,"csscolorparser":41}],88:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82,"csscolorparser":41}],89:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67294,7 +69318,7 @@ module.exports = function validateConstants(options) {
 
 };
 
-},{"../error/validation_error":78,"../util/get_type":81}],89:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82}],90:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67318,7 +69342,7 @@ module.exports = function validateEnum(options) {
     return errors;
 };
 
-},{"../error/validation_error":78,"../util/unbundle_jsonlint":83}],90:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/unbundle_jsonlint":84}],91:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67423,7 +69447,7 @@ module.exports = function validateFilter(options) {
     return errors;
 };
 
-},{"../error/validation_error":78,"../util/get_type":81,"../util/unbundle_jsonlint":83,"./validate_enum":89}],91:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82,"../util/unbundle_jsonlint":84,"./validate_enum":90}],92:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67611,7 +69635,7 @@ module.exports = function validateFunction(options) {
 
 };
 
-},{"../error/validation_error":78,"../util/get_type":81,"../util/unbundle_jsonlint":83,"./validate":84,"./validate_array":85,"./validate_number":96,"./validate_object":97}],92:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82,"../util/unbundle_jsonlint":84,"./validate":85,"./validate_array":86,"./validate_number":97,"./validate_object":98}],93:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67635,7 +69659,7 @@ module.exports = function(options) {
     return errors;
 };
 
-},{"../error/validation_error":78,"./validate_string":100}],93:[function(require,module,exports){
+},{"../error/validation_error":79,"./validate_string":101}],94:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67751,7 +69775,7 @@ module.exports = function validateLayer(options) {
     return errors;
 };
 
-},{"../error/validation_error":78,"../util/extend":80,"../util/unbundle_jsonlint":83,"./validate_filter":90,"./validate_layout_property":94,"./validate_object":97,"./validate_paint_property":98}],94:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/extend":81,"../util/unbundle_jsonlint":84,"./validate_filter":91,"./validate_layout_property":95,"./validate_object":98,"./validate_paint_property":99}],95:[function(require,module,exports){
 'use strict';
 
 var validate = require('./validate');
@@ -67792,7 +69816,7 @@ module.exports = function validateLayoutProperty(options) {
 
 };
 
-},{"../error/validation_error":78,"./validate":84}],95:[function(require,module,exports){
+},{"../error/validation_error":79,"./validate":85}],96:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67842,7 +69866,7 @@ module.exports = function validateLight(options) {
     return errors;
 };
 
-},{"../error/validation_error":78,"../util/get_type":81,"./validate":84}],96:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82,"./validate":85}],97:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -67869,7 +69893,7 @@ module.exports = function validateNumber(options) {
     return [];
 };
 
-},{"../error/validation_error":78,"../util/get_type":81}],97:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82}],98:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -67928,7 +69952,7 @@ module.exports = function validateObject(options) {
     return errors;
 };
 
-},{"../error/validation_error":78,"../util/get_type":81,"./validate":84}],98:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82,"./validate":85}],99:[function(require,module,exports){
 'use strict';
 
 var validate = require('./validate');
@@ -67970,7 +69994,7 @@ module.exports = function validatePaintProperty(options) {
 
 };
 
-},{"../error/validation_error":78,"./validate":84}],99:[function(require,module,exports){
+},{"../error/validation_error":79,"./validate":85}],100:[function(require,module,exports){
 'use strict';
 
 var ValidationError = require('../error/validation_error');
@@ -68056,7 +70080,7 @@ module.exports = function validateSource(options) {
     }
 };
 
-},{"../error/validation_error":78,"../util/unbundle_jsonlint":83,"./validate_enum":89,"./validate_object":97}],100:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/unbundle_jsonlint":84,"./validate_enum":90,"./validate_object":98}],101:[function(require,module,exports){
 'use strict';
 
 var getType = require('../util/get_type');
@@ -68074,7 +70098,7 @@ module.exports = function validateString(options) {
     return [];
 };
 
-},{"../error/validation_error":78,"../util/get_type":81}],101:[function(require,module,exports){
+},{"../error/validation_error":79,"../util/get_type":82}],102:[function(require,module,exports){
 'use strict';
 
 var validateConstants = require('./validate/validate_constants');
@@ -68148,12 +70172,12 @@ function wrapCleanErrors(inner) {
 
 module.exports = validateStyleMin;
 
-},{"../reference/latest.min":102,"./validate/validate":84,"./validate/validate_constants":88,"./validate/validate_filter":90,"./validate/validate_glyphs_url":92,"./validate/validate_layer":93,"./validate/validate_layout_property":94,"./validate/validate_light":95,"./validate/validate_paint_property":98,"./validate/validate_source":99}],102:[function(require,module,exports){
+},{"../reference/latest.min":103,"./validate/validate":85,"./validate/validate_constants":89,"./validate/validate_filter":91,"./validate/validate_glyphs_url":93,"./validate/validate_layer":94,"./validate/validate_layout_property":95,"./validate/validate_light":96,"./validate/validate_paint_property":99,"./validate/validate_source":100}],103:[function(require,module,exports){
 module.exports = require('./v8.min.json');
 
-},{"./v8.min.json":103}],103:[function(require,module,exports){
+},{"./v8.min.json":104}],104:[function(require,module,exports){
 module.exports={"$version":8,"$root":{"version":{"required":true,"type":"enum","values":[8]},"name":{"type":"string"},"metadata":{"type":"*"},"center":{"type":"array","value":"number"},"zoom":{"type":"number"},"bearing":{"type":"number","default":0,"period":360,"units":"degrees"},"pitch":{"type":"number","default":0,"units":"degrees"},"light":{"type":"light"},"sources":{"required":true,"type":"sources"},"sprite":{"type":"string"},"glyphs":{"type":"string"},"transition":{"type":"transition"},"layers":{"required":true,"type":"array","value":"layer"}},"sources":{"*":{"type":"source"}},"source":["source_tile","source_geojson","source_video","source_image","source_canvas"],"source_tile":{"type":{"required":true,"type":"enum","values":{"vector":{},"raster":{}}},"url":{"type":"string"},"tiles":{"type":"array","value":"string"},"minzoom":{"type":"number","default":0},"maxzoom":{"type":"number","default":22},"tileSize":{"type":"number","default":512,"units":"pixels"},"*":{"type":"*"}},"source_geojson":{"type":{"required":true,"type":"enum","values":{"geojson":{}}},"data":{"type":"*"},"maxzoom":{"type":"number","default":18},"buffer":{"type":"number","default":128,"maximum":512,"minimum":0},"tolerance":{"type":"number","default":0.375},"cluster":{"type":"boolean","default":false},"clusterRadius":{"type":"number","default":50,"minimum":0},"clusterMaxZoom":{"type":"number"}},"source_video":{"type":{"required":true,"type":"enum","values":{"video":{}}},"urls":{"required":true,"type":"array","value":"string"},"coordinates":{"required":true,"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"source_image":{"type":{"required":true,"type":"enum","values":{"image":{}}},"url":{"required":true,"type":"string"},"coordinates":{"required":true,"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}}},"source_canvas":{"type":{"required":true,"type":"enum","values":{"canvas":{}}},"coordinates":{"required":true,"type":"array","length":4,"value":{"type":"array","length":2,"value":"number"}},"animate":{"type":"boolean","default":"true"},"canvas":{"type":"string","required":true}},"layer":{"id":{"type":"string","required":true},"type":{"type":"enum","values":{"fill":{},"line":{},"symbol":{},"circle":{},"fill-extrusion":{},"raster":{},"background":{}}},"metadata":{"type":"*"},"ref":{"type":"string"},"source":{"type":"string"},"source-layer":{"type":"string"},"minzoom":{"type":"number","minimum":0,"maximum":24},"maxzoom":{"type":"number","minimum":0,"maximum":24},"filter":{"type":"filter"},"layout":{"type":"layout"},"paint":{"type":"paint"},"paint.*":{"type":"paint"}},"layout":["layout_fill","layout_line","layout_circle","layout_fill-extrusion","layout_symbol","layout_raster","layout_background"],"layout_background":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_fill":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_circle":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_fill-extrusion":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_line":{"line-cap":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"butt":{},"round":{},"square":{}},"default":"butt"},"line-join":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"bevel":{},"round":{},"miter":{}},"default":"miter"},"line-miter-limit":{"type":"number","default":2,"function":"interpolated","zoom-function":true,"requires":[{"line-join":"miter"}]},"line-round-limit":{"type":"number","default":1.05,"function":"interpolated","zoom-function":true,"requires":[{"line-join":"round"}]},"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_symbol":{"symbol-placement":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"point":{},"line":{}},"default":"point"},"symbol-spacing":{"type":"number","default":250,"minimum":1,"function":"interpolated","zoom-function":true,"units":"pixels","requires":[{"symbol-placement":"line"}]},"symbol-avoid-edges":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false},"icon-allow-overlap":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image"]},"icon-ignore-placement":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image"]},"icon-optional":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image","text-field"]},"icon-rotation-alignment":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{},"auto":{}},"default":"auto","requires":["icon-image"]},"icon-size":{"type":"number","default":1,"minimum":0,"function":"interpolated","zoom-function":true,"requires":["icon-image"]},"icon-text-fit":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"none":{},"width":{},"height":{},"both":{}},"default":"none","requires":["icon-image","text-field"]},"icon-text-fit-padding":{"type":"array","value":"number","length":4,"default":[0,0,0,0],"units":"pixels","function":"interpolated","zoom-function":true,"requires":["icon-image","text-field",{"icon-text-fit":["both","width","height"]}]},"icon-image":{"type":"string","function":"piecewise-constant","zoom-function":true,"tokens":true},"icon-rotate":{"type":"number","default":0,"period":360,"function":"interpolated","zoom-function":true,"property-function":true,"units":"degrees","requires":["icon-image"]},"icon-padding":{"type":"number","default":2,"minimum":0,"function":"interpolated","zoom-function":true,"units":"pixels","requires":["icon-image"]},"icon-keep-upright":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["icon-image",{"icon-rotation-alignment":"map"},{"symbol-placement":"line"}]},"icon-offset":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"property-function":true,"requires":["icon-image"]},"text-pitch-alignment":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{},"auto":{}},"default":"auto","requires":["text-field"]},"text-rotation-alignment":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{},"auto":{}},"default":"auto","requires":["text-field"]},"text-field":{"type":"string","function":"piecewise-constant","zoom-function":true,"default":"","tokens":true},"text-font":{"type":"array","value":"string","function":"piecewise-constant","zoom-function":true,"default":["Open Sans Regular","Arial Unicode MS Regular"],"requires":["text-field"]},"text-size":{"type":"number","default":16,"minimum":0,"units":"pixels","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-max-width":{"type":"number","default":10,"minimum":0,"units":"ems","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-line-height":{"type":"number","default":1.2,"units":"ems","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-letter-spacing":{"type":"number","default":0,"units":"ems","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-justify":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"left":{},"center":{},"right":{}},"default":"center","requires":["text-field"]},"text-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"center":{},"left":{},"right":{},"top":{},"bottom":{},"top-left":{},"top-right":{},"bottom-left":{},"bottom-right":{}},"default":"center","requires":["text-field"]},"text-max-angle":{"type":"number","default":45,"units":"degrees","function":"interpolated","zoom-function":true,"requires":["text-field",{"symbol-placement":"line"}]},"text-rotate":{"type":"number","default":0,"period":360,"units":"degrees","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-padding":{"type":"number","default":2,"minimum":0,"units":"pixels","function":"interpolated","zoom-function":true,"requires":["text-field"]},"text-keep-upright":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":true,"requires":["text-field",{"text-rotation-alignment":"map"},{"symbol-placement":"line"}]},"text-transform":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"none":{},"uppercase":{},"lowercase":{}},"default":"none","requires":["text-field"]},"text-offset":{"type":"array","value":"number","units":"ems","function":"interpolated","zoom-function":true,"length":2,"default":[0,0],"requires":["text-field"]},"text-allow-overlap":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["text-field"]},"text-ignore-placement":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["text-field"]},"text-optional":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":false,"requires":["text-field","icon-image"]},"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"layout_raster":{"visibility":{"type":"enum","values":{"visible":{},"none":{}},"default":"visible"}},"filter":{"type":"array","value":"*"},"filter_operator":{"type":"enum","values":{"==":{},"!=":{},">":{},">=":{},"<":{},"<=":{},"in":{},"!in":{},"all":{},"any":{},"none":{},"has":{},"!has":{}}},"geometry_type":{"type":"enum","values":{"Point":{},"LineString":{},"Polygon":{}}},"function":{"stops":{"type":"array","value":"function_stop"},"base":{"type":"number","default":1,"minimum":0},"property":{"type":"string","default":"$zoom"},"type":{"type":"enum","values":{"identity":{},"exponential":{},"interval":{},"categorical":{}},"default":"exponential"},"colorSpace":{"type":"enum","values":{"rgb":{},"lab":{},"hcl":{}},"default":"rgb"}},"function_stop":{"type":"array","minimum":0,"maximum":22,"value":["number","color"],"length":2},"light":{"anchor":{"type":"enum","default":"viewport","values":{"map":{},"viewport":{}},"transition":false},"position":{"type":"array","default":[1.15,210,30],"length":3,"value":"number","transition":true,"function":"interpolated","zoom-function":true,"property-function":false},"color":{"type":"color","default":"#ffffff","function":"interpolated","zoom-function":true,"property-function":false,"transition":true},"intensity":{"type":"number","default":0.5,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"property-function":false,"transition":true}},"paint":["paint_fill","paint_line","paint_circle","paint_fill-extrusion","paint_symbol","paint_raster","paint_background"],"paint_fill":{"fill-antialias":{"type":"boolean","function":"piecewise-constant","zoom-function":true,"default":true},"fill-opacity":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":1,"minimum":0,"maximum":1,"transition":true},"fill-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"fill-pattern"}]},"fill-outline-color":{"type":"color","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"fill-pattern"},{"fill-antialias":true}]},"fill-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"fill-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["fill-translate"]},"fill-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true}},"paint_fill-extrusion":{"fill-extrusion-opacity":{"type":"number","function":"interpolated","zoom-function":true,"property-function":false,"default":1,"minimum":0,"maximum":1,"transition":true},"fill-extrusion-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"fill-extrusion-pattern"}]},"fill-extrusion-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"fill-extrusion-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["fill-extrusion-translate"]},"fill-extrusion-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true},"fill-extrusion-height":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":0,"minimum":0,"units":"meters","transition":true},"fill-extrusion-base":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":0,"minimum":0,"units":"meters","transition":true,"requires":["fill-extrusion-height"]}},"paint_line":{"line-opacity":{"type":"number","function":"interpolated","zoom-function":true,"property-function":true,"default":1,"minimum":0,"maximum":1,"transition":true},"line-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"requires":[{"!":"line-pattern"}]},"line-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"line-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["line-translate"]},"line-width":{"type":"number","default":1,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"line-gap-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"line-offset":{"type":"number","default":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"line-blur":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"line-dasharray":{"type":"array","value":"number","function":"piecewise-constant","zoom-function":true,"minimum":0,"transition":true,"units":"line widths","requires":[{"!":"line-pattern"}]},"line-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true}},"paint_circle":{"circle-radius":{"type":"number","default":5,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"circle-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-blur":{"type":"number","default":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels"},"circle-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["circle-translate"]},"circle-pitch-scale":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map"},"circle-stroke-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true,"units":"pixels"},"circle-stroke-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"property-function":true,"transition":true},"circle-stroke-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"property-function":true,"transition":true}},"paint_symbol":{"icon-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true,"requires":["icon-image"]},"icon-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"transition":true,"requires":["icon-image"]},"icon-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","function":"interpolated","zoom-function":true,"transition":true,"requires":["icon-image"]},"icon-halo-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["icon-image"]},"icon-halo-blur":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["icon-image"]},"icon-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["icon-image"]},"icon-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["icon-image","icon-translate"]},"text-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true,"requires":["text-field"]},"text-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"transition":true,"requires":["text-field"]},"text-halo-color":{"type":"color","default":"rgba(0, 0, 0, 0)","function":"interpolated","zoom-function":true,"transition":true,"requires":["text-field"]},"text-halo-width":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["text-field"]},"text-halo-blur":{"type":"number","default":0,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["text-field"]},"text-translate":{"type":"array","value":"number","length":2,"default":[0,0],"function":"interpolated","zoom-function":true,"transition":true,"units":"pixels","requires":["text-field"]},"text-translate-anchor":{"type":"enum","function":"piecewise-constant","zoom-function":true,"values":{"map":{},"viewport":{}},"default":"map","requires":["text-field","text-translate"]}},"paint_raster":{"raster-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true},"raster-hue-rotate":{"type":"number","default":0,"period":360,"function":"interpolated","zoom-function":true,"transition":true,"units":"degrees"},"raster-brightness-min":{"type":"number","function":"interpolated","zoom-function":true,"default":0,"minimum":0,"maximum":1,"transition":true},"raster-brightness-max":{"type":"number","function":"interpolated","zoom-function":true,"default":1,"minimum":0,"maximum":1,"transition":true},"raster-saturation":{"type":"number","default":0,"minimum":-1,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true},"raster-contrast":{"type":"number","default":0,"minimum":-1,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true},"raster-fade-duration":{"type":"number","default":300,"minimum":0,"function":"interpolated","zoom-function":true,"transition":true,"units":"milliseconds"}},"paint_background":{"background-color":{"type":"color","default":"#000000","function":"interpolated","zoom-function":true,"transition":true,"requires":[{"!":"background-pattern"}]},"background-pattern":{"type":"string","function":"piecewise-constant","zoom-function":true,"transition":true},"background-opacity":{"type":"number","default":1,"minimum":0,"maximum":1,"function":"interpolated","zoom-function":true,"transition":true}},"transition":{"duration":{"type":"number","default":300,"minimum":0,"units":"milliseconds"},"delay":{"type":"number","default":0,"minimum":0,"units":"milliseconds"}}}
-},{}],104:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 'use strict';
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -68284,7 +70308,7 @@ function isWebGLSupported(failIfMajorPerformanceCaveat) {
     }
 }
 
-},{}],105:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 'use strict';
 var ProgramConfiguration = require('./program_configuration');
 var Segment = function Segment(vertexOffset, primitiveOffset) {
@@ -68372,7 +70396,7 @@ function serializePaintVertexArrays(layerData, transferables) {
 }
 ArrayGroup.MAX_VERTEX_ARRAY_LENGTH = Math.pow(2, 16) - 1;
 module.exports = ArrayGroup;
-},{"./program_configuration":119}],106:[function(require,module,exports){
+},{"./program_configuration":120}],107:[function(require,module,exports){
 'use strict';
 var ArrayGroup = require('./array_group');
 var BufferGroup = require('./buffer_group');
@@ -68437,7 +70461,7 @@ Bucket.deserialize = function (input, style) {
     }
     return output;
 };
-},{"../util/util":233,"./array_group":105,"./buffer_group":113}],107:[function(require,module,exports){
+},{"../util/util":234,"./array_group":106,"./buffer_group":114}],108:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -68525,7 +70549,7 @@ var CircleBucket = function (Bucket) {
     return CircleBucket;
 }(Bucket);
 module.exports = CircleBucket;
-},{"../bucket":106,"../element_array_type":114,"../extent":115,"../load_geometry":117,"../vertex_array_type":121}],108:[function(require,module,exports){
+},{"../bucket":107,"../element_array_type":115,"../extent":116,"../load_geometry":118,"../vertex_array_type":122}],109:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -68614,7 +70638,7 @@ var FillBucket = function (Bucket) {
     return FillBucket;
 }(Bucket);
 module.exports = FillBucket;
-},{"../../util/classify_rings":217,"../bucket":106,"../element_array_type":114,"../load_geometry":117,"../vertex_array_type":121,"earcut":45}],109:[function(require,module,exports){
+},{"../../util/classify_rings":218,"../bucket":107,"../element_array_type":115,"../load_geometry":118,"../vertex_array_type":122,"earcut":45}],110:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -68730,7 +70754,7 @@ module.exports = FillExtrusionBucket;
 function isBoundaryEdge(p1, p2) {
     return p1.x === p2.x && (p1.x < 0 || p1.x > EXTENT) || p1.y === p2.y && (p1.y < 0 || p1.y > EXTENT);
 }
-},{"../../util/classify_rings":217,"../bucket":106,"../element_array_type":114,"../extent":115,"../load_geometry":117,"../vertex_array_type":121,"earcut":45}],110:[function(require,module,exports){
+},{"../../util/classify_rings":218,"../bucket":107,"../element_array_type":115,"../extent":116,"../load_geometry":118,"../vertex_array_type":122,"earcut":45}],111:[function(require,module,exports){
 'use strict';
 var Bucket = require('../bucket');
 var createVertexArrayType = require('../vertex_array_type');
@@ -69015,7 +71039,7 @@ var LineBucket = function (Bucket) {
     return LineBucket;
 }(Bucket);
 module.exports = LineBucket;
-},{"../bucket":106,"../element_array_type":114,"../extent":115,"../load_geometry":117,"../vertex_array_type":121}],111:[function(require,module,exports){
+},{"../bucket":107,"../element_array_type":115,"../extent":116,"../load_geometry":118,"../vertex_array_type":122}],112:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var ArrayGroup = require('../array_group');
@@ -69543,7 +71567,7 @@ SymbolBucket.prototype.addSymbolQuad = function addSymbolQuad(symbolQuad) {
 };
 SymbolBucket.MAX_QUADS = 65535;
 module.exports = SymbolBucket;
-},{"../../source/rtl_text_plugin":153,"../../symbol/anchor":179,"../../symbol/clip_line":181,"../../symbol/collision_feature":183,"../../symbol/get_anchors":185,"../../symbol/mergelines":188,"../../symbol/quads":189,"../../symbol/resolve_text":190,"../../symbol/shaping":191,"../../util/classify_rings":217,"../../util/find_pole_of_inaccessibility":223,"../../util/script_detection":230,"../../util/token":232,"../../util/util":233,"../array_group":105,"../buffer_group":113,"../element_array_type":114,"../extent":115,"../load_geometry":117,"../vertex_array_type":121,"point-geometry":240,"vector-tile":247}],112:[function(require,module,exports){
+},{"../../source/rtl_text_plugin":154,"../../symbol/anchor":180,"../../symbol/clip_line":182,"../../symbol/collision_feature":184,"../../symbol/get_anchors":186,"../../symbol/mergelines":189,"../../symbol/quads":190,"../../symbol/resolve_text":191,"../../symbol/shaping":192,"../../util/classify_rings":218,"../../util/find_pole_of_inaccessibility":224,"../../util/script_detection":231,"../../util/token":233,"../../util/util":234,"../array_group":106,"../buffer_group":114,"../element_array_type":115,"../extent":116,"../load_geometry":118,"../vertex_array_type":122,"point-geometry":241,"vector-tile":248}],113:[function(require,module,exports){
 'use strict';
 var AttributeType = {
     Int8: 'BYTE',
@@ -69594,7 +71618,7 @@ Buffer.BufferType = {
     ELEMENT: 'ELEMENT_ARRAY_BUFFER'
 };
 module.exports = Buffer;
-},{}],113:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var Buffer = require('./buffer');
@@ -69664,7 +71688,7 @@ BufferGroup.prototype.destroy = function destroy() {
     }
 };
 module.exports = BufferGroup;
-},{"../render/vertex_array_object":143,"../util/util":233,"./buffer":112,"./program_configuration":119}],114:[function(require,module,exports){
+},{"../render/vertex_array_object":144,"../util/util":234,"./buffer":113,"./program_configuration":120}],115:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 module.exports = createElementArrayType;
@@ -69677,10 +71701,10 @@ function createElementArrayType(components) {
             }]
     });
 }
-},{"../util/struct_array":231}],115:[function(require,module,exports){
+},{"../util/struct_array":232}],116:[function(require,module,exports){
 'use strict';
 module.exports = 8192;
-},{}],116:[function(require,module,exports){
+},{}],117:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var loadGeometry = require('./load_geometry');
@@ -69938,7 +71962,7 @@ function offsetLine(rings, offset) {
     }
     return newRings;
 }
-},{"../util/dictionary_coder":219,"../util/intersection_tests":226,"../util/struct_array":231,"../util/util":233,"../util/vectortile_to_geojson":234,"./extent":115,"./load_geometry":117,"feature-filter":47,"grid-index":58,"pbf":239,"point-geometry":240,"vector-tile":247}],117:[function(require,module,exports){
+},{"../util/dictionary_coder":220,"../util/intersection_tests":227,"../util/struct_array":232,"../util/util":234,"../util/vectortile_to_geojson":235,"./extent":116,"./load_geometry":118,"feature-filter":47,"grid-index":58,"pbf":240,"point-geometry":241,"vector-tile":248}],118:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var EXTENT = require('./extent');
@@ -69969,7 +71993,7 @@ module.exports = function loadGeometry(feature, bits) {
     }
     return geometry;
 };
-},{"../util/util":233,"./extent":115}],118:[function(require,module,exports){
+},{"../util/util":234,"./extent":116}],119:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var PosArray = createStructArrayType({
@@ -69980,7 +72004,7 @@ var PosArray = createStructArrayType({
         }]
 });
 module.exports = PosArray;
-},{"../util/struct_array":231}],119:[function(require,module,exports){
+},{"../util/struct_array":232}],120:[function(require,module,exports){
 'use strict';
 var createVertexArrayType = require('./vertex_array_type');
 var util = require('../util/util');
@@ -70155,7 +72179,7 @@ function normalizePaintAttribute(attribute, layer) {
     }, attribute);
 }
 module.exports = ProgramConfiguration;
-},{"../util/util":233,"./vertex_array_type":121}],120:[function(require,module,exports){
+},{"../util/util":234,"./vertex_array_type":122}],121:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var RasterBoundsArray = createStructArrayType({
@@ -70173,7 +72197,7 @@ var RasterBoundsArray = createStructArrayType({
     ]
 });
 module.exports = RasterBoundsArray;
-},{"../util/struct_array":231}],121:[function(require,module,exports){
+},{"../util/struct_array":232}],122:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 module.exports = createVertexArrayType;
@@ -70183,7 +72207,7 @@ function createVertexArrayType(members) {
         alignment: 4
     });
 }
-},{"../util/struct_array":231}],122:[function(require,module,exports){
+},{"../util/struct_array":232}],123:[function(require,module,exports){
 'use strict';
 var Coordinate = function Coordinate(column, row, zoom) {
     this.column = column;
@@ -70213,7 +72237,7 @@ Coordinate.prototype._sub = function _sub(c) {
     return this;
 };
 module.exports = Coordinate;
-},{}],123:[function(require,module,exports){
+},{}],124:[function(require,module,exports){
 'use strict';
 var wrap = require('../util/util').wrap;
 var LngLat = function LngLat(lng, lat) {
@@ -70250,7 +72274,7 @@ LngLat.convert = function (input) {
     }
 };
 module.exports = LngLat;
-},{"../util/util":233}],124:[function(require,module,exports){
+},{"../util/util":234}],125:[function(require,module,exports){
 'use strict';
 var LngLat = require('./lng_lat');
 var LngLatBounds = function LngLatBounds(sw, ne) {
@@ -70352,7 +72376,7 @@ LngLatBounds.convert = function (input) {
     return new LngLatBounds(input);
 };
 module.exports = LngLatBounds;
-},{"./lng_lat":123}],125:[function(require,module,exports){
+},{"./lng_lat":124}],126:[function(require,module,exports){
 'use strict';
 var LngLat = require('./lng_lat'), Point = require('point-geometry'), Coordinate = require('./coordinate'), util = require('../util/util'), interp = require('../util/interpolate'), TileCoord = require('../source/tile_coord'), EXTENT = require('../data/extent'), glmatrix = require('@mapbox/gl-matrix');
 var vec4 = glmatrix.vec4, mat4 = glmatrix.mat4, mat2 = glmatrix.mat2;
@@ -70721,7 +72745,7 @@ Transform.prototype._calcMatrices = function _calcMatrices() {
 };
 Object.defineProperties(Transform.prototype, prototypeAccessors);
 module.exports = Transform;
-},{"../data/extent":115,"../source/tile_coord":157,"../util/interpolate":225,"../util/util":233,"./coordinate":122,"./lng_lat":123,"@mapbox/gl-matrix":21,"point-geometry":240}],126:[function(require,module,exports){
+},{"../data/extent":116,"../source/tile_coord":158,"../util/interpolate":226,"../util/util":234,"./coordinate":123,"./lng_lat":124,"@mapbox/gl-matrix":21,"point-geometry":241}],127:[function(require,module,exports){
 'use strict';
 var WorkerPool = require('./util/worker_pool');
 var globalWorkerPool;
@@ -70731,7 +72755,7 @@ module.exports = function getGlobalWorkerPool() {
     }
     return globalWorkerPool;
 };
-},{"./util/worker_pool":236}],127:[function(require,module,exports){
+},{"./util/worker_pool":237}],128:[function(require,module,exports){
 'use strict';
 var simplexFont = {
     ' ': [
@@ -73625,7 +75649,7 @@ module.exports = function textVertices(text, left, baseline, scale) {
     }
     return strokes;
 };
-},{}],128:[function(require,module,exports){
+},{}],129:[function(require,module,exports){
 'use strict';
 var browser = require('./util/browser');
 var mapboxgl = module.exports = {};
@@ -73660,7 +75684,7 @@ Object.defineProperty(mapboxgl, 'accessToken', {
         config.ACCESS_TOKEN = token;
     }
 });
-},{"../package.json":237,"./geo/lng_lat":123,"./geo/lng_lat_bounds":124,"./source/rtl_text_plugin":153,"./style/style":167,"./ui/control/attribution_control":197,"./ui/control/geolocate_control":198,"./ui/control/navigation_control":199,"./ui/control/scale_control":200,"./ui/map":209,"./ui/marker":210,"./ui/popup":211,"./util/ajax":213,"./util/browser":214,"./util/config":218,"./util/evented":222,"./util/util":233,"point-geometry":240}],129:[function(require,module,exports){
+},{"../package.json":238,"./geo/lng_lat":124,"./geo/lng_lat_bounds":125,"./source/rtl_text_plugin":154,"./style/style":168,"./ui/control/attribution_control":198,"./ui/control/geolocate_control":199,"./ui/control/navigation_control":200,"./ui/control/scale_control":201,"./ui/map":210,"./ui/marker":211,"./ui/popup":212,"./util/ajax":214,"./util/browser":215,"./util/config":219,"./util/evented":223,"./util/util":234,"point-geometry":241}],130:[function(require,module,exports){
 'use strict';
 var pattern = require('./pattern');
 module.exports = drawBackground;
@@ -73700,7 +75724,7 @@ function drawBackground(painter, sourceCache, layer) {
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, painter.tileExtentBuffer.length);
     }
 }
-},{"./pattern":141}],130:[function(require,module,exports){
+},{"./pattern":142}],131:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 module.exports = drawCircles;
@@ -73738,7 +75762,7 @@ function drawCircles(painter, sourceCache, layer, coords) {
         }
     }
 }
-},{"../util/browser":214}],131:[function(require,module,exports){
+},{"../util/browser":215}],132:[function(require,module,exports){
 'use strict';
 module.exports = drawCollisionDebug;
 function drawCollisionDebug(painter, sourceCache, layer, coords) {
@@ -73767,7 +75791,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords) {
         }
     }
 }
-},{}],132:[function(require,module,exports){
+},{}],133:[function(require,module,exports){
 'use strict';
 var textVertices = require('../lib/debugtext');
 var browser = require('../util/browser');
@@ -73834,7 +75858,7 @@ function drawDebugTile(painter, sourceCache, coord) {
     gl.uniformMatrix4fv(program.u_matrix, false, posMatrix);
     gl.drawArrays(gl.LINES, 0, debugTextBuffer.length);
 }
-},{"../data/buffer":112,"../data/extent":115,"../data/pos_array":118,"../lib/debugtext":127,"../util/browser":214,"./vertex_array_object":143,"@mapbox/gl-matrix":21}],133:[function(require,module,exports){
+},{"../data/buffer":113,"../data/extent":116,"../data/pos_array":119,"../lib/debugtext":128,"../util/browser":215,"./vertex_array_object":144,"@mapbox/gl-matrix":21}],134:[function(require,module,exports){
 'use strict';
 var pattern = require('./pattern');
 module.exports = drawFill;
@@ -73907,7 +75931,7 @@ function setFillProgram(programId, usePattern, painter, layerData, layer, tile, 
     painter.gl.uniformMatrix4fv(program.u_matrix, false, painter.translatePosMatrix(coord.posMatrix, tile, layer.paint['fill-translate'], layer.paint['fill-translate-anchor']));
     return program;
 }
-},{"./pattern":141}],134:[function(require,module,exports){
+},{"./pattern":142}],135:[function(require,module,exports){
 'use strict';
 var glMatrix = require('@mapbox/gl-matrix');
 var Buffer = require('../data/buffer');
@@ -74057,7 +76081,7 @@ function setLight(program, painter) {
     gl.uniform1f(program.u_lightintensity, light.calculated.intensity);
     gl.uniform3fv(program.u_lightcolor, light.calculated.color.slice(0, 3));
 }
-},{"../data/buffer":112,"../data/pos_array":118,"./pattern":141,"./vertex_array_object":143,"@mapbox/gl-matrix":21}],135:[function(require,module,exports){
+},{"../data/buffer":113,"../data/pos_array":119,"./pattern":142,"./vertex_array_object":144,"@mapbox/gl-matrix":21}],136:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 var pixelsToTileUnits = require('../source/pixels_to_tile_units');
@@ -74147,7 +76171,7 @@ function drawLineTile(program, painter, tile, buffers, layer, coord, layerData, 
         gl.drawElements(gl.TRIANGLES, segment.primitiveLength * 3, gl.UNSIGNED_SHORT, segment.primitiveOffset * 3 * 2);
     }
 }
-},{"../source/pixels_to_tile_units":150,"../util/browser":214}],136:[function(require,module,exports){
+},{"../source/pixels_to_tile_units":151,"../util/browser":215}],137:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 module.exports = drawRaster;
@@ -74256,7 +76280,7 @@ function getFadeValues(tile, parentTile, layer, transform) {
         };
     }
 }
-},{"../util/util":233}],137:[function(require,module,exports){
+},{"../util/util":234}],138:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 var drawCollisionDebug = require('./draw_collision_debug');
@@ -74381,7 +76405,7 @@ function drawSymbolElements(buffers, layer, gl, program) {
         gl.drawElements(gl.TRIANGLES, segment.primitiveLength * 3, gl.UNSIGNED_SHORT, segment.primitiveOffset * 3 * 2);
     }
 }
-},{"../source/pixels_to_tile_units":150,"../util/browser":214,"./draw_collision_debug":131}],138:[function(require,module,exports){
+},{"../source/pixels_to_tile_units":151,"../util/browser":215,"./draw_collision_debug":132}],139:[function(require,module,exports){
 'use strict';
 var FrameHistory = function FrameHistory() {
     this.changeTimes = new Float64Array(256);
@@ -74440,7 +76464,7 @@ FrameHistory.prototype.bind = function bind(gl) {
     }
 };
 module.exports = FrameHistory;
-},{}],139:[function(require,module,exports){
+},{}],140:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var LineAtlas = function LineAtlas(width, height) {
@@ -74538,7 +76562,7 @@ LineAtlas.prototype.bind = function bind(gl) {
     }
 };
 module.exports = LineAtlas;
-},{"../util/util":233}],140:[function(require,module,exports){
+},{"../util/util":234}],141:[function(require,module,exports){
 'use strict';
 var browser = require('../util/browser');
 var mat4 = require('@mapbox/gl-matrix').mat4;
@@ -74868,7 +76892,7 @@ Painter.prototype.useProgram = function useProgram(name, programConfiguration) {
     return nextProgram;
 };
 module.exports = Painter;
-},{"../data/buffer":112,"../data/extent":115,"../data/pos_array":118,"../data/program_configuration":119,"../data/raster_bounds_array":120,"../source/pixels_to_tile_units":150,"../source/source_cache":155,"../util/browser":214,"../util/util":233,"./draw_background":129,"./draw_circle":130,"./draw_debug":132,"./draw_fill":133,"./draw_fill_extrusion":134,"./draw_line":135,"./draw_raster":136,"./draw_symbol":137,"./frame_history":138,"./shaders":142,"./vertex_array_object":143,"@mapbox/gl-matrix":21}],141:[function(require,module,exports){
+},{"../data/buffer":113,"../data/extent":116,"../data/pos_array":119,"../data/program_configuration":120,"../data/raster_bounds_array":121,"../source/pixels_to_tile_units":151,"../source/source_cache":156,"../util/browser":215,"../util/util":234,"./draw_background":130,"./draw_circle":131,"./draw_debug":133,"./draw_fill":134,"./draw_fill_extrusion":135,"./draw_line":136,"./draw_raster":137,"./draw_symbol":138,"./frame_history":139,"./shaders":143,"./vertex_array_object":144,"@mapbox/gl-matrix":21}],142:[function(require,module,exports){
 'use strict';
 var pixelsToTileUnits = require('../source/pixels_to_tile_units');
 exports.prepare = function (image, painter, program) {
@@ -74900,7 +76924,7 @@ exports.setTile = function (tile, painter, program) {
     gl.uniform2f(program.u_pixel_coord_upper, pixelX >> 16, pixelY >> 16);
     gl.uniform2f(program.u_pixel_coord_lower, pixelX & 65535, pixelY & 65535);
 };
-},{"../source/pixels_to_tile_units":150}],142:[function(require,module,exports){
+},{"../source/pixels_to_tile_units":151}],143:[function(require,module,exports){
 'use strict';
 
 var path = require('path');
@@ -74974,7 +76998,7 @@ module.exports = {
         vertexSource: "const float PI = 3.141592653589793;\n\nattribute vec2 a_pos;\nattribute vec2 a_offset;\nattribute vec2 a_texture_pos;\nattribute vec4 a_data;\n\n\n// matrix is for the vertex position.\nuniform mat4 u_matrix;\n\nuniform mediump float u_zoom;\nuniform bool u_rotate_with_map;\nuniform bool u_pitch_with_map;\nuniform mediump float u_pitch;\nuniform mediump float u_bearing;\nuniform mediump float u_aspect_ratio;\nuniform vec2 u_extrude_scale;\n\nuniform vec2 u_texsize;\n\nvarying vec2 v_tex;\nvarying vec2 v_fade_tex;\nvarying float v_gamma_scale;\n\nvoid main() {\n    vec2 a_tex = a_texture_pos.xy;\n    mediump float a_labelminzoom = a_data[0];\n    mediump vec2 a_zoom = a_data.pq;\n    mediump float a_minzoom = a_zoom[0];\n    mediump float a_maxzoom = a_zoom[1];\n\n    // u_zoom is the current zoom level adjusted for the change in font size\n    mediump float z = 2.0 - step(a_minzoom, u_zoom) - (1.0 - step(a_maxzoom, u_zoom));\n\n    // pitch-alignment: map\n    // rotation-alignment: map | viewport\n    if (u_pitch_with_map) {\n        lowp float angle = u_rotate_with_map ? (a_data[1] / 256.0 * 2.0 * PI) : u_bearing;\n        lowp float asin = sin(angle);\n        lowp float acos = cos(angle);\n        mat2 RotationMatrix = mat2(acos, asin, -1.0 * asin, acos);\n        vec2 offset = RotationMatrix * a_offset;\n        vec2 extrude = u_extrude_scale * (offset / 64.0);\n        gl_Position = u_matrix * vec4(a_pos + extrude, 0, 1);\n        gl_Position.z += z * gl_Position.w;\n    // pitch-alignment: viewport\n    // rotation-alignment: map\n    } else if (u_rotate_with_map) {\n        // foreshortening factor to apply on pitched maps\n        // as a label goes from horizontal <=> vertical in angle\n        // it goes from 0% foreshortening to up to around 70% foreshortening\n        lowp float pitchfactor = 1.0 - cos(u_pitch * sin(u_pitch * 0.75));\n\n        lowp float lineangle = a_data[1] / 256.0 * 2.0 * PI;\n\n        // use the lineangle to position points a,b along the line\n        // project the points and calculate the label angle in projected space\n        // this calculation allows labels to be rendered unskewed on pitched maps\n        vec4 a = u_matrix * vec4(a_pos, 0, 1);\n        vec4 b = u_matrix * vec4(a_pos + vec2(cos(lineangle),sin(lineangle)), 0, 1);\n        lowp float angle = atan((b[1]/b[3] - a[1]/a[3])/u_aspect_ratio, b[0]/b[3] - a[0]/a[3]);\n        lowp float asin = sin(angle);\n        lowp float acos = cos(angle);\n        mat2 RotationMatrix = mat2(acos, -1.0 * asin, asin, acos);\n\n        vec2 offset = RotationMatrix * (vec2((1.0-pitchfactor)+(pitchfactor*cos(angle*2.0)), 1.0) * a_offset);\n        vec2 extrude = u_extrude_scale * (offset / 64.0);\n        gl_Position = u_matrix * vec4(a_pos, 0, 1) + vec4(extrude, 0, 0);\n        gl_Position.z += z * gl_Position.w;\n    // pitch-alignment: viewport\n    // rotation-alignment: viewport\n    } else {\n        vec2 extrude = u_extrude_scale * (a_offset / 64.0);\n        gl_Position = u_matrix * vec4(a_pos, 0, 1) + vec4(extrude, 0, 0);\n    }\n\n    v_gamma_scale = gl_Position.w;\n\n    v_tex = a_tex / u_texsize;\n    v_fade_tex = vec2(a_labelminzoom / 255.0, 0.0);\n}\n"
     }
 };
-},{"path":257}],143:[function(require,module,exports){
+},{"path":258}],144:[function(require,module,exports){
 'use strict';
 var VertexArrayObject = function VertexArrayObject() {
     this.boundProgram = null;
@@ -75037,7 +77061,7 @@ VertexArrayObject.prototype.destroy = function destroy() {
     }
 };
 module.exports = VertexArrayObject;
-},{}],144:[function(require,module,exports){
+},{}],145:[function(require,module,exports){
 'use strict';
 var ImageSource = require('./image_source');
 var window = require('../util/window');
@@ -75118,7 +77142,7 @@ var CanvasSource = function (ImageSource) {
     return CanvasSource;
 }(ImageSource);
 module.exports = CanvasSource;
-},{"../util/window":216,"./image_source":148}],145:[function(require,module,exports){
+},{"../util/window":217,"./image_source":149}],146:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var util = require('../util/util');
@@ -75270,7 +77294,7 @@ function resolveURL(url) {
     return a.href;
 }
 module.exports = GeoJSONSource;
-},{"../data/extent":115,"../util/evented":222,"../util/util":233,"../util/window":216}],146:[function(require,module,exports){
+},{"../data/extent":116,"../util/evented":223,"../util/util":234,"../util/window":217}],147:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var rewind = require('geojson-rewind');
@@ -75360,7 +77384,7 @@ var GeoJSONWorkerSource = function (VectorTileWorkerSource) {
     return GeoJSONWorkerSource;
 }(VectorTileWorkerSource);
 module.exports = GeoJSONWorkerSource;
-},{"../util/ajax":213,"./geojson_wrapper":147,"./vector_tile_worker_source":159,"geojson-rewind":49,"geojson-vt":53,"supercluster":243,"vt-pbf":251}],147:[function(require,module,exports){
+},{"../util/ajax":214,"./geojson_wrapper":148,"./vector_tile_worker_source":160,"geojson-rewind":49,"geojson-vt":53,"supercluster":244,"vt-pbf":252}],148:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var VectorTileFeature = require('vector-tile').VectorTileFeature;
@@ -75426,7 +77450,7 @@ GeoJSONWrapper.prototype.feature = function feature(i) {
     return new FeatureWrapper(this.features[i]);
 };
 module.exports = GeoJSONWrapper;
-},{"../data/extent":115,"point-geometry":240,"vector-tile":247}],148:[function(require,module,exports){
+},{"../data/extent":116,"point-geometry":241,"vector-tile":248}],149:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var window = require('../util/window');
@@ -75551,7 +77575,7 @@ var ImageSource = function (Evented) {
     return ImageSource;
 }(Evented);
 module.exports = ImageSource;
-},{"../data/buffer":112,"../data/extent":115,"../data/raster_bounds_array":120,"../geo/lng_lat":123,"../render/vertex_array_object":143,"../util/ajax":213,"../util/evented":222,"../util/util":233,"../util/window":216,"./tile_coord":157,"point-geometry":240}],149:[function(require,module,exports){
+},{"../data/buffer":113,"../data/extent":116,"../data/raster_bounds_array":121,"../geo/lng_lat":124,"../render/vertex_array_object":144,"../util/ajax":214,"../util/evented":223,"../util/util":234,"../util/window":217,"./tile_coord":158,"point-geometry":241}],150:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var ajax = require('../util/ajax');
@@ -75582,13 +77606,13 @@ module.exports = function (options, callback) {
         browser.frame(loaded.bind(null, null, options));
     }
 };
-},{"../util/ajax":213,"../util/browser":214,"../util/mapbox":229,"../util/util":233}],150:[function(require,module,exports){
+},{"../util/ajax":214,"../util/browser":215,"../util/mapbox":230,"../util/util":234}],151:[function(require,module,exports){
 'use strict';
 var EXTENT = require('../data/extent');
 module.exports = function (tile, pixelValue, z) {
     return pixelValue * (EXTENT / (tile.tileSize * Math.pow(2, z - tile.coord.z)));
 };
-},{"../data/extent":115}],151:[function(require,module,exports){
+},{"../data/extent":116}],152:[function(require,module,exports){
 'use strict';
 var TileCoord = require('./tile_coord');
 exports.rendered = function (sourceCache, styleLayers, queryGeometry, params, zoom, bearing) {
@@ -75648,7 +77672,7 @@ function mergeRenderedFeatureLayers(tiles) {
     }
     return result;
 }
-},{"./tile_coord":157}],152:[function(require,module,exports){
+},{"./tile_coord":158}],153:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var ajax = require('../util/ajax');
@@ -75752,7 +77776,7 @@ var RasterTileSource = function (Evented) {
     return RasterTileSource;
 }(Evented);
 module.exports = RasterTileSource;
-},{"../util/ajax":213,"../util/evented":222,"../util/mapbox":229,"../util/util":233,"./load_tilejson":149}],153:[function(require,module,exports){
+},{"../util/ajax":214,"../util/evented":223,"../util/mapbox":230,"../util/util":234,"./load_tilejson":150}],154:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var window = require('../util/window');
@@ -75785,7 +77809,7 @@ module.exports.setRTLTextPlugin = function (pluginURL, callback) {
         }
     });
 };
-},{"../util/ajax":213,"../util/window":216}],154:[function(require,module,exports){
+},{"../util/ajax":214,"../util/window":217}],155:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var sourceTypes = {
@@ -75816,7 +77840,7 @@ exports.getType = function (name) {
 exports.setType = function (name, type) {
     sourceTypes[name] = type;
 };
-},{"../source/canvas_source":144,"../source/geojson_source":145,"../source/image_source":148,"../source/raster_tile_source":152,"../source/vector_tile_source":158,"../source/video_source":160,"../util/util":233}],155:[function(require,module,exports){
+},{"../source/canvas_source":145,"../source/geojson_source":146,"../source/image_source":149,"../source/raster_tile_source":153,"../source/vector_tile_source":159,"../source/video_source":161,"../util/util":234}],156:[function(require,module,exports){
 'use strict';
 var Source = require('./source');
 var Tile = require('./tile');
@@ -76243,7 +78267,7 @@ function isRasterType(type) {
     return type === 'raster' || type === 'image' || type === 'video';
 }
 module.exports = SourceCache;
-},{"../data/extent":115,"../geo/coordinate":122,"../util/evented":222,"../util/lru_cache":228,"../util/util":233,"./source":154,"./tile":156,"./tile_coord":157}],156:[function(require,module,exports){
+},{"../data/extent":116,"../geo/coordinate":123,"../util/evented":223,"../util/lru_cache":229,"../util/util":234,"./source":155,"./tile":157,"./tile_coord":158}],157:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var Bucket = require('../data/bucket');
@@ -76404,7 +78428,7 @@ Tile.prototype.getExpiry = function getExpiry() {
     }
 };
 module.exports = Tile;
-},{"../data/bucket":106,"../data/feature_index":116,"../symbol/collision_box":182,"../symbol/collision_tile":184,"../symbol/symbol_instances":193,"../symbol/symbol_quads":194,"../util/util":233,"../util/vectortile_to_geojson":234,"feature-filter":47,"pbf":239,"vector-tile":247}],157:[function(require,module,exports){
+},{"../data/bucket":107,"../data/feature_index":117,"../symbol/collision_box":183,"../symbol/collision_tile":185,"../symbol/symbol_instances":194,"../symbol/symbol_quads":195,"../util/util":234,"../util/vectortile_to_geojson":235,"feature-filter":47,"pbf":240,"vector-tile":248}],158:[function(require,module,exports){
 'use strict';
 var WhooTS = require('whoots-js');
 var Coordinate = require('../geo/coordinate');
@@ -76562,7 +78586,7 @@ function getQuadkey(z, x, y) {
     return quadkey;
 }
 module.exports = TileCoord;
-},{"../geo/coordinate":122,"whoots-js":256}],158:[function(require,module,exports){
+},{"../geo/coordinate":123,"whoots-js":257}],159:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var util = require('../util/util');
@@ -76674,7 +78698,7 @@ var VectorTileSource = function (Evented) {
     return VectorTileSource;
 }(Evented);
 module.exports = VectorTileSource;
-},{"../util/evented":222,"../util/mapbox":229,"../util/util":233,"./load_tilejson":149}],159:[function(require,module,exports){
+},{"../util/evented":223,"../util/mapbox":230,"../util/util":234,"./load_tilejson":150}],160:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var vt = require('vector-tile');
@@ -76778,7 +78802,7 @@ VectorTileWorkerSource.prototype.redoPlacement = function redoPlacement(params, 
     }
 };
 module.exports = VectorTileWorkerSource;
-},{"../util/ajax":213,"../util/util":233,"./worker_tile":162,"pbf":239,"vector-tile":247}],160:[function(require,module,exports){
+},{"../util/ajax":214,"../util/util":234,"./worker_tile":163,"pbf":240,"vector-tile":248}],161:[function(require,module,exports){
 'use strict';
 var ajax = require('../util/ajax');
 var ImageSource = require('./image_source');
@@ -76844,7 +78868,7 @@ var VideoSource = function (ImageSource) {
     return VideoSource;
 }(ImageSource);
 module.exports = VideoSource;
-},{"../util/ajax":213,"./image_source":148}],161:[function(require,module,exports){
+},{"../util/ajax":214,"./image_source":149}],162:[function(require,module,exports){
 'use strict';
 var Actor = require('../util/actor');
 var StyleLayerIndex = require('../style/style_layer_index');
@@ -76943,7 +78967,7 @@ Worker.prototype.getWorkerSource = function getWorkerSource(mapId, type) {
 module.exports = function createWorker(self) {
     return new Worker(self);
 };
-},{"../style/style_layer_index":175,"../util/actor":212,"./geojson_worker_source":146,"./rtl_text_plugin":153,"./vector_tile_worker_source":159}],162:[function(require,module,exports){
+},{"../style/style_layer_index":176,"../util/actor":213,"./geojson_worker_source":147,"./rtl_text_plugin":154,"./vector_tile_worker_source":160}],163:[function(require,module,exports){
 'use strict';
 var FeatureIndex = require('../data/feature_index');
 var CollisionTile = require('../symbol/collision_tile');
@@ -77127,7 +79151,7 @@ function serializeBuckets(buckets, transferables) {
     });
 }
 module.exports = WorkerTile;
-},{"../data/feature_index":116,"../symbol/collision_box":182,"../symbol/collision_tile":184,"../symbol/symbol_instances":193,"../symbol/symbol_quads":194,"../util/dictionary_coder":219,"../util/util":233}],163:[function(require,module,exports){
+},{"../data/feature_index":117,"../symbol/collision_box":183,"../symbol/collision_tile":185,"../symbol/symbol_instances":194,"../symbol/symbol_quads":195,"../util/dictionary_coder":220,"../util/util":234}],164:[function(require,module,exports){
 'use strict';
 var AnimationLoop = function AnimationLoop() {
     this.n = 0;
@@ -77152,7 +79176,7 @@ AnimationLoop.prototype.cancel = function cancel(n) {
     });
 };
 module.exports = AnimationLoop;
-},{}],164:[function(require,module,exports){
+},{}],165:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var ajax = require('../util/ajax');
@@ -77233,7 +79257,7 @@ var ImageSprite = function (Evented) {
     return ImageSprite;
 }(Evented);
 module.exports = ImageSprite;
-},{"../util/ajax":213,"../util/browser":214,"../util/evented":222,"../util/mapbox":229}],165:[function(require,module,exports){
+},{"../util/ajax":214,"../util/browser":215,"../util/evented":223,"../util/mapbox":230}],166:[function(require,module,exports){
 'use strict';
 var styleSpec = require('./style_spec');
 var util = require('../util/util');
@@ -77365,7 +79389,7 @@ var Light = function (Evented) {
     return Light;
 }(Evented);
 module.exports = Light;
-},{"../util/evented":222,"../util/util":233,"./style_declaration":168,"./style_spec":176,"./style_transition":177,"./validate_style":178}],166:[function(require,module,exports){
+},{"../util/evented":223,"../util/util":234,"./style_declaration":169,"./style_spec":177,"./style_transition":178,"./validate_style":179}],167:[function(require,module,exports){
 'use strict';
 var parseColorString = require('csscolorparser').parseCSSColor;
 var util = require('../util/util');
@@ -77404,7 +79428,7 @@ module.exports = function parseColor(input) {
         throw new Error('Invalid color ' + input);
     }
 };
-},{"../util/util":233,"csscolorparser":41,"mapbox-gl-function":75}],167:[function(require,module,exports){
+},{"../util/util":234,"csscolorparser":41,"mapbox-gl-function":76}],168:[function(require,module,exports){
 'use strict';
 var Evented = require('../util/evented');
 var StyleLayer = require('./style_layer');
@@ -78079,7 +80103,7 @@ var Style = function (Evented) {
     return Style;
 }(Evented);
 module.exports = Style;
-},{"../global_worker_pool":126,"../render/line_atlas":139,"../source/query_features":151,"../source/rtl_text_plugin":153,"../source/source":154,"../source/source_cache":155,"../symbol/glyph_source":187,"../symbol/sprite_atlas":192,"../util/ajax":213,"../util/browser":214,"../util/dispatcher":220,"../util/evented":222,"../util/mapbox":229,"../util/util":233,"./animation_loop":163,"./image_sprite":164,"./light":165,"./style_layer":169,"./style_spec":176,"./validate_style":178,"mapbox-gl-function":75,"mapbox-gl-style-spec/lib/deref":76,"mapbox-gl-style-spec/lib/diff":77}],168:[function(require,module,exports){
+},{"../global_worker_pool":127,"../render/line_atlas":140,"../source/query_features":152,"../source/rtl_text_plugin":154,"../source/source":155,"../source/source_cache":156,"../symbol/glyph_source":188,"../symbol/sprite_atlas":193,"../util/ajax":214,"../util/browser":215,"../util/dispatcher":221,"../util/evented":223,"../util/mapbox":230,"../util/util":234,"./animation_loop":164,"./image_sprite":165,"./light":166,"./style_layer":170,"./style_spec":177,"./validate_style":179,"mapbox-gl-function":76,"mapbox-gl-style-spec/lib/deref":77,"mapbox-gl-style-spec/lib/diff":78}],169:[function(require,module,exports){
 'use strict';
 var MapboxGLFunction = require('mapbox-gl-function');
 var parseColor = require('./parse_color');
@@ -78133,7 +80157,7 @@ StyleDeclaration.prototype.calculateInterpolationT = function calculateInterpola
     return this.functionInterpolationT(globalProperties && globalProperties.zoom, featureProperties || {});
 };
 module.exports = StyleDeclaration;
-},{"../util/util":233,"./parse_color":166,"mapbox-gl-function":75}],169:[function(require,module,exports){
+},{"../util/util":234,"./parse_color":167,"mapbox-gl-function":76}],170:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var StyleTransition = require('./style_transition');
@@ -78420,7 +80444,7 @@ StyleLayer.create = function (layer) {
 function getDeclarationValue(declaration) {
     return declaration.value;
 }
-},{"../util/evented":222,"../util/util":233,"./parse_color":166,"./style_declaration":168,"./style_layer/circle_style_layer":170,"./style_layer/fill_extrusion_style_layer":171,"./style_layer/fill_style_layer":172,"./style_layer/line_style_layer":173,"./style_layer/symbol_style_layer":174,"./style_spec":176,"./style_transition":177,"./validate_style":178}],170:[function(require,module,exports){
+},{"../util/evented":223,"../util/util":234,"./parse_color":167,"./style_declaration":169,"./style_layer/circle_style_layer":171,"./style_layer/fill_extrusion_style_layer":172,"./style_layer/fill_style_layer":173,"./style_layer/line_style_layer":174,"./style_layer/symbol_style_layer":175,"./style_spec":177,"./style_transition":178,"./validate_style":179}],171:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var CircleBucket = require('../../data/bucket/circle_bucket');
@@ -78438,7 +80462,7 @@ var CircleStyleLayer = function (StyleLayer) {
     return CircleStyleLayer;
 }(StyleLayer);
 module.exports = CircleStyleLayer;
-},{"../../data/bucket/circle_bucket":107,"../style_layer":169}],171:[function(require,module,exports){
+},{"../../data/bucket/circle_bucket":108,"../style_layer":170}],172:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var FillExtrusionBucket = require('../../data/bucket/fill_extrusion_bucket');
@@ -78463,7 +80487,7 @@ var FillExtrusionStyleLayer = function (StyleLayer) {
     return FillExtrusionStyleLayer;
 }(StyleLayer);
 module.exports = FillExtrusionStyleLayer;
-},{"../../data/bucket/fill_extrusion_bucket":109,"../style_layer":169}],172:[function(require,module,exports){
+},{"../../data/bucket/fill_extrusion_bucket":110,"../style_layer":170}],173:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var FillBucket = require('../../data/bucket/fill_bucket');
@@ -78526,7 +80550,7 @@ var FillStyleLayer = function (StyleLayer) {
     return FillStyleLayer;
 }(StyleLayer);
 module.exports = FillStyleLayer;
-},{"../../data/bucket/fill_bucket":108,"../style_layer":169}],173:[function(require,module,exports){
+},{"../../data/bucket/fill_bucket":109,"../style_layer":170}],174:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var LineBucket = require('../../data/bucket/line_bucket');
@@ -78554,7 +80578,7 @@ var LineStyleLayer = function (StyleLayer) {
     return LineStyleLayer;
 }(StyleLayer);
 module.exports = LineStyleLayer;
-},{"../../data/bucket/line_bucket":110,"../../util/util":233,"../style_layer":169}],174:[function(require,module,exports){
+},{"../../data/bucket/line_bucket":111,"../../util/util":234,"../style_layer":170}],175:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('../style_layer');
 var SymbolBucket = require('../../data/bucket/symbol_bucket');
@@ -78587,7 +80611,7 @@ var SymbolStyleLayer = function (StyleLayer) {
     return SymbolStyleLayer;
 }(StyleLayer);
 module.exports = SymbolStyleLayer;
-},{"../../data/bucket/symbol_bucket":111,"../style_layer":169}],175:[function(require,module,exports){
+},{"../../data/bucket/symbol_bucket":112,"../style_layer":170}],176:[function(require,module,exports){
 'use strict';
 var StyleLayer = require('./style_layer');
 var util = require('../util/util');
@@ -78653,10 +80677,10 @@ StyleLayerIndex.prototype.update = function update(layerConfigs, removedIds, sym
     }
 };
 module.exports = StyleLayerIndex;
-},{"../util/util":233,"./style_layer":169,"feature-filter":47,"mapbox-gl-style-spec/lib/group_by_layout":79}],176:[function(require,module,exports){
+},{"../util/util":234,"./style_layer":170,"feature-filter":47,"mapbox-gl-style-spec/lib/group_by_layout":80}],177:[function(require,module,exports){
 'use strict';
 module.exports = require('mapbox-gl-style-spec/reference/latest.min');
-},{"mapbox-gl-style-spec/reference/latest.min":102}],177:[function(require,module,exports){
+},{"mapbox-gl-style-spec/reference/latest.min":103}],178:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var interpolate = require('../util/interpolate');
@@ -78728,7 +80752,7 @@ function interpZoomTransitioned(from, to, t) {
         t: t
     };
 }
-},{"../util/interpolate":225,"../util/util":233}],178:[function(require,module,exports){
+},{"../util/interpolate":226,"../util/util":234}],179:[function(require,module,exports){
 'use strict';
 module.exports = require('mapbox-gl-style-spec/lib/validate_style.min');
 module.exports.emitErrors = function (emitter, errors) {
@@ -78741,7 +80765,7 @@ module.exports.emitErrors = function (emitter, errors) {
         return false;
     }
 };
-},{"mapbox-gl-style-spec/lib/validate_style.min":101}],179:[function(require,module,exports){
+},{"mapbox-gl-style-spec/lib/validate_style.min":102}],180:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var Anchor = function (Point) {
@@ -78762,7 +80786,7 @@ var Anchor = function (Point) {
     return Anchor;
 }(Point);
 module.exports = Anchor;
-},{"point-geometry":240}],180:[function(require,module,exports){
+},{"point-geometry":241}],181:[function(require,module,exports){
 'use strict';
 module.exports = checkMaxAngle;
 function checkMaxAngle(line, anchor, labelLength, windowSize, maxAngle) {
@@ -78805,7 +80829,7 @@ function checkMaxAngle(line, anchor, labelLength, windowSize, maxAngle) {
     }
     return true;
 }
-},{}],181:[function(require,module,exports){
+},{}],182:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 module.exports = clipLine;
@@ -78854,7 +80878,7 @@ function clipLine(lines, x1, y1, x2, y2) {
     }
     return clippedLines;
 }
-},{"point-geometry":240}],182:[function(require,module,exports){
+},{"point-geometry":241}],183:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var Point = require('point-geometry');
@@ -78928,7 +80952,7 @@ Object.defineProperty(CollisionBoxArray.prototype.StructType.prototype, 'anchorP
     }
 });
 module.exports = CollisionBoxArray;
-},{"../util/struct_array":231,"point-geometry":240}],183:[function(require,module,exports){
+},{"../util/struct_array":232,"point-geometry":241}],184:[function(require,module,exports){
 'use strict';
 var CollisionFeature = function CollisionFeature(collisionBoxArray, line, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaped, boxScale, padding, alignLine, straight) {
     var y1 = shaped.top * boxScale - padding;
@@ -78993,7 +81017,7 @@ CollisionFeature.prototype._addLineCollisionBoxes = function _addLineCollisionBo
     return bboxes;
 };
 module.exports = CollisionFeature;
-},{}],184:[function(require,module,exports){
+},{}],185:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var EXTENT = require('../data/extent');
@@ -79219,7 +81243,7 @@ CollisionTile.prototype.insertCollisionFeature = function insertCollisionFeature
     }
 };
 module.exports = CollisionTile;
-},{"../data/extent":115,"../util/intersection_tests":226,"grid-index":58,"point-geometry":240}],185:[function(require,module,exports){
+},{"../data/extent":116,"../util/intersection_tests":227,"grid-index":58,"point-geometry":241}],186:[function(require,module,exports){
 'use strict';
 var interpolate = require('../util/interpolate');
 var Anchor = require('../symbol/anchor');
@@ -79264,7 +81288,7 @@ function resample(line, offset, spacing, angleWindowSize, maxAngle, labelLength,
     }
     return anchors;
 }
-},{"../symbol/anchor":179,"../util/interpolate":225,"./check_max_angle":180}],186:[function(require,module,exports){
+},{"../symbol/anchor":180,"../util/interpolate":226,"./check_max_angle":181}],187:[function(require,module,exports){
 'use strict';
 var ShelfPack = require('shelf-pack');
 var util = require('../util/util');
@@ -79395,7 +81419,7 @@ GlyphAtlas.prototype.updateTexture = function updateTexture(gl) {
     }
 };
 module.exports = GlyphAtlas;
-},{"../util/util":233,"shelf-pack":242}],187:[function(require,module,exports){
+},{"../util/util":234,"shelf-pack":243}],188:[function(require,module,exports){
 'use strict';
 var normalizeURL = require('../util/mapbox').normalizeGlyphsURL;
 var ajax = require('../util/ajax');
@@ -79504,7 +81528,7 @@ function glyphUrl(fontstack, range, url, subdomains) {
     return url.replace('{s}', subdomains[fontstack.length % subdomains.length]).replace('{fontstack}', fontstack).replace('{range}', range);
 }
 module.exports = GlyphSource;
-},{"../symbol/glyph_atlas":186,"../util/ajax":213,"../util/glyphs":224,"../util/mapbox":229,"../util/verticalize_punctuation":235,"pbf":239}],188:[function(require,module,exports){
+},{"../symbol/glyph_atlas":187,"../util/ajax":214,"../util/glyphs":225,"../util/mapbox":230,"../util/verticalize_punctuation":236,"pbf":240}],189:[function(require,module,exports){
 'use strict';
 module.exports = function (features) {
     var leftIndex = {};
@@ -79565,7 +81589,7 @@ module.exports = function (features) {
         return f.geometry;
     });
 };
-},{}],189:[function(require,module,exports){
+},{}],190:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 module.exports = {
@@ -79741,7 +81765,7 @@ function getSegmentGlyphs(glyphs, anchor, offset, line, segment, forward) {
     }
     return placementScale;
 }
-},{"point-geometry":240}],190:[function(require,module,exports){
+},{"point-geometry":241}],191:[function(require,module,exports){
 'use strict';
 var resolveTokens = require('../util/token');
 module.exports = function resolveText(feature, layout) {
@@ -79758,7 +81782,7 @@ module.exports = function resolveText(feature, layout) {
     }
     return text;
 };
-},{"../util/token":232}],191:[function(require,module,exports){
+},{"../util/token":233}],192:[function(require,module,exports){
 'use strict';
 var scriptDetection = require('../util/script_detection');
 var verticalizePunctuation = require('../util/verticalize_punctuation');
@@ -79997,7 +82021,7 @@ function PositionedIcon(image, top, bottom, left, right) {
     this.left = left;
     this.right = right;
 }
-},{"../source/rtl_text_plugin":153,"../util/script_detection":230,"../util/verticalize_punctuation":235}],192:[function(require,module,exports){
+},{"../source/rtl_text_plugin":154,"../util/script_detection":231,"../util/verticalize_punctuation":236}],193:[function(require,module,exports){
 'use strict';
 var ShelfPack = require('shelf-pack');
 var browser = require('../util/browser');
@@ -80162,7 +82186,7 @@ function copyBitmap(src, srcStride, srcX, srcY, dst, dstStride, dstX, dstY, widt
         }
     }
 }
-},{"../util/browser":214,"../util/util":233,"shelf-pack":242}],193:[function(require,module,exports){
+},{"../util/browser":215,"../util/util":234,"shelf-pack":243}],194:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var Point = require('point-geometry');
@@ -80224,7 +82248,7 @@ Object.defineProperty(SymbolInstancesArray.prototype.StructType.prototype, 'anch
     }
 });
 module.exports = SymbolInstancesArray;
-},{"../util/struct_array":231,"point-geometry":240}],194:[function(require,module,exports){
+},{"../util/struct_array":232,"point-geometry":241}],195:[function(require,module,exports){
 'use strict';
 var createStructArrayType = require('../util/struct_array');
 var Point = require('point-geometry');
@@ -80327,7 +82351,7 @@ Object.defineProperty(SymbolQuadsArray.prototype.StructType.prototype, 'SymbolQu
     }
 });
 module.exports = SymbolQuadsArray;
-},{"../util/struct_array":231,"./quads":189,"point-geometry":240}],195:[function(require,module,exports){
+},{"../util/struct_array":232,"./quads":190,"point-geometry":241}],196:[function(require,module,exports){
 'use strict';
 var DOM = require('../util/dom');
 var Point = require('point-geometry');
@@ -80461,7 +82485,7 @@ module.exports = function bindHandlers(map, options) {
         });
     }
 };
-},{"../util/dom":221,"./handler/box_zoom":201,"./handler/dblclick_zoom":202,"./handler/drag_pan":203,"./handler/drag_rotate":204,"./handler/keyboard":205,"./handler/scroll_zoom":206,"./handler/touch_zoom_rotate":207,"point-geometry":240}],196:[function(require,module,exports){
+},{"../util/dom":222,"./handler/box_zoom":202,"./handler/dblclick_zoom":203,"./handler/drag_pan":204,"./handler/drag_rotate":205,"./handler/keyboard":206,"./handler/scroll_zoom":207,"./handler/touch_zoom_rotate":208,"point-geometry":241}],197:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var interpolate = require('../util/interpolate');
@@ -80827,7 +82851,7 @@ var Camera = function (Evented) {
     return Camera;
 }(Evented);
 module.exports = Camera;
-},{"../geo/lng_lat":123,"../geo/lng_lat_bounds":124,"../util/browser":214,"../util/evented":222,"../util/interpolate":225,"../util/util":233,"point-geometry":240}],197:[function(require,module,exports){
+},{"../geo/lng_lat":124,"../geo/lng_lat_bounds":125,"../util/browser":215,"../util/evented":223,"../util/interpolate":226,"../util/util":234,"point-geometry":241}],198:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -80910,7 +82934,7 @@ AttributionControl.prototype._updateCompact = function _updateCompact() {
     this._container.classList[compact ? 'add' : 'remove']('compact');
 };
 module.exports = AttributionControl;
-},{"../../util/dom":221,"../../util/util":233}],198:[function(require,module,exports){
+},{"../../util/dom":222,"../../util/util":234}],199:[function(require,module,exports){
 'use strict';
 var Evented = require('../../util/evented');
 var DOM = require('../../util/dom');
@@ -81017,7 +83041,7 @@ var GeolocateControl = function (Evented) {
     return GeolocateControl;
 }(Evented);
 module.exports = GeolocateControl;
-},{"../../util/dom":221,"../../util/evented":222,"../../util/util":233,"../../util/window":216}],199:[function(require,module,exports){
+},{"../../util/dom":222,"../../util/evented":223,"../../util/util":234,"../../util/window":217}],200:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var window = require('../../util/window');
@@ -81107,7 +83131,7 @@ function copyMouseEvent(e) {
         metaKey: e.metaKey
     });
 }
-},{"../../util/dom":221,"../../util/util":233,"../../util/window":216}],200:[function(require,module,exports){
+},{"../../util/dom":222,"../../util/util":234,"../../util/window":217}],201:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -81178,7 +83202,7 @@ function getRoundNum(num) {
     d = d >= 10 ? 10 : d >= 5 ? 5 : d >= 3 ? 3 : d >= 2 ? 2 : 1;
     return pow10 * d;
 }
-},{"../../util/dom":221,"../../util/util":233}],201:[function(require,module,exports){
+},{"../../util/dom":222,"../../util/util":234}],202:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var LngLatBounds = require('../../geo/lng_lat_bounds');
@@ -81271,7 +83295,7 @@ BoxZoomHandler.prototype._fireEvent = function _fireEvent(type, e) {
     return this._map.fire(type, { originalEvent: e });
 };
 module.exports = BoxZoomHandler;
-},{"../../geo/lng_lat_bounds":124,"../../util/dom":221,"../../util/util":233,"../../util/window":216}],202:[function(require,module,exports){
+},{"../../geo/lng_lat_bounds":125,"../../util/dom":222,"../../util/util":234,"../../util/window":217}],203:[function(require,module,exports){
 'use strict';
 var DoubleClickZoomHandler = function DoubleClickZoomHandler(map) {
     this._map = map;
@@ -81296,7 +83320,7 @@ DoubleClickZoomHandler.prototype._onDblClick = function _onDblClick(e) {
     this._map.zoomTo(this._map.getZoom() + (e.originalEvent.shiftKey ? -1 : 1), { around: e.lngLat }, e);
 };
 module.exports = DoubleClickZoomHandler;
-},{}],203:[function(require,module,exports){
+},{}],204:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -81444,7 +83468,7 @@ DragPanHandler.prototype._drainInertiaBuffer = function _drainInertiaBuffer() {
         inertia.shift();
 };
 module.exports = DragPanHandler;
-},{"../../util/dom":221,"../../util/util":233,"../../util/window":216}],204:[function(require,module,exports){
+},{"../../util/dom":222,"../../util/util":234,"../../util/window":217}],205:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -81589,7 +83613,7 @@ DragRotateHandler.prototype._drainInertiaBuffer = function _drainInertiaBuffer()
         inertia.shift();
 };
 module.exports = DragRotateHandler;
-},{"../../util/dom":221,"../../util/util":233,"../../util/window":216}],205:[function(require,module,exports){
+},{"../../util/dom":222,"../../util/util":234,"../../util/window":217}],206:[function(require,module,exports){
 'use strict';
 var panStep = 100, bearingStep = 15, pitchStep = 10;
 var KeyboardHandler = function KeyboardHandler(map) {
@@ -81686,7 +83710,7 @@ function easeOut(t) {
     return t * (2 - t);
 }
 module.exports = KeyboardHandler;
-},{}],206:[function(require,module,exports){
+},{}],207:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -81777,7 +83801,7 @@ ScrollZoomHandler.prototype._zoom = function _zoom(delta, e) {
     }, { originalEvent: e });
 };
 module.exports = ScrollZoomHandler;
-},{"../../util/browser":214,"../../util/dom":221,"../../util/util":233,"../../util/window":216}],207:[function(require,module,exports){
+},{"../../util/browser":215,"../../util/dom":222,"../../util/util":234,"../../util/window":217}],208:[function(require,module,exports){
 'use strict';
 var DOM = require('../../util/dom');
 var util = require('../../util/util');
@@ -81904,7 +83928,7 @@ TouchZoomRotateHandler.prototype._drainInertiaBuffer = function _drainInertiaBuf
         inertia.shift();
 };
 module.exports = TouchZoomRotateHandler;
-},{"../../util/dom":221,"../../util/util":233,"../../util/window":216}],208:[function(require,module,exports){
+},{"../../util/dom":222,"../../util/util":234,"../../util/window":217}],209:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var window = require('../util/window');
@@ -81952,7 +83976,7 @@ Hash.prototype._updateHash = function _updateHash() {
     window.history.replaceState('', '', hash);
 };
 module.exports = Hash;
-},{"../util/util":233,"../util/window":216}],209:[function(require,module,exports){
+},{"../util/util":234,"../util/window":217}],210:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var browser = require('../util/browser');
@@ -82600,7 +84624,7 @@ function removeNode(node) {
         node.parentNode.removeChild(node);
     }
 }
-},{"../geo/lng_lat":123,"../geo/lng_lat_bounds":124,"../geo/transform":125,"../render/painter":140,"../style/animation_loop":163,"../style/style":167,"../util/browser":214,"../util/dom":221,"../util/util":233,"../util/window":216,"./bind_handlers":195,"./camera":196,"./control/attribution_control":197,"./hash":208,"mapbox-gl-supported":104,"point-geometry":240}],210:[function(require,module,exports){
+},{"../geo/lng_lat":124,"../geo/lng_lat_bounds":125,"../geo/transform":126,"../render/painter":141,"../style/animation_loop":164,"../style/style":168,"../util/browser":215,"../util/dom":222,"../util/util":234,"../util/window":217,"./bind_handlers":196,"./camera":197,"./control/attribution_control":198,"./hash":209,"mapbox-gl-supported":105,"point-geometry":241}],211:[function(require,module,exports){
 'use strict';
 var DOM = require('../util/dom');
 var LngLat = require('../geo/lng_lat');
@@ -82692,7 +84716,7 @@ Marker.prototype._update = function _update(e) {
     DOM.setTransform(this._element, 'translate(' + pos.x + 'px, ' + pos.y + 'px)');
 };
 module.exports = Marker;
-},{"../geo/lng_lat":123,"../util/dom":221,"point-geometry":240}],211:[function(require,module,exports){
+},{"../geo/lng_lat":124,"../util/dom":222,"point-geometry":241}],212:[function(require,module,exports){
 'use strict';
 var util = require('../util/util');
 var Evented = require('../util/evented');
@@ -82910,7 +84934,7 @@ function isPointLike(input) {
     return input instanceof Point || Array.isArray(input);
 }
 module.exports = Popup;
-},{"../geo/lng_lat":123,"../util/dom":221,"../util/evented":222,"../util/util":233,"../util/window":216,"point-geometry":240}],212:[function(require,module,exports){
+},{"../geo/lng_lat":124,"../util/dom":222,"../util/evented":223,"../util/util":234,"../util/window":217,"point-geometry":241}],213:[function(require,module,exports){
 'use strict';
 var Actor = function Actor(target, parent, mapId) {
     this.target = target;
@@ -82967,7 +84991,7 @@ Actor.prototype.remove = function remove() {
     this.target.removeEventListener('message', this.receive, false);
 };
 module.exports = Actor;
-},{}],213:[function(require,module,exports){
+},{}],214:[function(require,module,exports){
 'use strict';
 var window = require('./window');
 exports.getJSON = function (url, callback) {
@@ -83054,7 +85078,7 @@ exports.getVideo = function (urls, callback) {
     }
     return video;
 };
-},{"./window":216}],214:[function(require,module,exports){
+},{"./window":217}],215:[function(require,module,exports){
 'use strict';
 var window = require('./window');
 module.exports.now = function () {
@@ -83116,7 +85140,7 @@ webpImgTest.onload = function () {
     exports.supportsWebp = true;
 };
 webpImgTest.src = 'data:image/webp;base64,UklGRh4AAABXRUJQVlA4TBEAAAAvAQAAAAfQ//73v/+BiOh/AAA=';
-},{"./window":216,"mapbox-gl-supported":104}],215:[function(require,module,exports){
+},{"./window":217,"mapbox-gl-supported":105}],216:[function(require,module,exports){
 'use strict';
 var WebWorkify = require('webworkify');
 var window = require('../window');
@@ -83124,10 +85148,10 @@ var workerURL = window.URL.createObjectURL(new WebWorkify(require('../../source/
 module.exports = function () {
     return new window.Worker(workerURL);
 };
-},{"../../source/worker":161,"../window":216,"webworkify":254}],216:[function(require,module,exports){
+},{"../../source/worker":162,"../window":217,"webworkify":255}],217:[function(require,module,exports){
 'use strict';
 module.exports = self;
-},{}],217:[function(require,module,exports){
+},{}],218:[function(require,module,exports){
 'use strict';
 var quickselect = require('quickselect');
 var calculateSignedArea = require('./util').calculateSignedArea;
@@ -83167,7 +85191,7 @@ module.exports = function classifyRings(rings, maxRings) {
 function compareAreas(a, b) {
     return b.area - a.area;
 }
-},{"./util":233,"quickselect":241}],218:[function(require,module,exports){
+},{"./util":234,"quickselect":242}],219:[function(require,module,exports){
 'use strict';
 var config = {
     API_URL: 'https://api.mapbox.com',
@@ -83175,7 +85199,7 @@ var config = {
     ACCESS_TOKEN: null
 };
 module.exports = config;
-},{}],219:[function(require,module,exports){
+},{}],220:[function(require,module,exports){
 'use strict';
 var DictionaryCoder = function DictionaryCoder(strings) {
     var this$1 = this;
@@ -83194,7 +85218,7 @@ DictionaryCoder.prototype.decode = function decode(n) {
     return this._numberToString[n];
 };
 module.exports = DictionaryCoder;
-},{}],220:[function(require,module,exports){
+},{}],221:[function(require,module,exports){
 'use strict';
 var util = require('./util');
 var Actor = require('./actor');
@@ -83234,7 +85258,7 @@ Dispatcher.prototype.remove = function remove() {
     this.workerPool.release(this.id);
 };
 module.exports = Dispatcher;
-},{"./actor":212,"./util":233}],221:[function(require,module,exports){
+},{"./actor":213,"./util":234}],222:[function(require,module,exports){
 'use strict';
 var Point = require('point-geometry');
 var window = require('./window');
@@ -83309,7 +85333,7 @@ exports.remove = function (node) {
         node.parentNode.removeChild(node);
     }
 };
-},{"./window":216,"point-geometry":240}],222:[function(require,module,exports){
+},{"./window":217,"point-geometry":241}],223:[function(require,module,exports){
 'use strict';
 var util = require('./util');
 var Evented = function Evented() {
@@ -83366,7 +85390,7 @@ Evented.prototype.setEventedParent = function setEventedParent(parent, data) {
     return this;
 };
 module.exports = Evented;
-},{"./util":233}],223:[function(require,module,exports){
+},{"./util":234}],224:[function(require,module,exports){
 'use strict';
 var Queue = require('tinyqueue');
 var Point = require('point-geometry');
@@ -83459,7 +85483,7 @@ function getCentroidCell(polygon) {
     }
     return new Cell(x / area, y / area, 0, polygon);
 }
-},{"./intersection_tests":226,"point-geometry":240,"tinyqueue":244}],224:[function(require,module,exports){
+},{"./intersection_tests":227,"point-geometry":241,"tinyqueue":245}],225:[function(require,module,exports){
 'use strict';
 module.exports = Glyphs;
 function Glyphs(pbf, end) {
@@ -83497,7 +85521,7 @@ function readGlyph(tag, glyph, pbf) {
     else if (tag === 7)
         glyph.advance = pbf.readVarint();
 }
-},{}],225:[function(require,module,exports){
+},{}],226:[function(require,module,exports){
 'use strict';
 module.exports = interpolate;
 function interpolate(a, b, t) {
@@ -83523,7 +85547,7 @@ interpolate.array = function (from, to, t) {
         return interpolate(d, to[i], t);
     });
 };
-},{}],226:[function(require,module,exports){
+},{}],227:[function(require,module,exports){
 'use strict';
 var isCounterClockwise = require('./util').isCounterClockwise;
 module.exports = {
@@ -83683,7 +85707,7 @@ function polygonContainsPoint(ring, p) {
     }
     return c;
 }
-},{"./util":233}],227:[function(require,module,exports){
+},{"./util":234}],228:[function(require,module,exports){
 'use strict';
 var unicodeBlockLookup = {
     'Latin-1 Supplement': function (char) {
@@ -83814,7 +85838,7 @@ var unicodeBlockLookup = {
     }
 };
 module.exports = unicodeBlockLookup;
-},{}],228:[function(require,module,exports){
+},{}],229:[function(require,module,exports){
 'use strict';
 var LRUCache = function LRUCache(max, onRemove) {
     this.max = max;
@@ -83882,7 +85906,7 @@ LRUCache.prototype.setMaxSize = function setMaxSize(max) {
     return this;
 };
 module.exports = LRUCache;
-},{}],229:[function(require,module,exports){
+},{}],230:[function(require,module,exports){
 'use strict';
 var config = require('./config');
 var browser = require('./browser');
@@ -83971,7 +85995,7 @@ function formatUrl(obj) {
     var params = obj.params.length ? '?' + obj.params.join('&') : '';
     return obj.protocol + '://' + obj.authority + obj.path + params;
 }
-},{"./browser":214,"./config":218}],230:[function(require,module,exports){
+},{"./browser":215,"./config":219}],231:[function(require,module,exports){
 'use strict';
 var isChar = require('./is_char_in_unicode_block');
 module.exports.allowsIdeographicBreaking = function (chars) {
@@ -84176,7 +86200,7 @@ exports.charHasNeutralVerticalOrientation = function (char) {
 exports.charHasRotatedVerticalOrientation = function (char) {
     return !(exports.charHasUprightVerticalOrientation(char) || exports.charHasNeutralVerticalOrientation(char));
 };
-},{"./is_char_in_unicode_block":227}],231:[function(require,module,exports){
+},{"./is_char_in_unicode_block":228}],232:[function(require,module,exports){
 'use strict';
 module.exports = createStructArrayType;
 var viewTypes = {
@@ -84374,7 +86398,7 @@ function createGetter(member, c) {
 function createSetter(member, c) {
     return new Function('x', createMemberComponentString(member, c) + ' = x;');
 }
-},{}],232:[function(require,module,exports){
+},{}],233:[function(require,module,exports){
 'use strict';
 module.exports = resolveTokens;
 function resolveTokens(properties, text) {
@@ -84382,7 +86406,7 @@ function resolveTokens(properties, text) {
         return key in properties ? properties[key] : '';
     });
 }
-},{}],233:[function(require,module,exports){
+},{}],234:[function(require,module,exports){
 'use strict';
 var UnitBezier = require('@mapbox/unitbezier');
 var Coordinate = require('../geo/coordinate');
@@ -84611,7 +86635,7 @@ exports.parseCacheControl = function (cacheControl) {
     }
     return header;
 };
-},{"../geo/coordinate":122,"@mapbox/unitbezier":22,"point-geometry":240}],234:[function(require,module,exports){
+},{"../geo/coordinate":123,"@mapbox/unitbezier":22,"point-geometry":241}],235:[function(require,module,exports){
 'use strict';
 var Feature = function Feature(vectorTileFeature, z, x, y) {
     this.type = 'Feature';
@@ -84646,7 +86670,7 @@ Feature.prototype.toJSON = function toJSON() {
 };
 Object.defineProperties(Feature.prototype, prototypeAccessors);
 module.exports = Feature;
-},{}],235:[function(require,module,exports){
+},{}],236:[function(require,module,exports){
 'use strict';
 var scriptDetection = require('./script_detection');
 module.exports = function verticalizePunctuation(input) {
@@ -84748,7 +86772,7 @@ module.exports.lookup = {
     '\uFF62': '\uFE41',
     '\uFF63': '\uFE42'
 };
-},{"./script_detection":230}],236:[function(require,module,exports){
+},{"./script_detection":231}],237:[function(require,module,exports){
 'use strict';
 var WebWorker = require('./web_worker');
 var WorkerPool = function WorkerPool() {
@@ -84776,11 +86800,11 @@ WorkerPool.prototype.release = function release(mapId) {
     }
 };
 module.exports = WorkerPool;
-},{"../mapbox-gl":128,"./web_worker":215}],237:[function(require,module,exports){
+},{"../mapbox-gl":129,"./web_worker":216}],238:[function(require,module,exports){
 module.exports={
   "version": "0.32.1"
 }
-},{}],238:[function(require,module,exports){
+},{}],239:[function(require,module,exports){
 'use strict';
 
 // lightweight Buffer shim for pbf browser build
@@ -84941,7 +86965,7 @@ function encodeString(str) {
     return bytes;
 }
 
-},{"ieee754":59}],239:[function(require,module,exports){
+},{"ieee754":59}],240:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -85367,7 +87391,7 @@ function writePackedFixed64(arr, pbf)  { for (var i = 0; i < arr.length; i++) pb
 function writePackedSFixed64(arr, pbf) { for (var i = 0; i < arr.length; i++) pbf.writeSFixed64(arr[i]); }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./buffer":238}],240:[function(require,module,exports){
+},{"./buffer":239}],241:[function(require,module,exports){
 'use strict';
 
 module.exports = Point;
@@ -85500,7 +87524,7 @@ Point.convert = function (a) {
     return a;
 };
 
-},{}],241:[function(require,module,exports){
+},{}],242:[function(require,module,exports){
 'use strict';
 
 module.exports = partialSort;
@@ -85562,7 +87586,7 @@ function defaultCompare(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
 }
 
-},{}],242:[function(require,module,exports){
+},{}],243:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
@@ -85817,7 +87841,7 @@ Shelf.prototype.resize = function(w) {
 return ShelfPack;
 
 }));
-},{}],243:[function(require,module,exports){
+},{}],244:[function(require,module,exports){
 'use strict';
 
 var kdbush = require('kdbush');
@@ -86151,7 +88175,7 @@ function getY(p) {
     return p.y;
 }
 
-},{"kdbush":62}],244:[function(require,module,exports){
+},{"kdbush":63}],245:[function(require,module,exports){
 'use strict';
 
 module.exports = TinyQueue;
@@ -86232,7 +88256,7 @@ function swap(data, i, j) {
     data[j] = tmp;
 }
 
-},{}],245:[function(require,module,exports){
+},{}],246:[function(require,module,exports){
 /*
  * Toastr
  * Copyright 2012-2015
@@ -86669,7 +88693,7 @@ function swap(data, i, j) {
     }
 }));
 
-},{"jquery":61}],246:[function(require,module,exports){
+},{"jquery":62}],247:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -88219,12 +90243,12 @@ function swap(data, i, j) {
   }
 }.call(this));
 
-},{}],247:[function(require,module,exports){
+},{}],248:[function(require,module,exports){
 module.exports.VectorTile = require('./lib/vectortile.js');
 module.exports.VectorTileFeature = require('./lib/vectortilefeature.js');
 module.exports.VectorTileLayer = require('./lib/vectortilelayer.js');
 
-},{"./lib/vectortile.js":248,"./lib/vectortilefeature.js":249,"./lib/vectortilelayer.js":250}],248:[function(require,module,exports){
+},{"./lib/vectortile.js":249,"./lib/vectortilefeature.js":250,"./lib/vectortilelayer.js":251}],249:[function(require,module,exports){
 'use strict';
 
 var VectorTileLayer = require('./vectortilelayer');
@@ -88243,7 +90267,7 @@ function readTile(tag, layers, pbf) {
 }
 
 
-},{"./vectortilelayer":250}],249:[function(require,module,exports){
+},{"./vectortilelayer":251}],250:[function(require,module,exports){
 'use strict';
 
 var Point = require('point-geometry');
@@ -88478,7 +90502,7 @@ function signedArea(ring) {
     return sum;
 }
 
-},{"point-geometry":240}],250:[function(require,module,exports){
+},{"point-geometry":241}],251:[function(require,module,exports){
 'use strict';
 
 var VectorTileFeature = require('./vectortilefeature.js');
@@ -88541,7 +90565,7 @@ VectorTileLayer.prototype.feature = function(i) {
     return new VectorTileFeature(this._pbf, end, this.extent, this._keys, this._values);
 };
 
-},{"./vectortilefeature.js":249}],251:[function(require,module,exports){
+},{"./vectortilefeature.js":250}],252:[function(require,module,exports){
 var Pbf = require('pbf')
 var vtpb = require('./vector-tile-pb')
 var GeoJSONWrapper = require('./lib/geojson_wrapper')
@@ -88697,7 +90721,7 @@ function wrapValue (value) {
   return result
 }
 
-},{"./lib/geojson_wrapper":252,"./vector-tile-pb":253,"pbf":239}],252:[function(require,module,exports){
+},{"./lib/geojson_wrapper":253,"./vector-tile-pb":254,"pbf":240}],253:[function(require,module,exports){
 'use strict'
 
 var Point = require('point-geometry')
@@ -88765,7 +90789,7 @@ FeatureWrapper.prototype.bbox = function () {
 
 FeatureWrapper.prototype.toGeoJSON = VectorTileFeature.prototype.toGeoJSON
 
-},{"point-geometry":240,"vector-tile":247}],253:[function(require,module,exports){
+},{"point-geometry":241,"vector-tile":248}],254:[function(require,module,exports){
 'use strict';
 
 // tile ========================================
@@ -88871,7 +90895,7 @@ function writeLayer(layer, pbf) {
     if (layer.extent !== undefined) pbf.writeVarintField(5, layer.extent);
 }
 
-},{}],254:[function(require,module,exports){
+},{}],255:[function(require,module,exports){
 var bundleFn = arguments[3];
 var sources = arguments[4];
 var cache = arguments[5];
@@ -88954,12 +90978,12 @@ module.exports = function (fn, options) {
     return worker;
 };
 
-},{}],255:[function(require,module,exports){
+},{}],256:[function(require,module,exports){
 module.exports.RADIUS = 6378137;
 module.exports.FLATTENING = 1/298.257223563;
 module.exports.POLAR_RADIUS = 6356752.3142;
 
-},{}],256:[function(require,module,exports){
+},{}],257:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -89049,7 +91073,7 @@ exports.getMercCoords = getMercCoords;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 }));
-},{}],257:[function(require,module,exports){
+},{}],258:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -89277,7 +91301,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,require('_process'))
-},{"_process":258}],258:[function(require,module,exports){
+},{"_process":259}],259:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -89459,7 +91483,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],259:[function(require,module,exports){
+},{}],260:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -89484,14 +91508,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],260:[function(require,module,exports){
+},{}],261:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],261:[function(require,module,exports){
+},{}],262:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -90081,4 +92105,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":260,"_process":258,"inherits":259}]},{},[5]);
+},{"./support/isBuffer":261,"_process":259,"inherits":260}]},{},[5]);

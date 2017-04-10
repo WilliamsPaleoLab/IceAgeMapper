@@ -271,3 +271,11 @@ tr:hover {background-color: #00b3b3}
 .toggleButtonClose{
   color: black;
 }
+
+#tutorial{
+  height: 100%;
+  width: 100%;
+  background: none;
+  pointer-events: none;
+  display: none;
+}

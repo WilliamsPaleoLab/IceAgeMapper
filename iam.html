@@ -2,8 +2,8 @@
 <head>
   <meta http-equiv="content-type" content="text/html; charset=UTF8">
   <title>Ice Age Mapper</title>
-   <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-  <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+   <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css" >
+  <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
   <link rel='stylesheet' href="bower_components/dcjs/dc.min.css" />
   <link rel='stylesheet' href="bower_components/awesomplete/awesomplete.css" />
   <link rel="stylesheet" href="bower_components/toastr/toastr.min.css" />
@@ -16,6 +16,7 @@
   <!-- <link rel='stylesheet' href="bower_components/pace/themes/black/pace-theme-mac-osx.css" /> -->
   <link rel='stylesheet' href="bower_components/pace/themes/blue/pace-theme-loading-bar.css" />
   <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' />
+  <link rel='stylesheet' href='node_modules/intro.js/minified/introjs.min.css' />
   <style>
 
   </style>
@@ -29,6 +30,9 @@
 
 <body>
 
+<div id='tutorial' data-intro='Welcome to Ice Age Mapper - Exploring ecological change since Last Glacial Maximum. This walkthrough will guide you through some of the main features of the application. We are currently looking at occurrences of the genus Sequoia between 22,000 years ago and the present.'>
+
+</div>
 
   <nav class="navbar navbar-default">
     <div class="container-fluid">
@@ -39,13 +43,13 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <div id='headerRow' class='col-xs-12'>
+        <div id='headerRow' class='col-xs-12' data-intro="That's all for now. Have fun!" data-step=10>
           <h3 class='iam-header' id='iam-header'>Ice Age <strong><i>Mapper</i></strong> <span class='text-muted'><small>v2.0</small></span></h3>
-          <button type="button" class="btn btn-success" id='addDataButton' data-toggle="modal" data-target="#addDataModal">
+          <button type="button" class="btn btn-success" id='addDataButton' data-toggle="modal" data-target="#addDataModal" data-intro="Want to look at new data? Load a taxon by name of group using this menu." data-step=6>
           <span class='glyphicon glyphicon-plus'></span>Add Data
         </button>
 
-        <button type="button" class="btn btn-warning" id='shareMapButton' data-toggle="modal" data-target="#shareModal">
+        <button type="button" class="btn btn-warning" id='shareMapButton' data-toggle="modal" data-target="#shareModal" data-intro="Once you've configured your map, you can share it by generating a permanent URL for it -- great for sharing with colleagues, students, and friends! Personally identifying data is optional and will not be shared." data-step=9>
         <span class='glyphicon glyphicon-envelope'></span>Share Map
       </button>
         <!-- <label class='text-muted' id='taxonid'></label> -->
@@ -99,7 +103,8 @@
   <div class="ui-layout-east">
     <div class='container' id='analyticsContainer'>
       <div class='row col-xs-12'>
-        <h2 class='page-header summary-header'>Dashboard <span class='right'><button class='btn btn-lrg btn-primary' id='resetButton'>Reset All</button></span></h2>
+        <h2 class='page-header summary-header' data-intro='The dashboard shows presence in attribute space. Filters applied on one chart are reflected on the entire interface.' data-step=3>
+          Dashboard <span class='right'><button class='btn btn-lrg btn-primary' id='resetButton'>Reset All</button></span></h2>
         <a class='reset'
           href='javascript:myChart.filterAll();dc.redrawAll();'
           style='visibility: hidden;'>reset</a>
@@ -108,7 +113,7 @@
       <div class='row col-xs-12 dashboard-row '>
         <div class='col-xs-12 col-sm-12'>
           <h5 class='page-header anatyics-header'>Latitude Distribution</h5>
-          <div class='analytics-chart ' id='latitudeChart'>
+          <div class='analytics-chart ' id='latitudeChart' data-intro='To create a new filter, click and drag on the chart. To clear the filter, simply click the chart.' data-step=4>
 
           </div>
         </div>
@@ -157,14 +162,14 @@
         </div>
       </div>
       <!--here goes the map -->
-      <div id='map'>
+      <div id='map' data-intro="The map view shows presence in geographic space. You can zoom using the mouse wheel. Click on a point to open details about that fossil locality." data-step=2>
 
 
       </div>
     </div>
   </div>
 	<div class="ui-layout-south">
-    <div class='row' id='tempContainer'>
+    <div class='row' id='tempContainer' data-intro="The bottom panel contextualizes the occurrences by displaying mean temperature anomalies for the Northern Hemisphere, derived from a Greenland ice core record (GISP2). This chart can be filtered like the others." data-step=5 data-position='top'>
 
     </div>
 </div>

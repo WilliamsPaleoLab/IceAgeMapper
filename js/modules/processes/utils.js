@@ -137,6 +137,15 @@ var utils = (function(){
     return uri
   }
 
+  var isValidWalkthroughParameterValue = function(param){
+    //gives flexibility to include multiple walkthroughs using numbers or hashes instead of just a single walkthrough with true false,
+    //but for now, only one is allowed.
+    if((param === true) || (param === 'true')){
+      return true
+    }
+    return false
+  }
+
 
   return {
     getParameterByName: getParameterByName,
@@ -146,7 +155,8 @@ var utils = (function(){
     isValidToken: isValidToken,
     isValidTaxonName: isValidTaxonName,
     isValidTaxonID: isValidTaxonID,
-    createShareLink : createShareLink
+    createShareLink : createShareLink,
+    isValidWalkthroughParameterValue: isValidWalkthroughParameterValue
   }
 
 })();//end utils module

@@ -16,6 +16,24 @@ var icesheets = require("./icesheets.js");
 var ui = (function(){
   var layout, mapChart, map, initialize, temperatureChart;
 
+  var loadWalkthrough = function(){
+    console.log("Loading walkthrough...")
+    var config = require("./../config/config.js");
+    var state = require("./../config/state.js");
+    var i = require("intro.js");
+    var introJs = i.introJs() //configure so it's recognized as a module
+    if (config.walkthrough.loadClean){
+      initialize(config, state);
+    }else{
+      loadFromTaxonName(config.walkthrough.defaultTaxonName)
+    }
+
+    introJs.setOption("nextLabel", " > ");
+    introJs.setOption("prevLabel", " < ");
+    introJs.setOption('overlayOpacity', 0.8);
+    introJs.setOption('showProgress', false);
+    introJs.start();
+  }
 
   //load a configuration from the database
   var loadFromToken = function(configToken){
@@ -54,6 +72,7 @@ var ui = (function(){
     var shareToken = utils.getParameterByName('shareToken');
     var taxonName = utils.getParameterByName('taxonname');
     var taxonID = utils.getParameterByName('taxonid');
+    var doWalkthrough = utils.getParameterByName('walkthrough')
 
 
     //load preferentially off those parameters --> only one will happen
@@ -63,6 +82,8 @@ var ui = (function(){
       loadFromTaxonName(taxonName)
     }else if (utils.isValidTaxonID(taxonID)){
       loadFromTaxonID(taxonID);
+    }else if (utils.isValidWalkthroughParameterValue(doWalkthrough)){
+      loadWalkthrough();
     }else{
       loadClean();
     }

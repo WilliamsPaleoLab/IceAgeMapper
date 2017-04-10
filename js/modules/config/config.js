@@ -78,10 +78,14 @@ var config  = (function(){
     doAnnotations: true, //should annotations about time periods be put into the tempCurve?
     baseURL : "iam.html", //where does the *map* reside? e.g., what is this page?
     validationRules: {
-      authorRequired: true,
+      authorRequired: false,
       titleRequired: true,
       descriptionRequired: true,
-      organizationRequired: true
+      organizationRequired: false
+    },
+    walkthrough: {
+      loadClean: false,
+      defaultTaxonName: "sequoia"
     }
   }
 })(); //end configuration
