@@ -279,3 +279,14 @@ tr:hover {background-color: #00b3b3}
   pointer-events: none;
   display: none;
 }
+
+.failed{
+  height: 100%!important;
+  width: 100%!important;
+  z-index: 1000000;
+  background-color: white;
+  color: red;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}

@@ -8310,6 +8310,14 @@ var UIUtils = (function(){
     toastr.success(message, title)
   }
 
+  var displayEmptySet = function(){
+    displayError("No records found!", "Error.")
+  }
+
+  var displayWebGLError = function(){
+    $("body").append("<div class='failed'><h4 class='page-header'>It appears your browser is not properly configured to use this application. Please check to make sure that you ahve WebGL enabled in your browser.</div>")
+  }
+
   var handleShareRequestEvent = function(){
     metadata = getShareMapMetadata();
     isValid = utils.validateShareMapMetadata(metadata);
@@ -8357,6 +8365,18 @@ var UIUtils = (function(){
     dc.renderAll();
   }
 
+  function checkForWebGLSupport(){
+    try {
+        var canvas = document.createElement("canvas");
+        return !!
+            window.WebGLRenderingContext &&
+            (canvas.getContext("webgl") ||
+                canvas.getContext("experimental-webgl"));
+    } catch(e) {
+        return false;
+    }
+  }
+
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,
@@ -8366,9 +8386,12 @@ var UIUtils = (function(){
     displayError:displayError,
     displayInfo: displayInfo,
     displaySuccess: displaySuccess,
+    displayEmptySet: displayEmptySet,
     createLoadDataWindowComponents: createLoadDataWindowComponents,
     handleShareRequestEvent: handleShareRequestEvent,
-    applyFilters: applyFilters
+    applyFilters: applyFilters,
+    checkForWebGLSupport: checkForWebGLSupport,
+    displayWebGLError: displayWebGLError
   }
 })();
 
@@ -8471,6 +8494,16 @@ var ui = (function(){
     window.config = config;
     window.state = state;
 
+    //check to see if webgl is enabled
+    var webGLSupported = UIUtils.checkForWebGLSupport();
+    if(!webGLSupported){
+      //webgl is not supported
+      //possibly engineer fallback here
+      //for now, error
+       UIUtils.displayWebGLError();
+    }
+
+
     //create UI components
     //make the map and its dc container
     mapChart = mapModule.create();
@@ -8510,6 +8543,12 @@ var ui = (function(){
       UIUtils.displayError(error)
       throw error
     }
+    //check if there's actually data in there
+    if (occurrences.length == 0){
+      handleEmptyResponse();
+      return
+    }
+
     //get the data ready to plot
     processedData = process.mergeMetadata(occurrences, datasets);
     crossfilteredData = process.crossfilterIt(processedData)
@@ -8537,6 +8576,10 @@ var ui = (function(){
     if (state.openSite){
       sitePanel.triggerOpen(state.activeSiteID);
     }
+  }
+
+  function handleEmptyResponse(){
+    UIUtils.displayEmptySet();
   }
 
   function render(){

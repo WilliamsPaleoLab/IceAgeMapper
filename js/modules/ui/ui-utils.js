@@ -132,6 +132,14 @@ var UIUtils = (function(){
     toastr.success(message, title)
   }
 
+  var displayEmptySet = function(){
+    displayError("No records found!", "Error.")
+  }
+
+  var displayWebGLError = function(){
+    $("body").append("<div class='failed'><h4 class='page-header'>It appears your browser is not properly configured to use this application. Please check to make sure that you ahve WebGL enabled in your browser.</div>")
+  }
+
   var handleShareRequestEvent = function(){
     metadata = getShareMapMetadata();
     isValid = utils.validateShareMapMetadata(metadata);
@@ -179,6 +187,18 @@ var UIUtils = (function(){
     dc.renderAll();
   }
 
+  function checkForWebGLSupport(){
+    try {
+        var canvas = document.createElement("canvas");
+        return !!
+            window.WebGLRenderingContext &&
+            (canvas.getContext("webgl") ||
+                canvas.getContext("experimental-webgl"));
+    } catch(e) {
+        return false;
+    }
+  }
+
   return {
     failShareValidation: failShareValidation,
     onShareSuccess: onShareSuccess,
@@ -188,9 +208,12 @@ var UIUtils = (function(){
     displayError:displayError,
     displayInfo: displayInfo,
     displaySuccess: displaySuccess,
+    displayEmptySet: displayEmptySet,
     createLoadDataWindowComponents: createLoadDataWindowComponents,
     handleShareRequestEvent: handleShareRequestEvent,
-    applyFilters: applyFilters
+    applyFilters: applyFilters,
+    checkForWebGLSupport: checkForWebGLSupport,
+    displayWebGLError: displayWebGLError
   }
 })();
 

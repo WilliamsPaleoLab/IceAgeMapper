@@ -94,6 +94,16 @@ var ui = (function(){
     window.config = config;
     window.state = state;
 
+    //check to see if webgl is enabled
+    var webGLSupported = UIUtils.checkForWebGLSupport();
+    if(!webGLSupported){
+      //webgl is not supported
+      //possibly engineer fallback here
+      //for now, error
+       UIUtils.displayWebGLError();
+    }
+
+
     //create UI components
     //make the map and its dc container
     mapChart = mapModule.create();
@@ -133,6 +143,12 @@ var ui = (function(){
       UIUtils.displayError(error)
       throw error
     }
+    //check if there's actually data in there
+    if (occurrences.length == 0){
+      handleEmptyResponse();
+      return
+    }
+
     //get the data ready to plot
     processedData = process.mergeMetadata(occurrences, datasets);
     crossfilteredData = process.crossfilterIt(processedData)
@@ -160,6 +176,10 @@ var ui = (function(){
     if (state.openSite){
       sitePanel.triggerOpen(state.activeSiteID);
     }
+  }
+
+  function handleEmptyResponse(){
+    UIUtils.displayEmptySet();
   }
 
   function render(){
