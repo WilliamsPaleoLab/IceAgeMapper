@@ -217,4 +217,8 @@ li{
 
 #footer-banner{
   color: #c5050c;
-}s
+}
+
+#searchAddon:hover{
+  background-color:cyan;
+}
