@@ -89,6 +89,13 @@ var ui = (function(){
     }
   }
 
+  var startSessionTimer = function(){
+    if (window.config.timer === undefined){
+      window.config.timer = {}
+    }
+     window.config.timer.sessionStart = new Date();
+  }
+
   //initialize a new UI session using the configuration either default or remote
   var  initialize = function(config, state){
     window.config = config;
@@ -102,6 +109,8 @@ var ui = (function(){
       //for now, error
        UIUtils.displayWebGLError();
     }
+    //keep track of how long user spends on interface
+    startSessionTimer();
 
 
     //create UI components

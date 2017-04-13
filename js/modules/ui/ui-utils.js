@@ -140,7 +140,14 @@ var UIUtils = (function(){
     $("body").append("<div class='failed'><h4 class='page-header'>It appears your browser is not properly configured to use this application. Please check to make sure that you ahve WebGL enabled in your browser.</div>")
   }
 
+
+
   var handleShareRequestEvent = function(){
+
+    //close the timer
+    window.config.timer.sessionEnd = new Date();
+    utils.calcElapsedTime();
+
     metadata = getShareMapMetadata();
     isValid = utils.validateShareMapMetadata(metadata);
     //update the state with current filters

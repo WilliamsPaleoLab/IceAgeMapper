@@ -86,6 +86,13 @@ var config  = (function(){
     walkthrough: {
       loadClean: false,
       defaultTaxonName: "sequoia"
+    },
+    timer: {
+      sessionStart : null,
+      sessionEnd : null,
+      dataLoad : null,
+      totalElapsed :null,
+      loadElapsed : null
     }
   }
 })(); //end configuration

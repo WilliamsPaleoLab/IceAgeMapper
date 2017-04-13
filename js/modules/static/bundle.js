@@ -87,6 +87,13 @@ var config  = (function(){
     walkthrough: {
       loadClean: false,
       defaultTaxonName: "sequoia"
+    },
+    timer: {
+      sessionStart : null,
+      sessionEnd : null,
+      dataLoad : null,
+      totalElapsed :null,
+      loadElapsed : null
     }
   }
 })(); //end configuration
@@ -356,7 +363,6 @@ var io = (function(){
     //limit to ages set in configuration object
     endpoint += "&ageold=" + config.searchAgeBounds[1]
     endpoint += "&ageyoung=" + config.searchAgeBounds[0]
-    console.log(endpoint)
     $.ajax(endpoint, {
       success: function(data){
         //on success of Neotoma query
@@ -399,14 +405,11 @@ var io = (function(){
     //limit to ages set in configuration object
     endpoint += "&ageold=" + config.searchAgeBounds[1]
     endpoint += "&ageyoung=" + config.searchAgeBounds[0]
-    console.log(endpoint)
 
     $.getJSON(endpoint, function(data){
       //check neotoma server success
       if (data['success']){
         callback(null, data['data']);
-        console.log("Got datasets")
-
         // toastr.success("Received " + data['data'].length + " datasets from Neotoma.", "Datasets Recevied.")
       }else{
         console.log("Error.")
@@ -417,6 +420,12 @@ var io = (function(){
   };
 
   var getNeotomaData = function(config, state, callback){
+    //get both datasets and occurrences
+
+    //first set the timer
+    window.config.timer.dataLoad = new Date();
+
+    //now load the data
     var q = queue.queue();
     q.defer(getOccurrenceData, config, state);
     q.defer(getDatasets, config, state);
@@ -446,7 +455,7 @@ var io = (function(){
 
     datString = JSON.stringify(dat);
 
-    console.log(datString);
+    console.log(dat);
     console.log(uri)
     //send the request
     $.ajax(uri, {
@@ -703,7 +712,8 @@ var utils = (function(){
   }
 
   //validate the map metaddata to ensure it's got the required elements
-  function validateShareMapMetadata(metadata, config){
+  function validateShareMapMetadata(metadata){
+    config = window.config
     if (config){
       var authorRequired = config.validationRules.authorRequired;
       var organizationRequired = config.validationRules.organizationRequired;
@@ -746,6 +756,10 @@ var utils = (function(){
     return response
   }
 
+  var calcElapsedTime = function(){
+    window.config.timer.totalElapsed = window.config.timer.sessionEnd - window.config.timer.sessionStart;
+    window.config.timer.loadElapsed = window.config.timer.sessionEnd - window.config.timer.dataLoad;
+  }
 
   //generate the GET request URL for the shared map
   var createShareLink = function(metadata, host, config){
@@ -783,7 +797,8 @@ var utils = (function(){
     isValidTaxonName: isValidTaxonName,
     isValidTaxonID: isValidTaxonID,
     createShareLink : createShareLink,
-    isValidWalkthroughParameterValue: isValidWalkthroughParameterValue
+    isValidWalkthroughParameterValue: isValidWalkthroughParameterValue,
+    calcElapsedTime: calcElapsedTime
   }
 
 })();//end utils module
@@ -8318,7 +8333,14 @@ var UIUtils = (function(){
     $("body").append("<div class='failed'><h4 class='page-header'>It appears your browser is not properly configured to use this application. Please check to make sure that you ahve WebGL enabled in your browser.</div>")
   }
 
+
+
   var handleShareRequestEvent = function(){
+
+    //close the timer
+    window.config.timer.sessionEnd = new Date();
+    utils.calcElapsedTime();
+
     metadata = getShareMapMetadata();
     isValid = utils.validateShareMapMetadata(metadata);
     //update the state with current filters
@@ -8489,6 +8511,13 @@ var ui = (function(){
     }
   }
 
+  var startSessionTimer = function(){
+    if (window.config.timer === undefined){
+      window.config.timer = {}
+    }
+     window.config.timer.sessionStart = new Date();
+  }
+
   //initialize a new UI session using the configuration either default or remote
   var  initialize = function(config, state){
     window.config = config;
@@ -8502,6 +8531,8 @@ var ui = (function(){
       //for now, error
        UIUtils.displayWebGLError();
     }
+    //keep track of how long user spends on interface
+    startSessionTimer();
 
 
     //create UI components

@@ -76,7 +76,8 @@ var utils = (function(){
   }
 
   //validate the map metaddata to ensure it's got the required elements
-  function validateShareMapMetadata(metadata, config){
+  function validateShareMapMetadata(metadata){
+    config = window.config
     if (config){
       var authorRequired = config.validationRules.authorRequired;
       var organizationRequired = config.validationRules.organizationRequired;
@@ -119,6 +120,10 @@ var utils = (function(){
     return response
   }
 
+  var calcElapsedTime = function(){
+    window.config.timer.totalElapsed = window.config.timer.sessionEnd - window.config.timer.sessionStart;
+    window.config.timer.loadElapsed = window.config.timer.sessionEnd - window.config.timer.dataLoad;
+  }
 
   //generate the GET request URL for the shared map
   var createShareLink = function(metadata, host, config){
@@ -156,7 +161,8 @@ var utils = (function(){
     isValidTaxonName: isValidTaxonName,
     isValidTaxonID: isValidTaxonID,
     createShareLink : createShareLink,
-    isValidWalkthroughParameterValue: isValidWalkthroughParameterValue
+    isValidWalkthroughParameterValue: isValidWalkthroughParameterValue,
+    calcElapsedTime: calcElapsedTime
   }
 
 })();//end utils module

@@ -116,7 +116,6 @@ var io = (function(){
     //limit to ages set in configuration object
     endpoint += "&ageold=" + config.searchAgeBounds[1]
     endpoint += "&ageyoung=" + config.searchAgeBounds[0]
-    console.log(endpoint)
     $.ajax(endpoint, {
       success: function(data){
         //on success of Neotoma query
@@ -159,14 +158,11 @@ var io = (function(){
     //limit to ages set in configuration object
     endpoint += "&ageold=" + config.searchAgeBounds[1]
     endpoint += "&ageyoung=" + config.searchAgeBounds[0]
-    console.log(endpoint)
 
     $.getJSON(endpoint, function(data){
       //check neotoma server success
       if (data['success']){
         callback(null, data['data']);
-        console.log("Got datasets")
-
         // toastr.success("Received " + data['data'].length + " datasets from Neotoma.", "Datasets Recevied.")
       }else{
         console.log("Error.")
@@ -177,6 +173,12 @@ var io = (function(){
   };
 
   var getNeotomaData = function(config, state, callback){
+    //get both datasets and occurrences
+
+    //first set the timer
+    window.config.timer.dataLoad = new Date();
+
+    //now load the data
     var q = queue.queue();
     q.defer(getOccurrenceData, config, state);
     q.defer(getDatasets, config, state);
@@ -206,7 +208,7 @@ var io = (function(){
 
     datString = JSON.stringify(dat);
 
-    console.log(datString);
+    console.log(dat);
     console.log(uri)
     //send the request
     $.ajax(uri, {
