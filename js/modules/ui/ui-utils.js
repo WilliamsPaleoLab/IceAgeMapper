@@ -99,12 +99,15 @@ var UIUtils = (function(){
     org = $("#authorOrg").val();
     mapTitle = $("#mapTitle").val();
     mapDesc = $("#mapDescription").val();
+    role = $("#userRoleSelect :selected").val();
+
 
     return {
       author: author,
       organization: org,
       mapTitle: mapTitle,
-      mapDescription: mapDesc
+      mapDescription: mapDesc,
+      role: role
     }
   };
 
@@ -159,6 +162,8 @@ var UIUtils = (function(){
     window.state.filters.investigator = window.charts.PIChart.filter();
     window.state.filters.age = window.charts.temperatureChart.filter(); //overwrites age filter, but they're the same dimension.
 
+    //avoid putting a new table in the database
+    window.config.role = metadata.role
 
     if (isValid.valid){
       IO.sendShareRequest(metadata, onShareRequestSuccess)
@@ -183,7 +188,6 @@ var UIUtils = (function(){
 
   function applyFilters(state, charts){
     //apply saved filters to new UI
-    console.log(state.filters);
     charts.ageChart.filter(state.filters.age);
     charts.abundanceChart.filter(state.filters.abundance);
     charts.latitudeChart.filter(state.filters.latitude);

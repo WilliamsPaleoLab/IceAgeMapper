@@ -17,7 +17,6 @@ var io = (function(){
         type:"GET",
         success: function(data){
           //make sure data came back successfully from neotoma
-          console.log(data)
           if ((data['success']) && data['data'].length > 0){
             //this is the configuration that was returned
             var remoteConfig = data['data'][0]['configdata']
@@ -51,7 +50,6 @@ var io = (function(){
   var getTaxa = function(config, callback){
     //loads the taxa file specified in the configuration object
     //runs the callback specified in the arguments
-    console.log(config.dataSources.taxa)
     $.getJSON(config.dataSources.taxa, function(data){
       console.log(data)
       callback(data, config)
@@ -208,12 +206,10 @@ var io = (function(){
 
     datString = JSON.stringify(dat);
 
-    console.log(dat);
-    console.log(uri)
     //send the request
     $.ajax(uri, {
       beforeSend: function(){
-        console.log("Sharing your map.")
+
       },
       type: "POST",
       data: datString,

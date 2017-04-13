@@ -93,7 +93,7 @@
 
 
 
-      <h4>Samples of <span id='taxonName'></span> at this site:</h4>
+      <h4>Samples at this site:</h4>
         <table id='sampleTable' class='col-xs-12'>
         </table>
 
@@ -248,8 +248,23 @@
         <label>Institution <span class='small text-muted'>(optional)</span></label><input class='form-control' type='text' name='authorOrg' id='authorOrg' placeholder='Your Insitution' /><br />
         <label>Map Title</label><input class='form-control' type='text' name='mapTitle' id='mapTitle' placeholder="Map Title" /><br />
         <textarea class='form-control' id='mapDescription' name="mapDescription" placeholder="A short description of your map configuration"></textarea><br />
-
-        <i>By sharing your map, you are agreeing that your map configuration may be analyzed anonymously as part of a research study. </i><br /><br />
+        <label>What role best desribes you?</label>
+        <select class='form-control' id='userRoleSelect'>
+          <option value='researcher'>
+            Researcher
+          </option>
+          <option value='educator'>
+            Educator
+          </option>
+          <option value='student'>
+            Student
+          </option>
+          <option value='other'>
+            Other
+          </option>
+        </select>
+        <br / /><hr />
+        <i class='text-muted bold strong small'>By sharing your map, you are agreeing that your map configuration may be analyzed anonymously as part of a research study. </i><br /><br />
       <button class='btn btn-danger' id='sendShareRequest'>Share!</button>
 
 
