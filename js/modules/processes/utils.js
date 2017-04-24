@@ -151,6 +151,17 @@ var utils = (function(){
     return false
   }
 
+  var getBrowser = function(){
+    var platform ={}
+    platform.cookieEnabled = navigator.cookieEnabled
+    platform.language = navigator.language
+    platform.maxTouchPoints = navigator.maxTouchPoints
+    platform.platform = navigator.platform
+    platform.browserBuild = navigator.buildID;
+    platform.cpuInfo = navigator.oscpu
+    platform.browserVendor = navigator.vendor
+    return platform
+  }
 
   return {
     getParameterByName: getParameterByName,
@@ -162,7 +173,8 @@ var utils = (function(){
     isValidTaxonID: isValidTaxonID,
     createShareLink : createShareLink,
     isValidWalkthroughParameterValue: isValidWalkthroughParameterValue,
-    calcElapsedTime: calcElapsedTime
+    calcElapsedTime: calcElapsedTime,
+    getBrowser: getBrowser
   }
 
 })();//end utils module

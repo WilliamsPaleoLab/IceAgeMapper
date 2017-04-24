@@ -85,7 +85,8 @@ var config  = (function(){
     },
     walkthrough: {
       loadClean: false,
-      defaultTaxonName: "sequoia"
+      defaultTaxonName: "sequoia",
+      doWalkthrough: false //for post-hoc analysis only
     },
     timer: {
       sessionStart : null,

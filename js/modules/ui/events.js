@@ -74,6 +74,11 @@ var UIEvents = (function(){
     })
   }
 
+  var enableDownloadRequests = function(){
+    var el = $("#download-data");
+    el.on('click', UIUtils.handleDownloadRequest)
+  }
+
   var enableSiteDetailsOnMapClick = function(map){
     map.on('click', function(e){
       lng = e.lngLat.lng
@@ -106,6 +111,7 @@ var UIEvents = (function(){
     onSearchButtonClick();
     onSendShareRequestButtonClick();
     onResetAllButtonClick();
+    enableDownloadRequests();
   }
 
   return  {

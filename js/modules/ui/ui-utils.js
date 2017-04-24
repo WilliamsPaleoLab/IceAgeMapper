@@ -91,6 +91,11 @@ var UIUtils = (function(){
     }
   };
 
+  function handleDownloadRequest(){
+    //download the data conforming to current filters
+    console.log("Download request received")
+  }
+
 
   //get details about the person sharing the map
   function getShareMapMetadata(){
@@ -155,15 +160,23 @@ var UIUtils = (function(){
     isValid = utils.validateShareMapMetadata(metadata);
     //update the state with current filters
 
-    window.state.filters.age = window.charts.ageChart.filter();
-    window.state.filters.abudance = window.charts.abundanceChart.filter();
-    window.state.filters.recordType = window.charts.recordTypeChart.filter();
-    window.state.filters.latitude = window.charts.latitudeChart.filter();
-    window.state.filters.investigator = window.charts.PIChart.filter();
-    window.state.filters.age = window.charts.temperatureChart.filter(); //overwrites age filter, but they're the same dimension.
+    if (window.charts != null){
+      //charts have been initialized
+      window.state.filters.age = window.charts.ageChart.filter();
+      window.state.filters.abudance = window.charts.abundanceChart.filter();
+      window.state.filters.recordType = window.charts.recordTypeChart.filter();
+      window.state.filters.latitude = window.charts.latitudeChart.filter();
+      window.state.filters.investigator = window.charts.PIChart.filter();
+      window.state.filters.age = window.charts.temperatureChart.filter(); //overwrites age filter, but they're the same dimension.
+    }
+
 
     //avoid putting a new table in the database
     window.config.role = metadata.role
+
+    window.config.browser = utils.getBrowser();
+
+    console.log(window.config.browser)
 
     if (isValid.valid){
       IO.sendShareRequest(metadata, onShareRequestSuccess)
@@ -224,7 +237,8 @@ var UIUtils = (function(){
     handleShareRequestEvent: handleShareRequestEvent,
     applyFilters: applyFilters,
     checkForWebGLSupport: checkForWebGLSupport,
-    displayWebGLError: displayWebGLError
+    displayWebGLError: displayWebGLError,
+    handleDownloadRequest: handleDownloadRequest
   }
 })();
 
