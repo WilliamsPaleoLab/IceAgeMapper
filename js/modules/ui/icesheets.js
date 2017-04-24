@@ -2,55 +2,56 @@
 
 var _ = require("underscore");
 
-var icesheets = (function(){
-ages = []
-  function getIceAges(){
-    $.getJSON("/data/icesheets.json", function(data){
-      for (var i =0; i < data.features.length; i++){
-        ages.push(+data.features[i].properties.Age);
-      }
-      console.log(ages)
-      return ages
-    })//end ajax
+var icesheets = (function() {
+    ages = []
 
-  } //end functuon
+    function getIceAges() {
+        $.getJSON("./../../../data/icesheets.json", function(data) {
+                for (var i = 0; i < data.features.length; i++) {
+                    ages.push(+data.features[i].properties.Age);
+                }
+                console.log(ages)
+                return ages
+            }) //end ajax
 
-  function init(){
-    getIceAges();
-  }
+    } //end functuon
 
-  function filterFromRange(ageRange){
-    //filter to max extent of age range
-    //get closest to max of input
-    maxAge = ageRange[1]
-    if (maxAge < 3000){
-      closestAge = 0
-    }else{
-      closestAge = ages.closest(maxAge);
+    function init() {
+        getIceAges();
     }
-    applyFilter(closestAge)
-  }
 
-  function applyFilter(age){
-    //put a filter on the map icesheet layer
-    //TODO: this doesn't work
-    if (window.map.loaded()){
-      window.map.setFilter('icesheets', ['==', 'Age', age]);
-      return
-    }else{
-      window.map.on('load', function(){
-        window.map.setFilter('icesheets', ['==', 'Age', age]);
-        return
-      })
+    function filterFromRange(ageRange) {
+        //filter to max extent of age range
+        //get closest to max of input
+        maxAge = ageRange[1]
+        if (maxAge < 3000) {
+            closestAge = 0
+        } else {
+            closestAge = ages.closest(maxAge);
+        }
+        applyFilter(closestAge)
     }
-  }
 
-  return {
-    init: init,
-    ages: ages,
-    filter: applyFilter,
-    filterFromRange: filterFromRange
-  }
+    function applyFilter(age) {
+        //put a filter on the map icesheet layer
+        //TODO: this doesn't work
+        if (window.map.loaded()) {
+            window.map.setFilter('icesheets', ['==', 'Age', age]);
+            return
+        } else {
+            window.map.on('load', function() {
+                window.map.setFilter('icesheets', ['==', 'Age', age]);
+                return
+            })
+        }
+    }
+
+    return {
+        init: init,
+        ages: ages,
+        filter: applyFilter,
+        filterFromRange: filterFromRange
+    }
 })();
 
 module.exports = icesheets;
