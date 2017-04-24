@@ -47,7 +47,7 @@ The stable version is hosted by the University of Wisconsin, Madison, using a Wi
 
 
 ### Release History
-- ```v2.1.0 Alpha``` Ground-up redevelopment (forthcoming).
+- ```v2.1.0 Alpha``` Ground-up redevelopment (current).
 
   * New flat-design layout
   * Dashboard filtering
