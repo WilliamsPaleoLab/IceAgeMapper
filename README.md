@@ -4,7 +4,7 @@ An interactive geovisualization application for communicating climate-driven pal
 Developed at University of Wisconsin, Madison, Dept. of Geography.  
 
 ### Live Versions
-1.  ```Alpha``` [http://scottsfarley93.github.io/IceAgeMapper](http://scottsfarley.com/IceAgeMapper) -- unstable, bleeding edge version featuring the latest commit. If this doesn't work, try the beta version.
+1.  ```Alpha``` [http://williamspaleolab.github.io/IceAgeMapper](http://williamspaleolab.github.io/IceAgeMapper) -- unstable, bleeding edge version featuring the latest commit. If this doesn't work, try the beta version.
 2.  ```Beta``` [http://paleo.geography.wisc.edu](http://paleo.geography.wisc.edu) -- the latest stable release of the software: might not have all the latest features, but shouldn't fail miserably.
 
 ### Purpose
@@ -176,5 +176,5 @@ Upcoming versions:
 
 ### Contact
 
-This project is part of Scott Farley's Master's Thesis at UW.  Please shoot me an email if you have any comments or suggestions, or wish to collaborate.
+This project is part of Scott Farley's Master's Thesis at UW.  Please shoot me an [email](mailto:sfarley2@wisc.edu) if you have any comments or suggestions, or wish to collaborate.
 Contact: sfarley2@wisc.edu
