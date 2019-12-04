@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "awesomplete": "latest",
-    "bootstrap": "~3.3",
+    "bootstrap": "~3.4",
     "crossfilter": "latest",
     "d3": "~3",
     "d3-queue": "latest",
