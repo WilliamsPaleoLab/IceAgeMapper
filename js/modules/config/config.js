@@ -29,12 +29,12 @@ var config  = (function(){
     //where is the data stored
     dataSources : { //URIs of data used in AJAX calls
       taxa: "data/taxa.json", //customized file with names of taxa to improve performanc
-      ecolGroups: "http://api.neotomadb.org/v1/dbtables/ecolGroupTypes?fields=EcolGroupID,EcolGroup", //names and ids of ecological groups in neotoma
-      occurrences: "http://api.neotomadb.org/v1/data/SampleData", //endpoint for occurrence data
-      datasets: "http://api.neotomadb.org/v1/data/datasets", //endpoint for dataset metadata
-      sites: "http://api.neotomadb.org/v1/data/sites",//endpoint for site-level meta
+      ecolGroups: "https://api.neotomadb.org/v1/dbtables/ecolGroupTypes?fields=EcolGroupID,EcolGroup", //names and ids of ecological groups in neotoma
+      occurrences: "https://api.neotomadb.org/v1/data/SampleData", //endpoint for occurrence data
+      datasets: "https://api.neotomadb.org/v1/data/datasets", //endpoint for dataset metadata
+      sites: "https://api.neotomadb.org/v1/data/sites",//endpoint for site-level meta
       configStore: "http://grad.geography.wisc.edu:8080/mapConfigs",//where shared maps are stored
-      taxonInfo: "http://api.neotomadb.org/v1/data/taxa", //details about specific taxa
+      taxonInfo: "https://api.neotomadb.org/v1/data/taxa", //details about specific taxa
       icesheets: "data/icesheets.json",//geojson representing paleoicesheets
       NHTemp: "data/greenlandT.csv", //northern hemisphere ice core temperature record for plottings
     },

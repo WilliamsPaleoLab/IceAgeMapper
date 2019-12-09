@@ -9,6 +9,7 @@ angular.
 
       $http.get('http://grad.geography.wisc.edu:8080/mapConfigs?summaryOnly=true').then(function(response) {
         responseData = response.data
+        console.log(responseData)
         if (responseData.success){
           dat = responseData.data;
           dat.forEach(function(d){

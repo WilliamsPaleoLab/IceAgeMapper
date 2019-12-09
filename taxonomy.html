@@ -375,7 +375,7 @@ function divShow(d){
         div.html("Loading...")
             .style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY + 15) + "px");
-      $.getJSON("http://api.neotomadb.org/v1/data/taxa?taxonname=" + d.data.name, function(data){
+      $.getJSON("https://api.neotomadb.org/v1/data/taxa?taxonname=" + d.data.name, function(data){
         if (data['success']){
           try{
             html = "<h5 class='page-header'>" + data['data'][0]['TaxonName'] + "</h4>"
@@ -398,7 +398,7 @@ function divHide(d){
 function dblclick(d){
   $("#myModal").modal('show');
   $("#myModalLabel").text(d.data.name)
-  $.getJSON("http://api.neotomadb.org/v1/data/taxa?taxonname=" + d.data.name, function(data){
+  $.getJSON("https://api.neotomadb.org/v1/data/taxa?taxonname=" + d.data.name, function(data){
     if (data['success']){
       try{
         $("#taxonIDModal").text(data['data'][0]['TaxonID'])

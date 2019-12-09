@@ -12,7 +12,7 @@ function loadTaxa(callback){
 function loadEcolGroups(callback){
   //load the ecological groups from the file specified in the configuration object
   console.log("trying to load ")
-  $.getJSON("http://api.neotomadb.org/v1/dbtables/ecolGroupTypes?fields=EcolGroupID,EcolGroup", function(data){
+  $.getJSON("https://api.neotomadb.org/v1/dbtables/ecolGroupTypes?fields=EcolGroupID,EcolGroup", function(data){
     page.ecolGroups = data['data']
     console.log(page.ecolGroups)
     callback(data )

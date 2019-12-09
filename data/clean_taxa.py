@@ -2,7 +2,7 @@
 import requests
 import json
 
-dat = requests.get("http://api.neotomadb.org/v1/data/taxa").json()
+dat = requests.get("https://api.neotomadb.org/v1/data/taxa").json()
 
 res = dat['data']
 reducedData = []

@@ -38,7 +38,7 @@ guides its inclusion into a classroom setting.
 
 
 #### Data Sources
-- **Paleoecological Data**: The fossil occurrences and abundances come from the [Neotoma Database](http://neotomadb.org) using their [API](http://api.neotomadb.org).
+- **Paleoecological Data**: The fossil occurrences and abundances come from the [Neotoma Database](http://neotomadb.org) using their [API](https://api.neotomadb.org).
 
 #### Technology
 The development version of the application is hosted by Github, using the Github pages feature.
