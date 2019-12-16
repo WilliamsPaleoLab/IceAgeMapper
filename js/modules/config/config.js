@@ -60,8 +60,8 @@ var config  = (function(){
       altitudeDomainMax: 5000, //max of altitude bar chart axis
       abundanceDomainMin: 0, //min of abundance axis
       abundanceDomainMax: 100,//max of abundance axis
-      timeDomainMin: 0, //min of time bar chart axis
-      timeDomainMax: 22000, //max of time bar chart axis
+      timeDomainMin: -22000, //min of time bar chart axis
+      timeDomainMax: 100, //max of time bar chart axis
       colorYoung: "blue", //color to represent earliest dates on bubble chart
       colorOld:'red', //color to represent oldest dates on bubble chart
       timeBinSize: 1, //how big are the time bins in the analytics charts? --> years

@@ -61,8 +61,8 @@ var config  = (function(){
       altitudeDomainMax: 5000, //max of altitude bar chart axis
       abundanceDomainMin: 0, //min of abundance axis
       abundanceDomainMax: 100,//max of abundance axis
-      timeDomainMin: 0, //min of time bar chart axis
-      timeDomainMax: 22000, //max of time bar chart axis
+      timeDomainMin: -22000, //min of time bar chart axis
+      timeDomainMax: 0, //max of time bar chart axis
       colorYoung: "blue", //color to represent earliest dates on bubble chart
       colorOld:'red', //color to represent oldest dates on bubble chart
       timeBinSize: 1, //how big are the time bins in the analytics charts? --> years
@@ -524,7 +524,7 @@ var processes = (function(){
     occurrence.datasetMeta = dataset
     occurrence.latitude = (occurrence.SiteLatitudeNorth + occurrence.SiteLatitudeSouth)/2
     occurrence.longitude = (occurrence.SiteLongitudeWest + occurrence.SiteLongitudeEast)/2
-    occurrence.age = occurrence.SampleAge
+    occurrence.age = -(occurrence.SampleAge)
     occurrence.ageUncertainty = 0
     occurrence.altitude = occurrence.datasetMeta.Site.Altitude
     if (occurrence.age == null){
@@ -989,7 +989,7 @@ var IO = require("./../../processes/io.js");
 var d3 = require('d3');
 var crossfilter = require('crossfilter');
 var icesheets = require("./../icesheets.js");
-
+console.log(exports)
 var tempChart = (function(){
   var draw = function(data,
                       el,
@@ -1025,7 +1025,7 @@ var tempChart = (function(){
           margins = {bottom:30,left:50,right:10,top:10}
         }
         if(xDomain === undefined){
-          xDomain = [0, 22000]
+          xDomain = [-22000, 0]
         }
         if(yDomain === undefined){
           yDomain = d3.extent(data, function(d){return +d.TempC})
@@ -1069,21 +1069,21 @@ var tempChart = (function(){
   var annotateTempChart = function(chartBody, chart, config){
       chartBody.selectAll("text").remove()
       chartBody.append('text')
-        .attr('x', chart.x()(18000))
+        .attr('x', chart.x()(-18000))
         .attr('y', chart.y()(-40))
         .attr('text-anchor', 'middle')
         .text("Deglaciation")
         .style('fill', config.colors.annotations)
 
         chartBody.append('text')
-          .attr('x', chart.x()(14700))
-          .attr('y', chart.y()(-31.7))
+          .attr('x', chart.x()(-14700))
+          .attr('y', chart.y()(-30.7))
           .attr('text-anchor', 'middle')
           .text("Bolling Allerod")
           .style('fill', config.colors.annotations)
 
           chartBody.append('text')
-            .attr('x', chart.x()(8000))
+            .attr('x', chart.x()(-8000))
             .attr('y', chart.y()(-40))
             .attr('text-anchor', 'end')
             .text("The Holocene")
@@ -8280,7 +8280,6 @@ var UIUtils = (function(){
   }
 
   var filterAndPopulateTaxaDropdown = function(selectedGroup, taxa){
-    console.log(taxa)
     //filter the taxa list to the selected ecological group
     //put the filtered list into the taxa dropdown
     filteredTaxa = _.filter(taxa, function(d){
@@ -16446,7 +16445,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
           svg.remove();
         }
       }
-      if (d3_mouse_bug44083) point.x = e.pageX, point.y = e.pageY; else point.x = e.clientX, 
+      if (d3_mouse_bug44083) point.x = e.pageX, point.y = e.pageY; else point.x = e.clientX,
       point.y = e.clientY;
       point = point.matrixTransform(container.getScreenCTM().inverse());
       return [ point.x, point.y ];
@@ -16821,7 +16820,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     }
     function mousewheeled() {
       var dispatch = event.of(this, arguments);
-      if (mousewheelTimer) clearTimeout(mousewheelTimer); else d3_selection_interrupt.call(this), 
+      if (mousewheelTimer) clearTimeout(mousewheelTimer); else d3_selection_interrupt.call(this),
       translate0 = location(center0 = center || d3.mouse(this)), zoomstarted(dispatch);
       mousewheelTimer = setTimeout(function() {
         mousewheelTimer = null;
@@ -17190,7 +17189,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
   d3.xhr = d3_xhrType(d3_identity);
   function d3_xhrType(response) {
     return function(url, mimeType, callback) {
-      if (arguments.length === 2 && typeof mimeType === "function") callback = mimeType, 
+      if (arguments.length === 2 && typeof mimeType === "function") callback = mimeType,
       mimeType = null;
       return d3_xhr(url, mimeType, response, callback);
     };
@@ -18031,7 +18030,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     return n ? (date.y = d3_time_expandYear(+n[0]), i + n[0].length) : -1;
   }
   function d3_time_parseZone(date, string, i) {
-    return /^[+-]\d{4}$/.test(string = string.slice(i, i + 5)) ? (date.Z = -string, 
+    return /^[+-]\d{4}$/.test(string = string.slice(i, i + 5)) ? (date.Z = -string,
     i + 5) : -1;
   }
   function d3_time_expandYear(d) {
@@ -18224,7 +18223,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     var λ00, φ00, λ0, cosφ0, sinφ0;
     d3_geo_area.point = function(λ, φ) {
       d3_geo_area.point = nextPoint;
-      λ0 = (λ00 = λ) * d3_radians, cosφ0 = Math.cos(φ = (φ00 = φ) * d3_radians / 2 + π / 4), 
+      λ0 = (λ00 = λ) * d3_radians, cosφ0 = Math.cos(φ = (φ00 = φ) * d3_radians / 2 + π / 4),
       sinφ0 = Math.sin(φ);
     };
     function nextPoint(λ, φ) {
@@ -20053,7 +20052,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
       return _ ? center([ -_[1], _[0] ]) : (_ = center(), [ _[1], -_[0] ]);
     };
     projection.rotate = function(_) {
-      return _ ? rotate([ _[0], _[1], _.length > 2 ? _[2] + 90 : 90 ]) : (_ = rotate(), 
+      return _ ? rotate([ _[0], _[1], _.length > 2 ? _[2] + 90 : 90 ]) : (_ = rotate(),
       [ _[0], _[1], _[2] - 90 ]);
     };
     return rotate([ 0, 0, 90 ]);
@@ -20907,7 +20906,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     };
     quadtree.extent = function(_) {
       if (!arguments.length) return x1 == null ? null : [ [ x1, y1 ], [ x2, y2 ] ];
-      if (_ == null) x1 = y1 = x2 = y2 = null; else x1 = +_[0][0], y1 = +_[0][1], x2 = +_[1][0], 
+      if (_ == null) x1 = y1 = x2 = y2 = null; else x1 = +_[0][0], y1 = +_[0][1], x2 = +_[1][0],
       y2 = +_[1][1];
       return quadtree;
     };
@@ -22632,7 +22631,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
         return d3_layout_treemapPad(node, x);
       }
       var type;
-      pad = (padding = x) == null ? d3_layout_treemapPadNull : (type = typeof x) === "function" ? padFunction : type === "number" ? (x = [ x, x, x, x ], 
+      pad = (padding = x) == null ? d3_layout_treemapPadNull : (type = typeof x) === "function" ? padFunction : type === "number" ? (x = [ x, x, x, x ],
       padConstant) : padConstant;
       return treemap;
     };
@@ -23035,7 +23034,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     };
     scale.rangePoints = function(x, padding) {
       if (arguments.length < 2) padding = 0;
-      var start = x[0], stop = x[1], step = domain.length < 2 ? (start = (start + stop) / 2, 
+      var start = x[0], stop = x[1], step = domain.length < 2 ? (start = (start + stop) / 2,
       0) : (stop - start) / (domain.length - 1 + padding);
       range = steps(start + step * padding / 2, step);
       rangeBand = 0;
@@ -23047,7 +23046,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     };
     scale.rangeRoundPoints = function(x, padding) {
       if (arguments.length < 2) padding = 0;
-      var start = x[0], stop = x[1], step = domain.length < 2 ? (start = stop = Math.round((start + stop) / 2), 
+      var start = x[0], stop = x[1], step = domain.length < 2 ? (start = stop = Math.round((start + stop) / 2),
       0) : (stop - start) / (domain.length - 1 + padding) | 0;
       range = steps(start + Math.round(step * padding / 2 + (stop - start - (domain.length - 1 + padding) * step) / 2), step);
       rangeBand = 0;
@@ -23475,7 +23474,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
     return points.length < 4 ? d3_svg_lineLinear(points) : points[1] + d3_svg_lineHermite(points.slice(1, -1), d3_svg_lineCardinalTangents(points, tension));
   }
   function d3_svg_lineCardinalClosed(points, tension) {
-    return points.length < 3 ? d3_svg_lineLinearClosed(points) : points[0] + d3_svg_lineHermite((points.push(points[0]), 
+    return points.length < 3 ? d3_svg_lineLinearClosed(points) : points[0] + d3_svg_lineHermite((points.push(points[0]),
     points), d3_svg_lineCardinalTangents([ points[points.length - 2] ].concat(points, [ points[1] ]), tension));
   }
   function d3_svg_lineCardinal(points, tension) {
@@ -24248,7 +24247,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
         var g = d3.select(this);
         var scale0 = this.__chart__ || scale, scale1 = this.__chart__ = scale.copy();
         var ticks = tickValues == null ? scale1.ticks ? scale1.ticks.apply(scale1, tickArguments_) : scale1.domain() : tickValues, tickFormat = tickFormat_ == null ? scale1.tickFormat ? scale1.tickFormat.apply(scale1, tickArguments_) : d3_identity : tickFormat_, tick = g.selectAll(".tick").data(ticks, scale1), tickEnter = tick.enter().insert("g", ".domain").attr("class", "tick").style("opacity", ε), tickExit = d3.transition(tick.exit()).style("opacity", ε).remove(), tickUpdate = d3.transition(tick.order()).style("opacity", 1), tickSpacing = Math.max(innerTickSize, 0) + tickPadding, tickTransform;
-        var range = d3_scaleRange(scale1), path = g.selectAll(".domain").data([ 0 ]), pathUpdate = (path.enter().append("path").attr("class", "domain"), 
+        var range = d3_scaleRange(scale1), path = g.selectAll(".domain").data([ 0 ]), pathUpdate = (path.enter().append("path").attr("class", "domain"),
         d3.transition(path));
         tickEnter.append("line");
         tickEnter.append("text");
