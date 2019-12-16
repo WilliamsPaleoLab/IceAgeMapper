@@ -86,7 +86,7 @@ var config  = (function(){
     walkthrough: {
       loadClean: false,
       defaultTaxonName: "sequoia",
-      doWalkthrough: false //for post-hoc analysis only
+      doWalkthrough: true //for post-hoc analysis only
     },
     timer: {
       sessionStart : null,
