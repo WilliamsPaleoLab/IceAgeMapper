@@ -204,7 +204,7 @@ module.exports = state;
 (function (global){
 //This is Ice Age Mapper Version 2.1
 
-console.log("Welcome to Ice Age Mapper (Version 2.2)\n\tAuthor: Scott Farley \n\tUniversity of Wisconsin")
+console.log("Welcome to Ice Age Mapper (Version 2.2)\n\tAuthors: Scott Farley and Anna E George\n\tUniversity of Wisconsin")
 
 //load external jquery core and layout plugin
 var $ = jQuery = jquery = require("jquery");

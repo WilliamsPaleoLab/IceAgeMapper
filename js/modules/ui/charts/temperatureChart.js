@@ -39,7 +39,7 @@ var tempChart = (function(){
           margins = {bottom:30,left:50,right:10,top:10}
         }
         if(xDomain === undefined){
-          xDomain = [0, 22000]
+          xDomain = [-22000, 0]
         }
         if(yDomain === undefined){
           yDomain = d3.extent(data, function(d){return +d.TempC})
@@ -160,5 +160,16 @@ var tempChart = (function(){
   }
 })();
 
+// Currently non-functional play/pause for timebar
+// function updateTempChart(){
+//     d3.select("#tempContainer")
+//         .transition()
+//         .delay(100)
+//         .duration(2000)
+//         .attr("width", "500")
+//     var chart = draw(data, "#tempContainer", "Years Before Present", "Mean Temperature", config, onFilter);
+//     renderEmpty();
+//     window.tempChart = chart;
+// }
 
 module.exports = tempChart
