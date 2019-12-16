@@ -10,7 +10,6 @@ var icesheets = (function() {
                 for (var i = 0; i < data.features.length; i++) {
                     ages.push(+data.features[i].properties.Age);
                 }
-                console.log(ages)
                 return ages
             }) //end ajax
 
@@ -23,11 +22,11 @@ var icesheets = (function() {
     function filterFromRange(ageRange) {
         //filter to max extent of age range
         //get closest to max of input
-        maxAge = ageRange[1]
-        if (maxAge < 3000) {
-            closestAge = 0
+        maxAge = ageRange[0]
+        if (maxAge > -3000) {
+            closestAge = 1
         } else {
-            closestAge = ages.closest(maxAge);
+            closestAge = ages.closest(minAge);
         }
         applyFilter(closestAge)
     }

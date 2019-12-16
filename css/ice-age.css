@@ -75,11 +75,11 @@ z-index: 1040;
 .iam-header{
 display: inline;
 padding: 0px;
-color: white;
+color: #FFFFFF;
 }
 
 .container-fluid{
-  background-color: black;
+  background-color: #000000;
   padding: 5px;
 }
 
@@ -107,8 +107,13 @@ color: white;
 border-left: thin solid black ;
 }
 
-.navbar{
-margin-bottom: 0px;
+.nav-dropdown{
+padding-right: 2%;
+}
+
+.btn-walkthrough{
+    padding-top: 7%;
+    padding-right: 0px;
 }
 
 #main {

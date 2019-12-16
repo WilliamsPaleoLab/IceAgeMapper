@@ -17,7 +17,7 @@
     <!-- <link rel='stylesheet' href="bower_components/pace/themes/black/pace-theme-mac-osx.css" /> -->
     <link rel='stylesheet' href="bower_components/pace/themes/blue/pace-theme-loading-bar.css" />
     <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' />
-    <link rel='stylesheet' href='node_modules/intro.js-2.9.3/introjs.css' />
+    <link rel='stylesheet' href='node_modules/intro.js-2.9.3.js/minified/introjs.min.css' />
     <style>
 
     </style>
@@ -38,49 +38,48 @@
         <div class="container-fluid">
             <div class="navbar-header col-xs-8">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-          <span class="sr-only">Toggle navigation</span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
                 <div id='headerRow' class='col-xs-12' data-intro="That's all for now. Have fun!" data-step=10>
                     <h3 class='iam-header' id='iam-header'>Ice Age <strong><i>Mapper</i></strong> <span class='text-muted'><small>v2.0</small></span></h3>
                     <button type="button" class="btn btn-success" id='addDataButton' data-toggle="modal" data-target="#addDataModal" data-intro="Want to look at new data? Load a taxon by name of group using this menu." data-step=6>
-          <span class='glyphicon glyphicon-plus'></span>Add Data
-        </button>
-
-                    <button type="button" class="btn btn-warning" id='shareMapButton' data-toggle="modal" data-target="#shareModal" data-intro="Once you've configured your map, you can share it by generating a permanent URL for it -- great for sharing with colleagues, students, and friends! Personally identifying data is optional and will not be shared."
+                        <span class='glyphicon glyphicon-plus'></span> Add Data
+                    </button>
+                    <button type="button" class="btn btn-primary" id='shareMapButton' data-toggle="modal" data-target="#shareModal" data-intro="Once you've configured your map, you can share it by generating a permanent URL for it -- great for sharing with colleagues, students, and friends! Personally identifying data is optional and will not be shared."
                         data-step=9>
-        <span class='glyphicon glyphicon-envelope'></span>Share Map
-      </button>
+                        <span class='glyphicon glyphicon-envelope'></span> Share Map
+                    </button>
 
                     <button type="button" class="btn btn-primary" id='download-data'>
-      <span class='glyphicon glyphicon-download'></span>Download Data
-    </button>
+                        <span class='glyphicon glyphicon-download'></span> Download Data
+                    </button>
 
                     <button type="button" class="btn btn-primary" id='download-data'>
-    <span class='glyphicon glyphicon-filter'></span>Filter Definition
-  </button>
+                        <span class='glyphicon glyphicon-filter'></span> Filter Definition
+                    </button>
                     <!-- <label class='text-muted' id='taxonid'></label> -->
                 </div>
             </div>
+        <div  class="nav navbar-nav navbar-right nav-dropdown">
+            <a href="iam.html?walkthrough=true" class="btn btn-lg btn-walkthrough"> <span class="glyphicon glyphicon-question-sign"></span></a>
             <ul class="nav navbar-nav navbar-right">
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" id='dropdown-menu' data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
                         <h4>Menu <span class='caret'></span></h4>
                     </a>
                     <ul class="dropdown-menu">
-                        <li>
-                            <a href="index.html">Home</a>
-                        </li>
+                        <li><a href="iam.html">Home</a></li>
                         <li><a href="gallery.html">Gallery</a></li>
-                        <li><a href="iam.html?walkthrough=true">Interface Tutorial</a></li>
                         <li><a href="docs.html">Documentation</a></li>
                         <li><a href="taxonomy.html">Interactive Taxonomy</a></li>
                     </ul>
                 </li>
             </ul>
         </div>
+    </div>
         <!--/.container-fluid -->
     </nav>
 
